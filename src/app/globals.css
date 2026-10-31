@@ -1,0 +1,139 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * =============================================================================
+ * Lunas 3D — Design tokens (identidade visual)
+ * Documentação completa: docs/identidade-visual.md
+ *
+ * No Tailwind v4 a configuração de tema fica AQUI (não existe mais
+ * tailwind.config.ts). Para trocar uma cor da marca, altere só a variável
+ * em :root — todos os botões, cards e textos acompanham.
+ * =============================================================================
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* ---- Paleta da marca ---- */
+  --brand-night: #141a3c;   /* Azul Noite — fundo de destaque, header escuro, textos fortes */
+  --brand-indigo: #4338ca;  /* Índigo Lunar — cor PRIMÁRIA (botões, links) */
+  --brand-indigo-600: #3730a3;
+  --brand-lilac: #a5b4fc;   /* Lilás Nebulosa — SECUNDÁRIA (detalhes, ícones) */
+  --brand-lilac-50: #eef0ff;
+  --brand-orange: #ff7a1a;  /* Laranja Filamento — DESTAQUE (promoções, badges, CTA especial) */
+  --brand-orange-600: #e8650a;
+  --brand-moon: #f4f1ea;    /* Branco Lua — fundo quente das seções */
+
+  /* ---- Tokens semânticos (padrão shadcn/ui) ---- */
+  --radius: 0.875rem;
+  --background: #ffffff;
+  --foreground: #141a3c;
+  --card: #ffffff;
+  --card-foreground: #141a3c;
+  --popover: #ffffff;
+  --popover-foreground: #141a3c;
+  --primary: var(--brand-indigo);
+  --primary-hover: var(--brand-indigo-600);
+  --primary-foreground: #ffffff;
+  --secondary: var(--brand-lilac-50);
+  --secondary-foreground: #2b2f7a;
+  --accent: var(--brand-orange);
+  --accent-hover: var(--brand-orange-600);
+  --accent-foreground: #1b1206;
+  --muted: #f3f4f7;
+  --muted-foreground: #5b6178;
+  --destructive: #dc2626;
+  --success: #15803d;
+  --warning: #b45309;
+  --border: #e4e6ee;
+  --input: #d7dae5;
+  --ring: #6366f1;
+  --surface: var(--brand-moon);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-surface: var(--surface);
+
+  --color-brand-night: var(--brand-night);
+  --color-brand-indigo: var(--brand-indigo);
+  --color-brand-lilac: var(--brand-lilac);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-moon: var(--brand-moon);
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --shadow-card: 0 1px 2px rgb(20 26 60 / 0.04), 0 4px 16px rgb(20 26 60 / 0.06);
+  --shadow-card-hover: 0 2px 4px rgb(20 26 60 / 0.06), 0 12px 32px rgb(20 26 60 / 0.12);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight;
+  }
+}
+
+@layer utilities {
+  /* Grade "mesa de impressão" — textura sutil usada no hero */
+  .bg-print-grid {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  /* Linhas de camada — referência às camadas da impressão 3D */
+  .bg-layer-lines {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgb(20 26 60 / 0.035) 0,
+      rgb(20 26 60 / 0.035) 1px,
+      transparent 1px,
+      transparent 6px
+    );
+  }
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+}
