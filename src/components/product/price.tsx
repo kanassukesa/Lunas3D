@@ -22,7 +22,7 @@ export function Price({
           {formatBRL(price)}
         </span>
       )}
-      <span className="font-display text-lg font-bold text-brand-night">
+      <span className="font-display text-lg font-semibold text-brand-navy">
         {onSale && <span className="sr-only">Por </span>}
         {formatBRL(current)}
       </span>

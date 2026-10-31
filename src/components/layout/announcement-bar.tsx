@@ -7,13 +7,13 @@ export function AnnouncementBar({ announcement }: { announcement: SiteSettings["
 
   const content = (
     <>
-      <Sparkles className="size-3.5 shrink-0 text-brand-orange" aria-hidden="true" />
+      <Sparkles className="size-3.5 shrink-0 text-brand-yellow" aria-hidden="true" />
       <span className="truncate">{announcement.text}</span>
     </>
   );
 
   return (
-    <div className="bg-brand-night text-white">
+    <div className="bg-primary text-primary-foreground">
       <div className="container-page flex h-9 items-center justify-center text-xs font-medium sm:text-[13px]">
         {announcement.href ? (
           <Link href={announcement.href} className="flex min-w-0 items-center gap-2 hover:underline underline-offset-4">

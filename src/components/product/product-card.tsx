@@ -16,7 +16,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
   const maxSwatches = 5;
 
   return (
-    <article className="group relative flex w-full flex-col overflow-hidden rounded-2xl border bg-card shadow-card transition hover:-translate-y-0.5 hover:shadow-card-hover">
+    <article className="group relative flex w-full flex-col overflow-hidden rounded-3xl border bg-card shadow-card transition hover:-translate-y-0.5 hover:shadow-card-hover">
       <div className="relative aspect-square overflow-hidden bg-surface">
         {product.imageUrl ? (
           <Image
@@ -31,17 +31,17 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
           <ProductImagePlaceholder name={product.name} />
         )}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5">
-          {discount > 0 && <Badge variant="accent">-{discount}%</Badge>}
-          {product.madeToOrder && <Badge variant="night">Sob encomenda</Badge>}
+          {discount > 0 && <Badge>-{discount}%</Badge>}
+          {product.madeToOrder && <Badge variant="blue">Sob encomenda</Badge>}
           {!product.inStock && <Badge variant="outline" className="bg-background">Esgotado</Badge>}
         </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3.5 sm:p-4">
         {product.categoryName && (
-          <p className="text-[11px] font-semibold tracking-wider text-primary uppercase">{product.categoryName}</p>
+          <p className="text-[11px] font-bold tracking-wider text-brand-blue-700 uppercase">{product.categoryName}</p>
         )}
-        <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold sm:text-base">
+        <h3 className="line-clamp-2 text-[15px] leading-snug font-bold sm:text-base">
           <Link href={`/produtos/${product.slug}`} className="after:absolute after:inset-0 focus-visible:outline-none">
             {product.name}
           </Link>

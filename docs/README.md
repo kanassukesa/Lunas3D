@@ -218,7 +218,8 @@ mais simples e previsível. Pode ser religado na Etapa 6 para otimizar páginas 
 
 ```
 ├─ docs/                       documentação (este arquivo, identidade visual)
-├─ public/brand/               símbolo da marca
+├─ logo.png                    logo original
+├─ public/brand/logo.png       logo recortada (fundo transparente) usada no site
 ├─ supabase/
 │  ├─ config.toml              configuração do Supabase CLI
 │  ├─ migrations/              SQL versionado (aplicado em ordem pelo nome)

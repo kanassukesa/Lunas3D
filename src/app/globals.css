@@ -15,46 +15,53 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* ---- Paleta da marca ---- */
-  --brand-night: #141a3c;   /* Azul Noite — fundo de destaque, header escuro, textos fortes */
-  --brand-indigo: #4338ca;  /* Índigo Lunar — cor PRIMÁRIA (botões, links) */
-  --brand-indigo-600: #3730a3;
-  --brand-lilac: #a5b4fc;   /* Lilás Nebulosa — SECUNDÁRIA (detalhes, ícones) */
-  --brand-lilac-50: #eef0ff;
-  --brand-orange: #ff7a1a;  /* Laranja Filamento — DESTAQUE (promoções, badges, CTA especial) */
-  --brand-orange-600: #e8650a;
-  --brand-moon: #f4f1ea;    /* Branco Lua — fundo quente das seções */
+  /* ---- Paleta da marca (extraída de logo.png) ---- */
+  --brand-pink: #ff4c74;      /* Rosa Lunas — cor das letras "Lunas" */
+  --brand-pink-600: #d81e50;  /* Rosa Lunas escuro — PRIMÁRIA em botões (contraste AA com branco) */
+  --brand-pink-700: #b8173f;
+  --brand-pink-50: #ffe8ee;
+  --brand-blue: #3fa9f5;      /* Azul 3D — cor do "3D" */
+  --brand-blue-sky: #4bc7fd;  /* Azul estrela */
+  --brand-blue-700: #1a6fc2;  /* Azul 3D escuro — links/texto azul (contraste AA) */
+  --brand-blue-50: #e3f2fd;
+  --brand-yellow: #ffd84d;    /* Amarelo Estrela — DESTAQUE (contorno e estrelas da logo) */
+  --brand-yellow-600: #f6c632;
+  --brand-navy: #0b2a4a;      /* Azul Profundo — contorno do "3D": textos fortes e rodapé */
+  --brand-maroon: #46111c;    /* Vinho — contorno do "Lunas": texto sobre amarelo */
+  --brand-sky: #d5ecfc;       /* Azul Céu — fundo da logo: hero e seções */
 
   /* ---- Tokens semânticos (padrão shadcn/ui) ---- */
-  --radius: 0.875rem;
+  --radius: 1rem;
   --background: #ffffff;
-  --foreground: #141a3c;
+  --foreground: var(--brand-navy);
   --card: #ffffff;
-  --card-foreground: #141a3c;
+  --card-foreground: var(--brand-navy);
   --popover: #ffffff;
-  --popover-foreground: #141a3c;
-  --primary: var(--brand-indigo);
-  --primary-hover: var(--brand-indigo-600);
+  --popover-foreground: var(--brand-navy);
+  --primary: var(--brand-pink-600);
+  --primary-hover: var(--brand-pink-700);
+  --primary-shadow: #8f1131;
   --primary-foreground: #ffffff;
-  --secondary: var(--brand-lilac-50);
-  --secondary-foreground: #2b2f7a;
-  --accent: var(--brand-orange);
-  --accent-hover: var(--brand-orange-600);
-  --accent-foreground: #1b1206;
-  --muted: #f3f4f7;
-  --muted-foreground: #5b6178;
-  --destructive: #dc2626;
+  --secondary: var(--brand-blue-50);
+  --secondary-foreground: #124f8c;
+  --accent: var(--brand-yellow);
+  --accent-hover: var(--brand-yellow-600);
+  --accent-shadow: #c99a12;
+  --accent-foreground: var(--brand-maroon);
+  --muted: #f2f6fa;
+  --muted-foreground: #4f5d70;
+  --destructive: #c81e1e;
   --success: #15803d;
   --warning: #b45309;
-  --border: #e4e6ee;
-  --input: #d7dae5;
-  --ring: #6366f1;
-  --surface: var(--brand-moon);
+  --border: #dde7f0;
+  --input: #c9d7e4;
+  --ring: var(--brand-blue);
+  --surface: #eef7fe;
 }
 
 @theme inline {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fredoka), var(--font-nunito), ui-rounded, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, monospace;
 
   --color-background: var(--background);
@@ -81,11 +88,17 @@
   --color-ring: var(--ring);
   --color-surface: var(--surface);
 
-  --color-brand-night: var(--brand-night);
-  --color-brand-indigo: var(--brand-indigo);
-  --color-brand-lilac: var(--brand-lilac);
-  --color-brand-orange: var(--brand-orange);
-  --color-brand-moon: var(--brand-moon);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-pink-600: var(--brand-pink-600);
+  --color-brand-pink-50: var(--brand-pink-50);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-blue-sky: var(--brand-blue-sky);
+  --color-brand-blue-700: var(--brand-blue-700);
+  --color-brand-blue-50: var(--brand-blue-50);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-maroon: var(--brand-maroon);
+  --color-brand-sky: var(--brand-sky);
 
   --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 4px);
@@ -93,8 +106,8 @@
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
 
-  --shadow-card: 0 1px 2px rgb(20 26 60 / 0.04), 0 4px 16px rgb(20 26 60 / 0.06);
-  --shadow-card-hover: 0 2px 4px rgb(20 26 60 / 0.06), 0 12px 32px rgb(20 26 60 / 0.12);
+  --shadow-card: 0 1px 2px rgb(11 42 74 / 0.04), 0 6px 20px rgb(63 169 245 / 0.10);
+  --shadow-card-hover: 0 2px 4px rgb(11 42 74 / 0.06), 0 14px 36px rgb(63 169 245 / 0.22);
 }
 
 @layer base {
@@ -116,19 +129,26 @@
 }
 
 @layer utilities {
-  /* Grade "mesa de impressão" — textura sutil usada no hero */
+  /* Grade "mesa de impressão" em fundo claro (azul-céu) */
   .bg-print-grid {
     background-image:
-      linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+      linear-gradient(to right, rgb(63 169 245 / 0.14) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(63 169 245 / 0.14) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  /* Mesma grade, para fundos escuros/coloridos */
+  .bg-print-grid-light {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.10) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.10) 1px, transparent 1px);
     background-size: 28px 28px;
   }
   /* Linhas de camada — referência às camadas da impressão 3D */
   .bg-layer-lines {
     background-image: repeating-linear-gradient(
       to bottom,
-      rgb(20 26 60 / 0.035) 0,
-      rgb(20 26 60 / 0.035) 1px,
+      rgb(63 169 245 / 0.07) 0,
+      rgb(63 169 245 / 0.07) 1px,
       transparent 1px,
       transparent 6px
     );

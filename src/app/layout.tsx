@@ -1,16 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Fredoka, Nunito } from "next/font/google";
 import { publicEnv } from "@/lib/env";
 import "./globals.css";
 
 // Tipografia da marca (Google Fonts, servidas pelo próprio Next — sem requisição externa no navegador)
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  display: "swap",
-});
+// Fredoka: arredondada e "fofinha", conversa com as letras infladas da logo (títulos e botões).
+// Nunito: arredondada e muito legível no celular (textos).
+const fredoka = Fredoka({ variable: "--font-fredoka", subsets: ["latin"], display: "swap" });
+const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnv.siteUrl),
@@ -25,14 +22,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#141a3c",
+  themeColor: "#d5ecfc",
   width: "device-width",
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${spaceGrotesk.variable} h-full`}>
+    <html lang="pt-BR" className={`${fredoka.variable} ${nunito.variable} h-full`}>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

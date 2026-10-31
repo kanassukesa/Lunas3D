@@ -24,13 +24,13 @@ export function MobileNav({ whatsapp }: { whatsapp: string }) {
         <nav aria-label="Menu principal" className="flex flex-col px-3">
           {mainNav.map((item) => (
             <SheetClose asChild key={item.href}>
-              <Link href={item.href} className="rounded-xl px-3 py-3.5 text-base font-medium hover:bg-muted">
+              <Link href={item.href} className="rounded-2xl px-3 py-3.5 font-display text-lg font-medium hover:bg-secondary">
                 {item.label}
               </Link>
             </SheetClose>
           ))}
           <SheetClose asChild>
-            <Link href="/conta" className="flex items-center gap-2 rounded-xl px-3 py-3.5 text-base font-medium hover:bg-muted">
+            <Link href="/conta" className="flex items-center gap-2 rounded-2xl px-3 py-3.5 font-display text-lg font-medium hover:bg-secondary">
               <UserRound className="size-5" aria-hidden="true" /> Minha conta
             </Link>
           </SheetClose>

@@ -23,7 +23,7 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                className="rounded-full px-3.5 py-2 font-display text-[15px] font-medium text-brand-navy/80 transition hover:bg-secondary hover:text-brand-navy"
               >
                 {item.label}
               </Link>
@@ -36,7 +36,7 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
             <Link
               href="/conta"
               aria-label="Minha conta"
-              className="hidden size-11 items-center justify-center rounded-xl text-brand-night transition hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:inline-flex"
+              className="hidden size-11 items-center justify-center rounded-full text-brand-navy transition hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:inline-flex"
             >
               <UserRound className="size-[22px]" aria-hidden="true" />
             </Link>

@@ -14,15 +14,15 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
   const instagram = settings.instagram.replace(/^@/, "");
 
   return (
-    <footer className="mt-auto bg-brand-night text-white/80">
+    <footer className="mt-auto bg-brand-navy text-white/80">
       <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-4 sm:col-span-2 lg:col-span-1">
-          <Logo variant="light" />
+          <Logo size="lg" />
           <p className="max-w-xs text-sm leading-relaxed">{settings.tagline}</p>
         </div>
 
         <div>
-          <h2 className="mb-4 text-sm font-semibold tracking-wide text-white uppercase">Loja</h2>
+          <h2 className="mb-4 text-sm font-semibold tracking-wide text-brand-yellow uppercase">Loja</h2>
           <ul className="space-y-2.5 text-sm">
             {mainNav.map((item) => (
               <li key={item.href}>
@@ -40,7 +40,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
         </div>
 
         <div>
-          <h2 className="mb-4 text-sm font-semibold tracking-wide text-white uppercase">Contato</h2>
+          <h2 className="mb-4 text-sm font-semibold tracking-wide text-brand-yellow uppercase">Contato</h2>
           <ul className="space-y-3 text-sm">
             {settings.whatsapp && (
               <li>
@@ -52,14 +52,14 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
             {settings.contact_email && (
               <li>
                 <a href={`mailto:${settings.contact_email}`} className="inline-flex items-center gap-2.5 break-all hover:text-white">
-                  <Mail className="size-4 shrink-0 text-brand-lilac" aria-hidden="true" /> {settings.contact_email}
+                  <Mail className="size-4 shrink-0 text-brand-blue-sky" aria-hidden="true" /> {settings.contact_email}
                 </a>
               </li>
             )}
             {instagram && (
               <li>
                 <a href={`https://instagram.com/${instagram}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2.5 hover:text-white">
-                  <InstagramIcon className="size-4 text-brand-lilac" /> @{instagram}
+                  <InstagramIcon className="size-4 text-brand-blue-sky" /> @{instagram}
                 </a>
               </li>
             )}
@@ -67,10 +67,10 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
         </div>
 
         <div>
-          <h2 className="mb-4 text-sm font-semibold tracking-wide text-white uppercase">Retirada</h2>
+          <h2 className="mb-4 text-sm font-semibold tracking-wide text-brand-yellow uppercase">Retirada</h2>
           <ul className="space-y-3 text-sm">
             <li className="flex gap-2.5">
-              <MapPin className="mt-0.5 size-4 shrink-0 text-brand-orange" aria-hidden="true" />
+              <MapPin className="mt-0.5 size-4 shrink-0 text-brand-yellow" aria-hidden="true" />
               <span>
                 {addressLine}
                 {addr.notes && <span className="mt-1 block text-white/60">{addr.notes}</span>}
@@ -78,7 +78,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
             </li>
             {settings.business_hours && (
               <li className="flex gap-2.5">
-                <Clock className="mt-0.5 size-4 shrink-0 text-brand-orange" aria-hidden="true" />
+                <Clock className="mt-0.5 size-4 shrink-0 text-brand-yellow" aria-hidden="true" />
                 <span>{settings.business_hours}</span>
               </li>
             )}

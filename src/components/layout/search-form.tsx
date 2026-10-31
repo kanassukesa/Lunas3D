@@ -19,7 +19,7 @@ export function SearchForm({ className, id = "busca" }: { className?: string; id
         placeholder="Buscar peças, presentes, utilidades..."
         autoComplete="off"
         enterKeyHint="search"
-        className="h-11 w-full rounded-xl border border-input bg-muted/60 pr-3 pl-10 text-base outline-none transition placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:ring-[3px] focus:ring-ring/30 md:text-sm"
+        className="h-11 w-full rounded-full border border-input bg-surface pr-3 pl-10 text-base outline-none transition placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:ring-[3px] focus:ring-ring/30 md:text-sm"
       />
     </form>
   );

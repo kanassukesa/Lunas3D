@@ -1,83 +1,102 @@
 # Identidade visual — Lunas 3D
 
-> ⚠️ **Paleta provisória.** O arquivo `logo.png` não estava no repositório quando a Etapa 1 foi feita,
-> então a paleta abaixo foi criada a partir do nome e do conceito da marca (lua + camadas de impressão 3D).
-> Assim que a logo oficial for adicionada na raiz do projeto, a paleta é extraída dela e ajustada
-> **em um único lugar**: as variáveis de `:root` em `src/app/globals.css`. Nenhum componente precisa mudar.
+Paleta, tipografia e estilo extraídos da logo oficial (`./logo.png`).
 
 ## Conceito
 
-**"Ideias que ganham forma, camada por camada."**
-A lua (Lunas) encontra o universo maker: fundo azul-noite, um índigo vibrante como cor de ação e um
-laranja "filamento" para chamar atenção. As fotos dos produtos são as protagonistas: cards brancos,
-bordas suaves e fundos neutros para as peças coloridas se destacarem.
+A logo é **divertida, colorida e "inflada"**: letras rosas brilhantes, o "3D" em azul, contorno
+amarelo, estrelinhas e linhas tracejadas como uma órbita, tudo sobre um fundo azul-céu.
+O site leva essa personalidade para a interface (cantos bem arredondados, botões com cara de
+"botão 3D", estrelas como elemento gráfico) sem atrapalhar o principal: **as fotos dos produtos**
+ficam em cards brancos e limpos.
 
-Dois elementos gráficos reforçam o tema:
+O toque "maker/tecnológico" vem de dois padrões sutis:
 
-- **Grade de mesa de impressão** (`.bg-print-grid`) — usada em fundos escuros (hero, CTA).
-- **Linhas de camada** (`.bg-layer-lines`) — listras horizontais finíssimas, como as camadas de uma peça impressa.
-  Usadas em seções claras e no espaço reservado da foto do produto.
+- **Grade de mesa de impressão** (`.bg-print-grid` para fundos claros, `.bg-print-grid-light` para fundos coloridos)
+- **Linhas de camada** (`.bg-layer-lines`): listras horizontais finíssimas, como as camadas de uma peça impressa
+
+## Arquivos da marca
+
+| Arquivo | O que é |
+|---|---|
+| `logo.png` (raiz) | Original enviado (1280×720, fundo azul-céu). Guardado como fonte |
+| `public/brand/logo.png` | Versão para o site: recortada, **fundo transparente**, 900 px de largura. Funciona em fundo claro e escuro |
+| `src/app/icon.png`, `src/app/apple-icon.png` | Ícone da aba do navegador e da tela inicial do celular: o "3D" sobre fundo rosa |
 
 ## Paleta
 
-| Papel | Nome | Hex | Uso |
-|---|---|---|---|
-| Primária | Índigo Lunar | `#4338CA` (hover `#3730A3`) | Botões principais, links, foco |
-| Secundária | Lilás Nebulosa | `#A5B4FC` / fundo `#EEF0FF` | Ícones, detalhes, botões secundários |
-| Destaque | Laranja Filamento | `#FF7A1A` (hover `#E8650A`) | Promoções, badges, CTA de conversão |
-| Base escura | Azul Noite | `#141A3C` | Textos, header do aviso, hero, footer |
-| Fundo quente | Branco Lua | `#F4F1EA` | Seções alternadas, fundo das fotos |
-| Neutros | — | `#FFFFFF`, `#F3F4F7`, `#E4E6EE`, `#5B6178` | Fundo, superfícies, bordas, texto secundário |
-| Estados | — | sucesso `#15803D`, aviso `#B45309`, erro `#DC2626` | Mensagens e status |
+Cores medidas direto nos pixels da logo:
 
-**Contraste (WCAG):** branco sobre Índigo Lunar ≈ 7,6:1 · Azul Noite sobre branco ≈ 16:1 ·
-texto secundário `#5B6178` sobre branco ≈ 6:1 · texto escuro sobre Laranja Filamento ≈ 8:1.
-Todos passam no nível AA (o laranja **não** é usado com texto branco).
+| Papel | Nome | Hex | Na logo | Uso no site |
+|---|---|---|---|---|
+| **Primária** | Rosa Lunas | `#FF4C74` | letras "Lunas" | Decoração, estrelas, ilustrações |
+| Primária (ação) | Rosa Lunas escuro | `#D81E50` (hover `#B8173F`) | sombra das letras | **Botões principais**, faixa do aviso no topo, badge de promoção |
+| **Secundária** | Azul 3D | `#3FA9F5` / `#4BC7FD` | "3D" e estrelas azuis | Foco, ícones, detalhes |
+| Secundária (texto) | Azul 3D escuro | `#1A6FC2` | — | Links, categoria no card, badge "sob encomenda" |
+| **Destaque** | Amarelo Estrela | `#FFD84D` | contorno e estrelas | Botão de conversão especial, estrelas, títulos do rodapé |
+| Base escura | Azul Profundo | `#0B2A4A` | contorno do "3D" | Textos, rodapé |
+| Texto sobre amarelo | Vinho | `#46111C` | contorno do "Lunas" | Texto de botões amarelos |
+| Fundo da marca | Azul Céu | `#D5ECFC` | fundo da logo | Hero, cor do tema no celular |
+| Neutros | — | `#FFFFFF`, `#EEF7FE`, `#F2F6FA`, `#DDE7F0`, `#4F5D70` | — | Fundos, seções alternadas, bordas, texto secundário |
+
+### Acessibilidade (contraste WCAG AA, mínimo de 4,5:1)
+
+| Combinação | Contraste |
+|---|---|
+| Branco sobre Rosa escuro `#D81E50` | 4,97 ✅ |
+| Vinho sobre Amarelo `#FFD84D` | ≈ 12 ✅ |
+| Azul Profundo sobre branco | ≈ 14 ✅ |
+| Azul Profundo sobre Azul Céu | ≈ 12 ✅ |
+| Azul escuro `#1A6FC2` sobre branco | 5,1 ✅ |
+| Branco sobre Rosa claro `#FF4C74` | 3,2 ❌ |
+
+O rosa e o azul claros da logo **não** levam texto branco por cima. Eles ficam para decoração;
+botões e textos usam as versões escuras.
 
 ## Tipografia (Google Fonts)
 
-| Uso | Fonte | Pesos |
+| Uso | Fonte | Por quê |
 |---|---|---|
-| Títulos, preços, logo | **Space Grotesk** — geométrica, com cara de tecnologia | 500, 600, 700 |
-| Textos e interface | **Inter** — altíssima legibilidade em telas pequenas | variável |
+| Títulos, botões, preços, menu | **Fredoka** | Arredondada e "fofinha", conversa com as letras infladas da logo |
+| Textos e formulários | **Nunito** | Também arredondada, muito legível em telas pequenas |
 
-Classes: `font-display` (Space Grotesk) e `font-sans` (Inter, padrão do `body`).
-`h1`–`h4` usam `font-display` automaticamente. As fontes são baixadas pelo `next/font` no build
-e servidas pelo próprio site (rápido e sem depender do Google no navegador do cliente).
+Classes: `font-display` (Fredoka) e `font-sans` (Nunito, padrão do `body`). Os títulos `h1`–`h4` já usam Fredoka.
+As fontes são baixadas pelo `next/font` no build e servidas pelo próprio site.
 
 ## Componentes
 
-**Botões** (`src/components/ui/button.tsx`) — cantos arredondados (`rounded-xl`), peso semibold,
-altura mínima de 44 px (área de toque confortável no celular) e leve "afundar" ao tocar.
+**Botões** (`src/components/ui/button.tsx`): formato de pílula (`rounded-full`), texto em Fredoka,
+altura mínima de 44 px e uma **sombra sólida embaixo** que "afunda" ao tocar, imitando o volume da logo.
 
 | Variante | Quando usar |
 |---|---|
-| `default` (índigo) | Ação principal da tela |
-| `accent` (laranja) | Conversão: "Ver produtos", "Pedir orçamento", "Adicionar ao carrinho" |
-| `secondary` / `outline` / `ghost` | Ações secundárias |
+| `default` (rosa) | Ação principal: "Ver produtos", "Adicionar ao carrinho", "Finalizar pedido" |
+| `accent` (amarelo) | Conversão especial em fundo colorido: "Pedir orçamento" |
+| `outline` / `secondary` / `ghost` | Ações secundárias |
 | `whatsapp` (verde) | Qualquer botão que abre o WhatsApp |
 
-**Cards** — fundo branco, borda `#E4E6EE`, raio de 22 px (`rounded-2xl`), sombra suave
-(`shadow-card`) que cresce no hover (`shadow-card-hover`). Card de produto: foto quadrada no topo,
-badges no canto (promoção em laranja, "sob encomenda" em azul-noite), categoria em caixa alta índigo,
-nome, bolinhas das cores disponíveis e preço em Space Grotesk.
+**Cards**: fundo branco, borda azul bem clara, cantos de 24 px (`rounded-3xl`) e sombra azulada
+(`shadow-card`) que cresce no hover. No card de produto ficam a foto quadrada, os badges
+(promoção em rosa, "sob encomenda" em azul), a categoria em azul, o nome, as bolinhas de cor e o preço em Fredoka.
 
-**Raio padrão:** `--radius: 0.875rem` (14 px). **Inputs:** 44 px de altura, texto 16 px no celular
+**Badges**: pílulas em Fredoka. **Inputs**: 44 px de altura, busca em pílula, texto de 16 px no celular
 (evita o zoom automático do iPhone).
+
+**Estrelas** (`src/components/brand/sparkle.tsx`): estrela de 4 pontas tirada da logo, usada em amarelo,
+azul ou rosa para decorar hero e faixas. Use com moderação, 2 a 4 por seção.
 
 ## Mobile-first
 
-- Layout pensado primeiro para ~390 px de largura; telas maiores ganham colunas extras.
-- Header: menu (gaveta lateral) · logo central · carrinho, com a busca sempre visível na linha de baixo.
-- Vitrine com 2 colunas no celular, 3 no tablet, 4 no desktop.
-- Botão flutuante de WhatsApp sempre acessível.
+- Layout pensado primeiro para ~390 px de largura.
+- Header: menu (gaveta lateral), logo no centro e carrinho; a busca fica sempre visível na linha de baixo.
+- Vitrine com 2 colunas no celular, 3 no tablet e 4 no desktop.
+- Botão flutuante de WhatsApp sempre à mão.
 
 ## Onde está cada coisa
 
 | O quê | Arquivo |
 |---|---|
-| Cores, raios, sombras, utilitários | `src/app/globals.css` (Tailwind v4 — o tema fica no CSS, não existe `tailwind.config.ts`) |
+| Cores, raios, sombras, padrões | `src/app/globals.css`. No Tailwind v4 o tema fica no CSS; não existe `tailwind.config.ts` |
 | Fontes | `src/app/layout.tsx` |
 | Logo (componente) | `src/components/brand/logo.tsx` |
-| Símbolo provisório / favicon | `public/brand/logo-mark.svg`, `src/app/icon.svg` |
 | Componentes base (shadcn/ui) | `src/components/ui/` |
