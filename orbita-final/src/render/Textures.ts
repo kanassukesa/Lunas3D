@@ -515,11 +515,53 @@ export function initTextures(): void {
     c.arc(54, 10, 6, 0, Math.PI * 2);
     c.fill();
   }));
-  reg("missil", canvas(40, 20, (c) => {
-    poly(c, [[38, 10], [14, 3], [4, 3], [4, 17], [14, 17]]);
-    c.fillStyle = "#ffffff";
-    c.shadowColor = "#fff";
-    c.shadowBlur = 6;
+  // míssil de verdade (apontando para +x): ogiva, corpo, faixa, aletas e bocal
+  reg("missil", canvas(72, 28, (c) => {
+    const cy = 14;
+    // aletas traseiras
+    c.fillStyle = "#4a5568";
+    poly(c, [[14, cy - 3], [4, cy - 12], [9, cy - 12], [22, cy - 3]]);
+    c.fill();
+    poly(c, [[14, cy + 3], [4, cy + 12], [9, cy + 12], [22, cy + 3]]);
+    c.fill();
+    // corpo
+    const g = c.createLinearGradient(0, cy - 5, 0, cy + 5);
+    g.addColorStop(0, "#ffffff");
+    g.addColorStop(0.45, "#d7dde8");
+    g.addColorStop(1, "#7d8799");
+    c.fillStyle = g;
+    c.fillRect(10, cy - 4.5, 40, 9);
+    // ogiva
+    poly(c, [[50, cy - 4.5], [66, cy], [50, cy + 4.5]]);
+    c.fill();
+    c.fillStyle = "#ff6a3c";
+    poly(c, [[58, cy - 2.4], [66, cy], [58, cy + 2.4]]);
+    c.fill();
+    // faixas
+    c.fillStyle = "#ff6a3c";
+    c.fillRect(42, cy - 4.5, 3, 9);
+    c.fillStyle = "#2d3748";
+    c.fillRect(24, cy - 4.5, 2, 9);
+    // aletas do meio
+    c.fillStyle = "#64748b";
+    poly(c, [[30, cy - 4], [36, cy - 8], [40, cy - 4]]);
+    c.fill();
+    poly(c, [[30, cy + 4], [36, cy + 8], [40, cy + 4]]);
+    c.fill();
+    // bocal
+    c.fillStyle = "#1f2937";
+    c.fillRect(7, cy - 3.5, 4, 7);
+  }));
+  // chama do motor
+  reg("chama", canvas(48, 24, (c) => {
+    const g = c.createRadialGradient(40, 12, 1, 34, 12, 30);
+    g.addColorStop(0, "rgba(255,255,255,1)");
+    g.addColorStop(0.2, "rgba(255,230,150,0.95)");
+    g.addColorStop(0.55, "rgba(255,140,40,0.5)");
+    g.addColorStop(1, "rgba(255,80,20,0)");
+    c.fillStyle = g;
+    c.beginPath();
+    c.ellipse(28, 12, 22, 8, 0, 0, Math.PI * 2);
     c.fill();
   }));
   reg("anel", canvas(128, 128, (c) => {

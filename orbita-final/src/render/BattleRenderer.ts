@@ -52,6 +52,9 @@ class SpriteView implements Freeable {
   root: Container;
   s: Sprite;
   halo: Sprite | null = null;
+  /** Rastro (só mísseis): pares x,y do mais novo para o mais antigo. */
+  trail: number[] = [];
+  trailTick = 0;
   constructor(private pool: ViewPool<SpriteView>, texId: string, halo: boolean) {
     this.root = new Container();
     if (halo) {
@@ -66,6 +69,7 @@ class SpriteView implements Freeable {
     this.root.addChild(this.s);
   }
   free(): void {
+    this.trail.length = 0;
     this.pool.back(this);
   }
 }
@@ -100,8 +104,8 @@ const CORES_PROJ: Record<string, number> = { estilhaco: 0xffffff };
 
 export class BattleRenderer {
   readonly world = new Container();
-  /** Tudo que recebe bloom (os números de dano ficam fora para continuarem nítidos). */
-  private cena = new Container();
+  /** Camada que recebe bloom: só o que brilha (tiros, partículas, feixes). Planeta e inimigos ficam nítidos. */
+  private brilhoL = new Container();
   private zonesL = new Container();
   private campoG = new Graphics();
   private minaPool: ViewPool<SpriteView>;
@@ -133,6 +137,7 @@ export class BattleRenderer {
   tremor = 0;
   flash = 0;
   private tempo = 0;
+  private dtFrame = 0;
   private trailTick = 0;
 
   constructor(private b: Battle) {
@@ -147,15 +152,23 @@ export class BattleRenderer {
     this.bossRing.tint = 0x9a7cff;
     this.bossL.addChild(this.bossAura, this.bossRing, this.bossSprite);
     this.bossL.visible = false;
-    this.cena.addChild(
-      this.campoG, this.zonesL, this.orbitas, this.planetL.layer, this.enemyL, this.bossL, this.sentL, this.shotL, this.projL,
-      this.particles.layer, this.beamsG,
+    this.brilhoL.addChild(this.projL, this.particles.layer, this.beamsG);
+    this.world.addChild(
+      this.campoG, this.zonesL, this.orbitas, this.planetL.layer, this.enemyL, this.bossL, this.sentL, this.shotL,
+      this.brilhoL, this.numeros.layer,
     );
-    this.world.addChild(this.cena, this.numeros.layer);
     this.enemyPool = new ViewPool(this.enemyL, (p) => new EnemyView(p));
     this.projPool = new ViewPool(this.projL, (p) => new SpriteView(p, "bolt", false));
     this.projHaloPool = new ViewPool(this.projL, (p) => new SpriteView(p, "bolt", true));
-    this.missilPool = new ViewPool(this.projL, (p) => new SpriteView(p, "missil", true));
+    this.missilPool = new ViewPool(this.projL, (p) => {
+      const v = new SpriteView(p, "missil", true);
+      v.s.blendMode = "normal";
+      v.s.scale.set(0.8);
+      v.halo!.texture = tex("chama");
+      v.halo!.anchor.set(1, 0.5);
+      v.halo!.x = -22;
+      return v;
+    });
     this.shotPool = new ViewPool(this.shotL, (p) => new SpriteView(p, "glow", false));
     this.dronePool = new ViewPool(this.projL, (p) => new SpriteView(p, "drone", false));
     this.zonePool = new ViewPool(this.zonesL, (p) => new SpriteView(p, "vortice", false));
@@ -172,10 +185,10 @@ export class BattleRenderer {
   aplicarConfig(leve: boolean, brilho: boolean, numeros: boolean, bloom = true): void {
     const usar = bloom && !leve;
     if (usar && !this.bloom) {
-      this.bloom = new AdvancedBloomFilter({ threshold: 0.6, bloomScale: 0.8, brightness: 1, blur: 5, quality: 3 });
-      this.bloom.resolution = 0.5;
+      this.bloom = new AdvancedBloomFilter({ threshold: 0.25, bloomScale: 1.1, brightness: 1, blur: 6, quality: 3 });
+      this.bloom.resolution = "inherit";
     }
-    this.cena.filters = usar && this.bloom ? [this.bloom] : [];
+    this.brilhoL.filters = usar && this.bloom ? [this.bloom] : [];
     this.leve = leve;
     this.brilho = brilho;
     this.particles.max = leve ? 250 : 900;
@@ -189,7 +202,7 @@ export class BattleRenderer {
    */
   setTela(w: number, h: number, scale: number, ox: number, oy: number): void {
     const m = 60;
-    this.cena.filterArea = new Rectangle(-ox / scale - m, -oy / scale - m, w / scale + m * 2, h / scale + m * 2);
+    this.brilhoL.filterArea = new Rectangle(-ox / scale - m, -oy / scale - m, w / scale + m * 2, h / scale + m * 2);
   }
 
   private desenharCampo(): void {
@@ -274,6 +287,7 @@ export class BattleRenderer {
   render(dt: number): void {
     const b = this.b;
     this.tempo += dt;
+    this.dtFrame = dt;
     this.consumirFx();
     this.trailTick += dt;
     const trail = !this.leve && this.trailTick > 1 / 30;
@@ -415,26 +429,65 @@ export class BattleRenderer {
 
   private syncProj(p: Projectile, trail: boolean): void {
     let v = p.view as SpriteView | undefined;
+    const missil = p.kind === "missil";
     if (!v) {
       const halo = this.brilho && !this.leve;
-      v = p.kind === "missil" ? this.missilPool.get() : halo && p.kind !== "estilhaco" ? this.projHaloPool.get() : this.projPool.get();
+      v = missil ? this.missilPool.get() : halo && p.kind !== "estilhaco" ? this.projHaloPool.get() : this.projPool.get();
       p.view = v;
-      const cor = CORES_PROJ[p.kind] ?? p.cor;
-      v.s.tint = cor;
-      if (v.halo) {
-        v.halo.tint = cor;
-        v.halo.alpha = 0.55;
-        v.halo.visible = this.brilho && !this.leve;
+      if (missil) {
+        v.trail.length = 0;
+        v.trailTick = 0;
+      } else {
+        const cor = CORES_PROJ[p.kind] ?? p.cor;
+        v.s.tint = cor;
+        if (v.halo) {
+          v.halo.tint = cor;
+          v.halo.alpha = 0.55;
+          v.halo.visible = this.brilho && !this.leve;
+        }
+        const sc = p.kind === "trilho" ? (p.r > 30 ? 2.6 : 1.7) : p.kind === "estilhaco" ? 0.4 : p.kind === "drone" ? 0.5 : 0.8;
+        v.s.scale.set(sc, p.kind === "trilho" ? sc * 1.1 : sc);
+        if (v.halo) v.halo.scale.set(p.kind === "trilho" ? 2.2 : 1);
       }
-      const sc = p.kind === "trilho" ? (p.r > 30 ? 2.6 : 1.7) : p.kind === "estilhaco" ? 0.4 : p.kind === "drone" ? 0.5 : p.kind === "missil" ? 1 : 0.8;
-      v.s.scale.set(sc, p.kind === "trilho" ? sc * 1.1 : sc);
-      if (v.halo) v.halo.scale.set(p.kind === "trilho" ? 2.2 : p.kind === "missil" ? 0.8 : 1);
     }
     v.root.x = p.x;
     v.root.y = p.y;
     v.root.rotation = Math.atan2(p.vy, p.vx);
-    if (trail && (p.kind === "missil" || p.kind === "trilho")) {
-      this.particles.emitir(p.x, p.y, { cor: p.kind === "missil" ? 0xffb050 : p.cor, vel: 10, vida: p.kind === "trilho" ? 0.35 : 0.4, s0: p.kind === "trilho" ? 1.1 : 0.45, s1: 0 });
+    if (missil) {
+      // chama tremulando + ponto do rastro a cada 2 frames (≈ 0,6 s de rastro)
+      v.halo!.scale.set(0.9 + Math.random() * 0.5, 0.8 + Math.random() * 0.3);
+      if (this.dtFrame > 0 && ++v.trailTick % 2 === 0) {
+        const a = v.root.rotation;
+        v.trail.unshift(p.x - Math.cos(a) * 26, p.y - Math.sin(a) * 26);
+        const max = this.leve ? 20 : 36;
+        if (v.trail.length > max) v.trail.length = max;
+      }
+    } else if (trail && p.kind === "trilho") {
+      this.particles.emitir(p.x, p.y, { cor: p.cor, vel: 10, vida: 0.35, s0: 1.1, s1: 0 });
+    }
+  }
+
+  /** Rastros finos e brilhantes dos mísseis, afinando e sumindo para trás. */
+  private desenharRastros(g: Graphics): void {
+    for (const p of this.b.projs) {
+      if (!p.alive || p.kind !== "missil") continue;
+      const v = p.view as SpriteView | undefined;
+      const t = v?.trail;
+      if (!t || t.length < 4) continue;
+      const n = t.length / 2;
+      const partes = 4;
+      for (let k = 0; k < partes; k++) {
+        const i0 = Math.floor((k * (n - 1)) / partes);
+        const i1 = Math.floor(((k + 1) * (n - 1)) / partes);
+        if (i1 <= i0) continue;
+        const f = 1 - k / partes;
+        g.moveTo(t[i0 * 2], t[i0 * 2 + 1]);
+        for (let i = i0 + 1; i <= i1; i++) g.lineTo(t[i * 2], t[i * 2 + 1]);
+        g.stroke({ width: 9 * f + 2, color: 0xffb347, alpha: 0.16 * f });
+        g.moveTo(t[i0 * 2], t[i0 * 2 + 1]);
+        for (let i = i0 + 1; i <= i1; i++) g.lineTo(t[i * 2], t[i * 2 + 1]);
+        g.stroke({ width: 2.6 * f + 0.8, color: 0xfff3c8, alpha: 0.85 * f });
+      }
     }
   }
 
@@ -485,6 +538,7 @@ export class BattleRenderer {
     const g = this.beamsG;
     const b = this.b;
     g.clear();
+    this.desenharRastros(g);
     // lasers contínuos
     for (const s of b.sentinels) {
       if (s.def.id !== "laser") continue;
