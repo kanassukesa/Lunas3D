@@ -1,6 +1,7 @@
 import { Container, Graphics, Sprite, TilingSprite } from "pixi.js";
 import { BALANCE } from "../data/balance";
 import { tex } from "./Textures";
+import { temArte } from "./Sprites";
 
 const P = BALANCE.planeta;
 
@@ -35,9 +36,17 @@ export class PlanetView {
     const sombra = new Sprite(tex("planetaSombra"));
     sombra.anchor.set(0.5);
     this.layer.addChild(sombra);
+    if (temArte("planeta")) {
+      // a imagem já tem continentes, nuvens e iluminação: dispensa as camadas procedurais
+      this.base.scale.set((P.raio * 2) / (this.base.texture.width * 0.96));
+      this.terra.visible = false;
+      sombra.visible = false;
+      atm.alpha = 0.55;
+    }
 
     this.escudo = new Sprite(tex("escudo"));
     this.escudo.anchor.set(0.5);
+    if (temArte("escudo")) this.escudo.scale.set((P.raioEscudo * 2) / (this.escudo.texture.width * 0.96));
     this.escudo.blendMode = "add";
     this.layer.addChild(this.escudo);
 

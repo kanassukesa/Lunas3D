@@ -1,6 +1,7 @@
 import { Application } from "pixi.js";
 import "./style.css";
 import { Game } from "./core/Game";
+import { carregarSprites } from "./render/Sprites";
 
 async function main(): Promise<void> {
   const app = new Application();
@@ -14,6 +15,7 @@ async function main(): Promise<void> {
     height: window.innerHeight,
   });
   document.getElementById("game")!.appendChild(app.canvas);
+  await carregarSprites();
   const game = new Game(app);
   game.init();
   (window as unknown as { game: Game }).game = game;

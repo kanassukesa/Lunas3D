@@ -9,6 +9,7 @@ import { DamageNumbers } from "./DamageNumbers";
 import { Particles } from "./Particles";
 import { PlanetView } from "./PlanetView";
 import { enemyTexKey, tex } from "./Textures";
+import { temArte } from "./Sprites";
 
 interface Freeable {
   free(): void;
@@ -79,6 +80,8 @@ class SentinelView implements Freeable {
   glow = new Sprite(tex("glow"));
   body: Sprite;
   ring = new Sprite(tex("anel"));
+  /** Escala base: arte final (256 px) é reduzida para ~110 px do mundo. */
+  escala = 1;
   constructor(id: string, cor: number) {
     this.glow.anchor.set(0.5);
     this.glow.blendMode = "add";
@@ -87,11 +90,14 @@ class SentinelView implements Freeable {
     this.glow.alpha = 0.6;
     this.body = new Sprite(tex(`sentinela_${id}`));
     this.body.anchor.set(0.5);
-    this.body.tint = cor;
+    if (temArte(`sentinela_${id}`)) {
+      this.escala = 112 / this.body.texture.width;
+      this.glow.alpha = 0.35;
+    } else this.body.tint = cor;
     this.ring.anchor.set(0.5);
     this.ring.tint = 0xffc23d;
     this.ring.blendMode = "add";
-    this.ring.scale.set(0.62);
+    this.ring.scale.set(temArte(`sentinela_${id}`) ? 1.15 : 0.62);
     this.ring.visible = false;
     this.root.addChild(this.glow, this.ring, this.body);
   }
@@ -424,7 +430,7 @@ export class BattleRenderer {
     v.ring.visible = s.evoluido;
     if (s.evoluido) v.ring.rotation += 0.03;
     v.glow.visible = !this.leve;
-    v.body.scale.set(1.0 + 0.06 * s.nivel);
+    v.body.scale.set(v.escala * (1.0 + 0.06 * (s.nivel - 1)));
   }
 
   private syncProj(p: Projectile, trail: boolean): void {

@@ -4,6 +4,7 @@ import { SENTINELS } from "../data/sentinels";
 import type { SentinelId } from "../data/types";
 import { PlanetView } from "./PlanetView";
 import { tex } from "./Textures";
+import { temArte } from "./Sprites";
 
 /** Vitrine do hub: planeta girando com as sentinelas do deck orbitando. */
 export class HubScene {
@@ -26,7 +27,8 @@ export class HubScene {
       g.alpha = 0.6;
       const b = new Sprite(tex(`sentinela_${id}`));
       b.anchor.set(0.5);
-      b.tint = SENTINELS[id].cor;
+      if (temArte(`sentinela_${id}`)) b.scale.set(112 / b.texture.width);
+      else b.tint = SENTINELS[id].cor;
       c.addChild(g, b);
       this.layer.addChild(c);
       this.sents.push({ s: c, slot });

@@ -41,6 +41,11 @@ StatSystem: `final = (base + Σaditivos) × (1 + Σpercentuais) × Πmultiplicad
 ## Curva de dificuldade (simulador)
 Sem melhorias permanentes o bot vence as fases 1–5; da 6 em diante é preciso evoluir no hangar/planeta.
 
+## Arte final
+Imagens geradas por IA vão em `arte/original/<id>.jpg` (lista e prompts em `docs/`). Rode
+`python3 scripts/processar_arte.py` para recortar o fundo e gerar `src/assets/sprites/<id>.png`.
+O jogo carrega sozinho qualquer sprite com o mesmo ID da textura procedural; o resto continua procedural.
+
 ## Pendências
 - Arena assíncrona (precisa de backend)
 - Arte final (sprites) e música composta; hoje tudo é procedural

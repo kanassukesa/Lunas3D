@@ -2,6 +2,7 @@ import { Texture } from "pixi.js";
 import { BOSSES } from "../data/bosses";
 import { ENEMIES } from "../data/enemies";
 import { SENTINEL_IDS } from "../data/sentinels";
+import { spritesReais } from "./Sprites";
 
 /**
  * Arte inicial: tudo desenhado em Canvas2D (formas geométricas + brilho) e convertido em textura.
@@ -639,6 +640,8 @@ export function initTextures(): void {
   reg("estrelas2", starsTex(540, 960, 90, 1.6, 23));
   reg("estrelas3", starsTex(540, 960, 30, 2.4, 37));
   reg("nebulosa", nebulaTex(540, 960));
+  // arte final substitui a procedural com o mesmo ID
+  for (const [id, t] of spritesReais) reg(id, t);
 }
 
 export function enemyTexKey(forma: string, raio: number): string {

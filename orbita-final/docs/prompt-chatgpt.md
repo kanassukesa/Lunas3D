@@ -3,7 +3,7 @@ Você vai criar a arte de um jogo mobile meu chamado ÓRBITA FINAL: um tower def
 COMO TRABALHAR
 - Gere UMA imagem por resposta, na ordem da lista abaixo. Depois de cada imagem, escreva só o nome do arquivo e espere eu dizer "próximo". Se eu disser "refaz", gere de novo a mesma imagem com o ajuste que eu pedir.
 - Mantenha o MESMO estilo em todas: sci-fi semi-realista estilizado, cores saturadas, silhuetas limpas e fáceis de ler em tela pequena, luz de contorno suave e brilho (emissive) nas partes que soltam energia. Nada de texto, logo ou marca d'água (exceto no logo).
-- SPRITES (seções A a E e I, menos o ícone do app): fundo TRANSPARENTE, formato quadrado 1024×1024, objeto centralizado com margem, vista de CIMA (top-down ortográfica), sem sombra no chão. Naves, torres, mísseis e tiros sempre APONTANDO PARA A DIREITA.
+- SPRITES (seções A a E e H, menos o ícone do app): fundo PRETO LISO (#000000, sem xadrez de transparência desenhado), formato quadrado 1024×1024, objeto centralizado com margem, vista de CIMA (top-down ortográfica), sem sombra no chão. Naves, torres, mísseis e tiros sempre APONTANDO PARA A DIREITA.
 - FUNDOS (seção F): retrato 1024×1536, fundo cheio.
 - CARTAS (seção G): paisagem 1536×1024, fundo cheio, cena cinematográfica no espaço com a borda curva de um planeta azul no canto inferior esquerdo. As de EVOLUÇÃO têm moldura dourada brilhante e luz dourada.
 
