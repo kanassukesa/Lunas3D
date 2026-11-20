@@ -8,7 +8,7 @@ import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA } from "./dom";
 
 function painelBuild(b: Battle): HTMLElement {
   const p = h("div", { class: "painel" });
-  p.append(h("h3", { text: `Sentinelas (${b.sentinels.length}/6)` }));
+  p.append(h("h3", { text: `Sentinelas (${b.sentinels.length}/${b.slots()})` }));
   const total = b.sentinels.reduce((a, s) => a + s.danoCausado, 0) || 1;
   for (const s of b.sentinels) {
     const pips = h("span", { class: "pips" });

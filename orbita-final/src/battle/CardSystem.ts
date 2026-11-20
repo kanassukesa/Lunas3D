@@ -40,7 +40,7 @@ export class CardSystem {
     if (r?.carta && this.qtd(r.carta) === 0) return false;
     switch (c.tipo) {
       case "nova_sentinela":
-        return !!c.alvo && b.sentinels.length < BALANCE.maxSlots && !b.getSentinel(c.alvo) && b.cfg.pool.includes(c.alvo);
+        return !!c.alvo && b.sentinels.length < b.slots() && !b.getSentinel(c.alvo) && b.cfg.pool.includes(c.alvo);
       case "sentinela_nivel": {
         const s = c.alvo && b.getSentinel(c.alvo);
         return !!s && s.nivel < 5;

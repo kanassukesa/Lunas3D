@@ -176,7 +176,14 @@ export class Battle {
     syncDrones(this);
   }
 
+  /** Slots da partida = sentinelas disponíveis no deck (base + pool), no máximo 6. */
+  slots(): number {
+    return Math.max(1, Math.min(BALANCE.maxSlots, new Set([this.cfg.base, ...this.cfg.pool]).size));
+  }
+
   addSentinel(id: SentinelId): SentinelRun | null {
+    const existente = this.getSentinel(id);
+    if (existente) return existente;
     if (this.sentinels.length >= BALANCE.maxSlots) return null;
     const def = SENTINELS[id];
     const s: SentinelRun = {

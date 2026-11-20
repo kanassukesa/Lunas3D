@@ -1,13 +1,17 @@
 import type { Battle } from "../battle/Battle";
 import type { Oferta } from "../battle/CardSystem";
-import { BALANCE, RARIDADE_COR, RARIDADE_NOME } from "../data/balance";
+import { RARIDADE_COR, RARIDADE_NOME } from "../data/balance";
 import { arteCarta, arteSentinela } from "./CardArt";
 import { h } from "./dom";
 
 /** Linha de slots das sentinelas (6), com a arte e as estrelas de nível. */
 export function slotsSentinelas(b: Battle, destaque?: string): HTMLElement {
   const linha = h("div", { class: "slots-sent" });
-  for (let i = 0; i < BALANCE.maxSlots; i++) {
+  const n = b.slots();
+  // poucos slots (ex.: desafio "Só Mísseis") ficam centralizados no tamanho normal
+  linha.style.gridTemplateColumns = n >= 4 ? `repeat(${n}, 1fr)` : `repeat(${n}, 15%)`;
+  linha.style.justifyContent = "center";
+  for (let i = 0; i < n; i++) {
     const s = b.sentinels[i];
     if (!s) {
       linha.append(h("div", { class: "slot-sent vazio" }));
@@ -55,7 +59,7 @@ export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrol
     "div",
     { class: "overlay levelup" },
     h("div", { class: "lv-cabecalho" }, h("span", { text: "SUBIU DE NÍVEL" }), h("b", { text: `Nv. ${b.nivel - b.pendentes + 1}` })),
-    h("div", { class: "lv-painel" }, slotsSentinelas(b), h("div", { class: "lv-legenda", text: `Sentinelas ${b.sentinels.length}/${BALANCE.maxSlots}` })),
+    h("div", { class: "lv-painel" }, slotsSentinelas(b), h("div", { class: "lv-legenda", text: `Sentinelas ${b.sentinels.length}/${b.slots()}` })),
     lista,
     h("div", { class: "linha" },
       h("button", { class: "btn", text: txtRer, disabled: !b.cards.podeRerrolar(), onclick: aoRerrolar }),

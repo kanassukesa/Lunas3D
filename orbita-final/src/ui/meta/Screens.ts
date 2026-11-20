@@ -98,7 +98,7 @@ export function telaMapa(nav: Nav, dificil: boolean): HTMLElement {
 export function telaHangar(nav: Nav): HTMLElement {
   const s = nav.save;
   const info = h("div", { class: "cartao" },
-    h("div", { class: "desc", html: `<b>Deck:</b> 1 sentinela <b>base</b> (começa a partida e define o ultimate) + até ${BALANCE.maxSlots - 1} que podem aparecer como carta.` }));
+    h("div", { class: "desc", html: `<b>Deck:</b> 1 sentinela <b>base</b> (começa a partida e define o ultimate) + até ${BALANCE.maxSlots - 1} que podem aparecer como carta. Os slots da partida são as sentinelas do deck: hoje <b>${new Set([s.deck.base, ...s.deck.pool]).size}/${BALANCE.maxSlots}</b>.` }));
   const cards = SENTINEL_IDS.map((id) => {
     const def = SENTINELS[id];
     const st = s.sentinelas[id];
