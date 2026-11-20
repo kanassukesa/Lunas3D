@@ -1,0 +1,374 @@
+import { Application, Container } from "pixi.js";
+import { Battle } from "../battle/Battle";
+import { montarRun } from "../battle/Loadout";
+import type { Oferta } from "../battle/CardSystem";
+import type { Modo } from "../battle/types";
+import { BALANCE } from "../data/balance";
+import { STAGES } from "../data/stages";
+import { calcularRecompensas, CUSTO_REVIVER, desafioDoDia, faseLiberada, hojeStr, snapshot, type Recompensa } from "../meta/Meta";
+import { Background } from "../render/Background";
+import { BattleRenderer } from "../render/BattleRenderer";
+import { HubScene } from "../render/HubScene";
+import { initTextures } from "../render/Textures";
+import { Hud } from "../ui/Hud";
+import { telaLevelUp } from "../ui/LevelUpScreen";
+import { telaBuild, telaPausa, telaResultado } from "../ui/Panels";
+import { h } from "../ui/dom";
+import {
+  painelConfig, telaChips, telaConfig, telaHangar, telaHub, telaMapa, telaMissoes, telaModos, telaPlaneta, type Nav,
+} from "../ui/meta/Screens";
+import { audio } from "./Audio";
+import { FixedLoop } from "./Loop";
+import { carregar, salvar, type SaveData } from "./Save";
+
+const W = BALANCE.mundo.largura;
+const H = BALANCE.mundo.altura;
+
+const DICAS: [number, number, string][] = [
+  [0.5, 6, "As sentinelas atiram sozinhas. Proteja o planeta! 🌍"],
+  [6.5, 12.5, "Inimigos destruídos dão XP. A cada nível, escolha uma carta de melhoria."],
+  [13, 19, "Quando o ⚡ encher, toque nele para soltar o ultimate."],
+  [19.5, 25.5, "Use x2 para acelerar e 🃏 para ver sua build."],
+];
+
+interface Run {
+  b: Battle;
+  r: BattleRenderer;
+  loop: FixedLoop;
+  hud: Hud;
+  overlay: HTMLElement | null;
+  overlayTipo: "" | "nivel" | "pausa" | "build" | "config" | "reviver" | "resultado";
+  modo: Modo;
+  idx: number;
+  dificil: boolean;
+  tutorial: boolean;
+  recompensa: Recompensa | null;
+}
+
+/** Máquina de estados do jogo: Hub (menus) ↔ Batalha (LevelUp, Pausa, Resultado). */
+export class Game implements Nav {
+  save: SaveData;
+  root: HTMLElement;
+  private bg!: Background;
+  private cena = new Container();
+  private hub: HubScene | null = null;
+  private run: Run | null = null;
+  private telaEl: HTMLElement | null = null;
+  private fpsAcc = 0;
+  private fpsFrames = 0;
+  private fps = 60;
+
+  constructor(private app: Application) {
+    this.save = carregar();
+    this.root = document.getElementById("ui")!;
+  }
+
+  init(): void {
+    initTextures();
+    this.bg = new Background();
+    this.app.stage.addChild(this.bg.layer, this.cena);
+    this.aplicarConfig();
+    window.addEventListener("resize", () => this.resize());
+    window.visualViewport?.addEventListener("resize", () => this.resize());
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && this.run && !this.run.overlay && !this.run.b.fim) this.pausar();
+    });
+    // áudio só libera após gesto do usuário (iOS)
+    const unlock = () => audio.desbloquear();
+    window.addEventListener("pointerdown", unlock);
+    this.root.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).closest("button")) audio.sfx("clique");
+    });
+    this.app.ticker.add((t) => this.tick(t.deltaMS / 1000));
+    this.ir("hub");
+    this.resize();
+  }
+
+  // ------------------------------------------------------------------ Nav (menus)
+
+  persistir(): void {
+    salvar(this.save);
+  }
+
+  aplicarConfig(): void {
+    const c = this.save.config;
+    audio.volSom = c.som;
+    audio.volMusica = c.musica;
+    audio.aplicarVolumes();
+    this.run?.r.aplicarConfig(c.efeitos === "leve", c.brilho, c.numeros);
+  }
+
+  ir(tela: string): void {
+    this.sairDaBatalha();
+    if (!this.hub) {
+      this.hub = new HubScene([this.save.deck.base, ...this.save.deck.pool]);
+      this.cena.addChild(this.hub.layer);
+      this.resize();
+    }
+    const scroll = this.telaEl?.querySelector(".tela-conteudo")?.scrollTop ?? 0;
+    const mesmo = this.telaEl?.dataset.tela === tela;
+    this.telaEl?.remove();
+    const mapa: Record<string, () => HTMLElement> = {
+      hub: () => telaHub(this),
+      mapa: () => telaMapa(this, false),
+      mapaDificil: () => telaMapa(this, true),
+      hangar: () => telaHangar(this),
+      chips: () => telaChips(this),
+      planeta: () => telaPlaneta(this),
+      missoes: () => telaMissoes(this),
+      modos: () => telaModos(this),
+      config: () => telaConfig(this),
+    };
+    const el = (mapa[tela] ?? mapa.hub)();
+    el.dataset.tela = tela;
+    this.telaEl = el;
+    this.root.append(el);
+    if (mesmo) {
+      const c = el.querySelector(".tela-conteudo");
+      if (c) c.scrollTop = scroll;
+    }
+    if (tela === "hangar" || tela === "hub") this.recriarHub();
+    audio.tocarMusica("ambiente");
+  }
+
+  private recriarHub(): void {
+    if (!this.hub) return;
+    this.hub.destruir();
+    this.hub = new HubScene([this.save.deck.base, ...this.save.deck.pool]);
+    this.cena.addChild(this.hub.layer);
+    this.resize();
+  }
+
+  jogarCampanha(idx: number, dificil: boolean): void {
+    if (!faseLiberada(this.save, idx, dificil)) return;
+    const stage = STAGES[idx];
+    this.iniciar("campanha", stage, idx, dificil, (Date.now() >>> 0) ^ (idx * 7919));
+  }
+
+  jogarDiario(): void {
+    const d = desafioDoDia();
+    if (this.save.diario.data !== hojeStr()) this.save.diario = { data: hojeStr(), melhor: 0, concluido: false };
+    this.iniciar("diario", d.stage, d.stage.id - 1, false, d.seed, d.mod);
+  }
+
+  jogarSobrevivencia(): void {
+    const base = { ...STAGES[0], nome: "Sobrevivência", ondas: [], mult: 1 };
+    this.iniciar("sobrevivencia", base, 0, false, Date.now() >>> 0);
+  }
+
+  // ------------------------------------------------------------------ batalha
+
+  private iniciar(modo: Modo, stage: (typeof STAGES)[number], idx: number, dificil: boolean, seed: number, daily?: ReturnType<typeof desafioDoDia>["mod"]): void {
+    this.sairDaBatalha();
+    this.telaEl?.remove();
+    this.telaEl = null;
+    if (this.hub) {
+      this.hub.destruir();
+      this.hub = null;
+    }
+    const tutorial = modo === "campanha" && idx === 0 && !this.save.tutorialVisto;
+    const cfg = montarRun({ modo, stage, dificil, seed, meta: snapshot(this.save), daily, tutorial });
+    const b = new Battle(cfg);
+    const r = new BattleRenderer(b);
+    const loop = new FixedLoop((dt) => {
+      if (b.pendentes > 0 || b.fim) return;
+      b.step(dt);
+    });
+    const nome = modo === "campanha" ? `${dificil ? "Difícil" : "Normal"} · Fase ${stage.id}` : stage.nome;
+    const hud = new Hud(nome, {
+      pausar: () => this.pausar(),
+      velocidade: () => {
+        loop.speed = loop.speed === 1 ? 2 : 1;
+      },
+      cartas: () => this.abrir(telaBuild(b, () => this.fechar()), "build"),
+      ultimate: () => {
+        if (!this.run?.overlay) b.ult.ativar();
+      },
+      foco: () => {
+        b.focoChefe = !b.focoChefe;
+      },
+    });
+    this.run = { b, r, loop, hud, overlay: null, overlayTipo: "", modo, idx, dificil, tutorial, recompensa: null };
+    this.cena.addChild(r.world);
+    this.root.append(hud.el);
+    this.aplicarConfig();
+    this.resize();
+    audio.tocarMusica("ambiente");
+  }
+
+  private sairDaBatalha(): void {
+    const run = this.run;
+    if (!run) return;
+    run.r.destruir();
+    run.hud.el.remove();
+    run.overlay?.remove();
+    this.run = null;
+  }
+
+  private abrir(el: HTMLElement, tipo: Run["overlayTipo"]): void {
+    const run = this.run;
+    if (!run) return;
+    run.overlay?.remove();
+    run.overlay = el;
+    run.overlayTipo = tipo;
+    this.root.append(el);
+  }
+
+  private fechar(): void {
+    const run = this.run;
+    if (!run) return;
+    run.overlay?.remove();
+    run.overlay = null;
+    run.overlayTipo = "";
+  }
+
+  private pausar(): void {
+    const run = this.run;
+    if (!run || run.b.fim) return;
+    this.abrir(
+      telaPausa({
+        continuar: () => this.fechar(),
+        config: () => this.abrirConfigJogo(),
+        desistir: () => {
+          this.fechar();
+          run.b.terminar(false);
+          run.b.reviveu = true; // desistir não oferece reviver
+        },
+      }),
+      "pausa",
+    );
+  }
+
+  private abrirConfigJogo(): void {
+    const el = h("div", { class: "overlay" }, h("div", { class: "titulo", text: "CONFIGURAÇÕES" }),
+      painelConfig(this, () => this.abrirConfigJogo(), true),
+      h("button", { class: "btn ciano", text: "Voltar", onclick: () => this.pausar() }));
+    this.abrir(el, "config");
+  }
+
+  private mostrarLevelUp(): void {
+    const run = this.run!;
+    const b = run.b;
+    if (!b.cards.ofertas.length || run.overlayTipo !== "nivel") b.cards.sortear(b.cards.numeroDeCartas());
+    const escolher = (o: Oferta) => {
+      audio.sfx("carta");
+      b.cards.aplicar(o.card);
+      b.cards.ofertas = [];
+      if (b.pendentes > 0) {
+        b.cards.sortear(b.cards.numeroDeCartas());
+        this.abrir(telaLevelUp(b, escolher, rerrolar), "nivel");
+      } else this.fechar();
+    };
+    const rerrolar = () => {
+      if (b.cards.rerrolar()) this.abrir(telaLevelUp(b, escolher, rerrolar), "nivel");
+    };
+    this.abrir(telaLevelUp(b, escolher, rerrolar), "nivel");
+  }
+
+  private mostrarFim(): void {
+    const run = this.run!;
+    const b = run.b;
+    const f = b.fim!;
+    // oferece reviver antes de fechar as contas
+    if (!f.vitoria && !b.reviveu && run.modo !== "sobrevivencia") {
+      const el = h("div", { class: "overlay" },
+        h("div", { class: "titulo", style: "color:var(--vermelho)", text: "ESCUDOS CAÍRAM" }),
+        h("div", { class: "subtitulo", text: `Reviver com 50% de HP? (1x por partida) · Você tem 💎 ${this.save.cristais}` }),
+        h("button", { class: "btn ouro", disabled: this.save.cristais < CUSTO_REVIVER, text: `💎 ${CUSTO_REVIVER} Reviver`, onclick: () => {
+          this.save.cristais -= CUSTO_REVIVER;
+          this.persistir();
+          b.reviver();
+          this.fechar();
+        } }),
+        h("button", { class: "btn", text: "Ver resultado", onclick: () => {
+          b.reviveu = true;
+          this.mostrarFim();
+        } }));
+      this.abrir(el, "reviver");
+      return;
+    }
+    if (!run.recompensa) {
+      run.recompensa = calcularRecompensas(this.save, b, run.modo);
+      if (run.tutorial) this.save.tutorialVisto = true;
+      this.persistir();
+    }
+    const idx = run.idx;
+    const temProxima = run.modo === "campanha" && f.vitoria && idx + 1 < STAGES.length && faseLiberada(this.save, idx + 1, run.dificil);
+    const repetir = () => {
+      if (run.modo === "campanha") this.jogarCampanha(idx, run.dificil);
+      else if (run.modo === "diario") this.jogarDiario();
+      else this.jogarSobrevivencia();
+    };
+    this.abrir(
+      telaResultado(b, run.recompensa, {
+        hub: () => this.ir("hub"),
+        repetir,
+        proxima: temProxima ? () => this.jogarCampanha(idx + 1, run.dificil) : null,
+        reviver: null,
+        cristais: this.save.cristais,
+        custoReviver: CUSTO_REVIVER,
+      }),
+      "resultado",
+    );
+  }
+
+  // ------------------------------------------------------------------ loop
+
+  private tick(dt: number): void {
+    this.fpsAcc += dt;
+    this.fpsFrames++;
+    if (this.fpsAcc >= 0.5) {
+      this.fps = this.fpsFrames / this.fpsAcc;
+      this.fpsAcc = 0;
+      this.fpsFrames = 0;
+    }
+    const run = this.run;
+    if (!run) {
+      this.bg.update(dt);
+      this.hub?.update(dt);
+      return;
+    }
+    const b = run.b;
+    const parado = !!run.overlay;
+    run.loop.paused = parado;
+    run.loop.advance(dt);
+    this.bg.update(parado ? 0 : dt * run.loop.speed, 1.5);
+    run.r.render(parado ? 0 : dt * run.loop.speed);
+    if (!run.overlay) {
+      if (b.fim) this.mostrarFim();
+      else if (b.pendentes > 0) this.mostrarLevelUp();
+    }
+    run.hud.update(b, run.loop.speed, this.save.config.fps ? this.fps : null, run.r.flash);
+    if (run.tutorial) {
+      const d = DICAS.find(([a, z]) => b.t >= a && b.t < z);
+      run.hud.mostrarDica(d ? d[2] : null);
+    }
+    audio.tocarMusica(b.boss && b.boss.alive ? "chefe" : "ambiente");
+  }
+
+  private resize(): void {
+    const w = window.innerWidth;
+    const hh = window.innerHeight;
+    this.app.renderer.resize(w, hh);
+    this.bg.resize(w, hh);
+    this.hub?.resize(w, hh);
+    const run = this.run;
+    if (!run) return;
+    // mundo lógico 1080×1920: encaixa pela largura em telas altas (mostra mais espaço acima), pela altura em telas largas
+    let scale: number;
+    let ox: number;
+    let oy: number;
+    if (w / hh < W / H) {
+      scale = w / W;
+      ox = 0;
+      oy = hh - H * scale;
+    } else {
+      scale = hh / H;
+      ox = (w - W * scale) / 2;
+      oy = 0;
+    }
+    run.r.world.scale.set(scale);
+    run.r.world.position.set(ox, oy);
+    run.b.vis = { left: 0, right: W, top: Math.min(0, -oy / scale), bottom: H };
+  }
+}

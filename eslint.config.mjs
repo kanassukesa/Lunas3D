@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Jogo independente (projeto Vite próprio)
+    "orbita-final/**",
   ]),
 ]);
 
