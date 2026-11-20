@@ -1,6 +1,7 @@
 import { BALANCE } from "../data/balance";
 import { ENEMIES } from "../data/enemies";
 import { SOBREVIVENCIA } from "../data/stages";
+import { JORNADA } from "../data/journey";
 import type { Onda } from "../data/types";
 import type { Battle } from "./Battle";
 import { spawnBoss } from "./Boss";
@@ -30,7 +31,7 @@ export class Spawner {
     if (this.b.cfg.modo === "sobrevivencia") return SOBREVIVENCIA.multBase + this.b.t * SOBREVIVENCIA.multPorSegundo;
     // a dificuldade da fase entra aos poucos: 45% no início, 100% aos 4 min (o chefe usa o valor cheio)
     const m = this.b.cfg.stage.mult;
-    const f = Math.min(1, 0.45 + 0.55 * (this.b.t / 240));
+    const f = Math.min(1, 0.45 + 0.55 * (this.b.t / (this.b.cfg.modo === "jornada" ? 160 : 240)));
     return m >= 1 ? 1 + (m - 1) * f : m;
   }
 
@@ -49,11 +50,12 @@ export class Spawner {
         a.prox += a.onda.intervalo / this.spawnMult;
       }
     }
-    if (!b.avisoChefe && t >= BALANCE.avisoChefe) {
+    const jornada = b.cfg.modo === "jornada";
+    if (!b.avisoChefe && t >= (jornada ? JORNADA.avisoChefe : BALANCE.avisoChefe)) {
       b.avisoChefe = true;
       b.fx.push({ t: "som", id: "alerta" });
     }
-    if (!this.chefeLiberado && t >= BALANCE.entradaChefe) {
+    if (!this.chefeLiberado && t >= b.entradaChefe()) {
       this.chefeLiberado = true;
       spawnBoss(b, b.cfg.stage.chefe);
     }

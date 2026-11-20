@@ -60,11 +60,12 @@ export function telaResultado(
   const inf = b.cfg.modo === "sobrevivencia";
   const est = h("div", { class: "estrelas" });
   for (let i = 1; i <= 3; i++) est.append(h("span", { class: i <= f.estrelas ? "" : "off", text: "⭐" }));
-  const titulo = inf ? "FIM DA LINHA" : f.vitoria ? "VITÓRIA" : "PLANETA PERDIDO";
+  const jornada = b.cfg.modo === "jornada";
+  const titulo = inf ? "FIM DA LINHA" : jornada ? (f.vitoria ? "JORNADA COMPLETA" : `JORNADA: ${f.etapas}/${b.cfg.etapas?.length ?? 5} ETAPAS`) : f.vitoria ? "VITÓRIA" : "PLANETA PERDIDO";
   const linhas: HTMLElement[] = [
     h("div", { class: "titulo", style: `color:${f.vitoria ? "var(--ouro)" : inf ? "var(--ciano)" : "var(--vermelho)"}`, text: titulo }),
   ];
-  if (!inf) linhas.push(est);
+  if (!inf && !jornada) linhas.push(est);
   linhas.push(h("div", { class: "subtitulo", text: `${fmtTempo(f.tempo)} · ${fmtInt(f.abates)} abates · nível ${f.nivel}${rec.recorde ? " · NOVO RECORDE!" : ""}${rec.primeiraVez ? " · 1ª vitória!" : ""}` }));
   if (!f.vitoria && !inf && b.boss === null && !f.chefeDerrotado) {
     linhas.push(h("div", { class: "subtitulo", text: `Chegou a ${Math.min(100, Math.round((f.tempo / 280) * 100))}% da fase` }));

@@ -4,6 +4,7 @@ import { SENTINELS } from "../data/sentinels";
 import { TALENTS } from "../data/talents";
 import type { Chip, SentinelId, StageDef } from "../data/types";
 import type { DailyMod } from "../data/modes";
+import { CAMPOS } from "../data/journey";
 import { Mods } from "./StatSystem";
 import type { Modo, RunConfig } from "./types";
 
@@ -52,6 +53,8 @@ export function montarRun(opts: {
   meta: MetaSnapshot;
   daily?: DailyMod;
   tutorial?: boolean;
+  campos?: string[];
+  etapas?: StageDef[];
 }): RunConfig {
   const { meta, daily } = opts;
   const globais = modsGlobais(meta);
@@ -62,10 +65,16 @@ export function montarRun(opts: {
     pool = [...daily.sentinelas];
   }
   if (daily?.efeito) globais.apply(daily.efeito);
+  for (const id of opts.campos ?? []) {
+    const c = CAMPOS.find((x) => x.id === id);
+    if (c?.efeito) globais.apply(c.efeito);
+  }
   const perm: RunConfig["perm"] = {};
   for (const id of pool) perm[id] = modsPermanentes(id, meta.niveis[id] ?? 1);
   return {
     modo: opts.modo, stage: opts.stage, dificil: opts.dificil, seed: opts.seed, base, pool, globais, perm, daily,
     tutorial: opts.tutorial ?? false,
+    campos: opts.campos,
+    etapas: opts.etapas,
   };
 }

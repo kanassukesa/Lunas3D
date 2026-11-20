@@ -5,7 +5,7 @@ import type { Oferta } from "../battle/CardSystem";
 import type { Modo } from "../battle/types";
 import { BALANCE } from "../data/balance";
 import { STAGES } from "../data/stages";
-import { calcularRecompensas, CUSTO_REVIVER, desafioDoDia, faseLiberada, hojeStr, snapshot, type Recompensa } from "../meta/Meta";
+import { calcularRecompensas, CUSTO_REVIVER, desafioDoDia, faseLiberada, hojeStr, jornadaDaSemana, snapshot, type Recompensa } from "../meta/Meta";
 import { Background } from "../render/Background";
 import { BattleRenderer } from "../render/BattleRenderer";
 import { HubScene } from "../render/HubScene";
@@ -95,7 +95,7 @@ export class Game implements Nav {
     audio.volSom = c.som;
     audio.volMusica = c.musica;
     audio.aplicarVolumes();
-    this.run?.r.aplicarConfig(c.efeitos === "leve", c.brilho, c.numeros);
+    this.run?.r.aplicarConfig(c.efeitos === "leve", c.brilho, c.numeros, c.bloom);
   }
 
   ir(tela: string): void {
@@ -156,9 +156,17 @@ export class Game implements Nav {
     this.iniciar("sobrevivencia", base, 0, false, Date.now() >>> 0);
   }
 
+  jogarJornada(): void {
+    const j = jornadaDaSemana();
+    this.iniciar("jornada", j.etapas[0], 0, false, j.seed, undefined, j.campos.map((c) => c.id), j.etapas);
+  }
+
   // ------------------------------------------------------------------ batalha
 
-  private iniciar(modo: Modo, stage: (typeof STAGES)[number], idx: number, dificil: boolean, seed: number, daily?: ReturnType<typeof desafioDoDia>["mod"]): void {
+  private iniciar(
+    modo: Modo, stage: (typeof STAGES)[number], idx: number, dificil: boolean, seed: number,
+    daily?: ReturnType<typeof desafioDoDia>["mod"], campos?: string[], etapas?: (typeof STAGES)[number][],
+  ): void {
     this.sairDaBatalha();
     this.telaEl?.remove();
     this.telaEl = null;
@@ -167,7 +175,7 @@ export class Game implements Nav {
       this.hub = null;
     }
     const tutorial = modo === "campanha" && idx === 0 && !this.save.tutorialVisto;
-    const cfg = montarRun({ modo, stage, dificil, seed, meta: snapshot(this.save), daily, tutorial });
+    const cfg = montarRun({ modo, stage, dificil, seed, meta: snapshot(this.save), daily, tutorial, campos, etapas: etapas?.map((e) => ({ ...e })) });
     const b = new Battle(cfg);
     const r = new BattleRenderer(b);
     const loop = new FixedLoop((dt) => {
@@ -270,7 +278,7 @@ export class Game implements Nav {
     const b = run.b;
     const f = b.fim!;
     // oferece reviver antes de fechar as contas
-    if (!f.vitoria && !b.reviveu && run.modo !== "sobrevivencia") {
+    if (!f.vitoria && !b.reviveu && run.modo !== "sobrevivencia" && run.modo !== "jornada") {
       const el = h("div", { class: "overlay" },
         h("div", { class: "titulo", style: "color:var(--vermelho)", text: "ESCUDOS CAÍRAM" }),
         h("div", { class: "subtitulo", text: `Reviver com 50% de HP? (1x por partida) · Você tem 💎 ${this.save.cristais}` }),
@@ -297,6 +305,7 @@ export class Game implements Nav {
     const repetir = () => {
       if (run.modo === "campanha") this.jogarCampanha(idx, run.dificil);
       else if (run.modo === "diario") this.jogarDiario();
+      else if (run.modo === "jornada") this.jogarJornada();
       else this.jogarSobrevivencia();
     };
     this.abrir(
@@ -367,6 +376,7 @@ export class Game implements Nav {
       ox = (w - W * scale) / 2;
       oy = 0;
     }
+    run.r.setTela(w, hh, scale, ox, oy);
     run.r.world.scale.set(scale);
     run.r.world.position.set(ox, oy);
     run.b.vis = { left: 0, right: W, top: Math.min(0, -oy / scale), bottom: H };

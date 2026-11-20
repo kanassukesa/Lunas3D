@@ -112,9 +112,17 @@ export function updateEnemies(b: Battle, dt: number): void {
         break;
       }
       default:
-        e.vx = nx * vel;
-        e.vy = ny * vel;
-        e.rot = Math.atan2(dy, dx);
+        if (b.campo.espiral() && dist > 260) {
+          // gravidade invertida: aproximação em espiral (componente tangencial)
+          const tx = -ny * (e.id % 2 ? 1 : -1);
+          const ty = nx * (e.id % 2 ? 1 : -1);
+          e.vx = (nx * 0.75 + tx * 0.66) * vel;
+          e.vy = (ny * 0.75 + ty * 0.66) * vel;
+        } else {
+          e.vx = nx * vel;
+          e.vy = ny * vel;
+        }
+        e.rot = Math.atan2(e.vy, e.vx);
     }
 
     e.x += e.vx * dt;

@@ -9,6 +9,7 @@ npm install
 npm run dev        # http://localhost:5173 (use --host para abrir no celular na mesma rede)
 npm run build      # typecheck + build em dist/
 npm run sim -- 1-10 4 1   # simulador de balanceamento: fases, partidas por fase, nível do hangar
+npx tsx scripts/simJornada.ts 4 10 radiacao,nevoa   # simula a Jornada (partidas, nível do hangar, efeitos)
 ```
 
 ## Stack
@@ -33,11 +34,13 @@ StatSystem: `final = (base + Σaditivos) × (1 + Σpercentuais) × Πmultiplicad
 - 76 cartas (raridades 60/28/10/2, pilhas, requisitos, evoluções garantidas quando disponíveis, 5 cartas a cada 10 níveis)
 - Meta: créditos/núcleos/cristais, hangar nv 1–30 com traço a cada 5 níveis, deck (base + 5), chips com 4 conjuntos e fusão 3→1,
   talentos do planeta, missões, desafio diário com seed, sobrevivência infinita, reviver 1x, tutorial na fase 1
+- **Jornada da semana**: 5 etapas seguidas sem cura (build, nível e HP continuam), com 2 efeitos de campo sorteados
+  pela semana ISO entre 6 (radiação, gravidade invertida, corrente rápida, tempestade solar, nebulosa, campo minado)
+- Bloom real (`AdvancedBloomFilter` do pixi-filters) com opção de desligar; música procedural com progressão de acordes
 
 ## Curva de dificuldade (simulador)
 Sem melhorias permanentes o bot vence as fases 1–5; da 6 em diante é preciso evoluir no hangar/planeta.
 
 ## Pendências
-- Modo Jornada (efeitos de campo semanais) e Arena (precisa de backend)
+- Arena assíncrona (precisa de backend)
 - Arte final (sprites) e música composta; hoje tudo é procedural
-- Bloom real via filtro (hoje é um halo aditivo, liga/desliga em Configurações)

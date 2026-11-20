@@ -1,4 +1,6 @@
-import { Container, Graphics, Sprite } from "pixi.js";
+import { Container, Graphics, Rectangle, Sprite } from "pixi.js";
+import { AdvancedBloomFilter } from "pixi-filters";
+import type { Mina } from "../battle/Campo";
 import type { Battle } from "../battle/Battle";
 import type { Drone, Enemy, EnemyShot, Projectile, SentinelRun, Zone } from "../battle/types";
 import { BALANCE } from "../data/balance";
@@ -98,7 +100,12 @@ const CORES_PROJ: Record<string, number> = { estilhaco: 0xffffff };
 
 export class BattleRenderer {
   readonly world = new Container();
+  /** Tudo que recebe bloom (os números de dano ficam fora para continuarem nítidos). */
+  private cena = new Container();
   private zonesL = new Container();
+  private campoG = new Graphics();
+  private minaPool: ViewPool<SpriteView>;
+  private bloom: AdvancedBloomFilter | null = null;
   private orbitas = new Graphics();
   private planetL: PlanetView;
   private sentL = new Container();
@@ -140,10 +147,11 @@ export class BattleRenderer {
     this.bossRing.tint = 0x9a7cff;
     this.bossL.addChild(this.bossAura, this.bossRing, this.bossSprite);
     this.bossL.visible = false;
-    this.world.addChild(
-      this.zonesL, this.orbitas, this.planetL.layer, this.enemyL, this.bossL, this.sentL, this.shotL, this.projL,
-      this.particles.layer, this.beamsG, this.numeros.layer,
+    this.cena.addChild(
+      this.campoG, this.zonesL, this.orbitas, this.planetL.layer, this.enemyL, this.bossL, this.sentL, this.shotL, this.projL,
+      this.particles.layer, this.beamsG,
     );
+    this.world.addChild(this.cena, this.numeros.layer);
     this.enemyPool = new ViewPool(this.enemyL, (p) => new EnemyView(p));
     this.projPool = new ViewPool(this.projL, (p) => new SpriteView(p, "bolt", false));
     this.projHaloPool = new ViewPool(this.projL, (p) => new SpriteView(p, "bolt", true));
@@ -151,6 +159,7 @@ export class BattleRenderer {
     this.shotPool = new ViewPool(this.shotL, (p) => new SpriteView(p, "glow", false));
     this.dronePool = new ViewPool(this.projL, (p) => new SpriteView(p, "drone", false));
     this.zonePool = new ViewPool(this.zonesL, (p) => new SpriteView(p, "vortice", false));
+    this.minaPool = new ViewPool(this.zonesL, (p) => new SpriteView(p, "glow", true));
     b.onRemove = (o) => (o.view as Freeable | undefined)?.free();
     this.desenharOrbitas();
   }
@@ -160,12 +169,64 @@ export class BattleRenderer {
     for (const a of BALANCE.aneis) g.circle(BALANCE.planeta.x, BALANCE.planeta.y, a.raio).stroke({ width: 2, color: 0x4fd6ff, alpha: 0.12 });
   }
 
-  aplicarConfig(leve: boolean, brilho: boolean, numeros: boolean): void {
+  aplicarConfig(leve: boolean, brilho: boolean, numeros: boolean, bloom = true): void {
+    const usar = bloom && !leve;
+    if (usar && !this.bloom) {
+      this.bloom = new AdvancedBloomFilter({ threshold: 0.6, bloomScale: 0.8, brightness: 1, blur: 5, quality: 3 });
+      this.bloom.resolution = 0.5;
+    }
+    this.cena.filters = usar && this.bloom ? [this.bloom] : [];
     this.leve = leve;
     this.brilho = brilho;
     this.particles.max = leve ? 250 : 900;
     this.numeros.ativo = numeros;
     this.numeros.max = leve ? 35 : 70;
+  }
+
+  /**
+   * Área do filtro em coordenadas LOCAIS do mundo (cobre a tela inteira + margem do tremor),
+   * para o bloom não recalcular limites a cada frame.
+   */
+  setTela(w: number, h: number, scale: number, ox: number, oy: number): void {
+    const m = 60;
+    this.cena.filterArea = new Rectangle(-ox / scale - m, -oy / scale - m, w / scale + m * 2, h / scale + m * 2);
+  }
+
+  private desenharCampo(): void {
+    const b = this.b;
+    const g = this.campoG;
+    g.clear();
+    const c = b.campo;
+    for (const z of c.radiacao) {
+      const pulso = 0.12 + 0.05 * Math.sin(this.tempo * 3 + z.y);
+      g.rect(-200, z.y - z.h / 2, 1480, z.h).fill({ color: 0x7dff5e, alpha: pulso });
+      g.moveTo(-200, z.y - z.h / 2).lineTo(1280, z.y - z.h / 2).stroke({ width: 3, color: 0xb8ff9e, alpha: 0.5 });
+      g.moveTo(-200, z.y + z.h / 2).lineTo(1280, z.y + z.h / 2).stroke({ width: 3, color: 0xb8ff9e, alpha: 0.5 });
+    }
+    if (c.erupcao > 0) g.rect(-300, b.vis.top - 100, 1700, 2400).fill({ color: 0xff9a2c, alpha: c.erupcao * 0.35 });
+    for (const m of c.minas) this.syncMina(m);
+  }
+
+  private syncMina(m: Mina): void {
+    let v = m.view as SpriteView | undefined;
+    if (!m.alive) {
+      if (v) {
+        v.free();
+        m.view = undefined;
+      }
+      return;
+    }
+    if (!v) {
+      v = this.minaPool.get();
+      m.view = v;
+      v.s.tint = 0xff4d3c;
+      if (v.halo) v.halo.tint = 0xff4d3c;
+    }
+    v.root.x = m.x;
+    v.root.y = m.y;
+    const k = 0.7 + 0.25 * Math.sin(this.tempo * 6 + m.x);
+    v.s.scale.set(0.6 * k);
+    if (v.halo) v.halo.scale.set(2.2 * k);
   }
 
   /** Consome eventos de FX da lógica. */
@@ -222,7 +283,8 @@ export class BattleRenderer {
     const pl = b.planet;
     this.planetL.update(dt, pl.escudoMax ? pl.escudo / pl.escudoMax : 0, this.tempo);
 
-    // zonas
+    // efeitos de campo + zonas
+    this.desenharCampo();
     for (const z of b.zones) this.syncZone(z);
 
     // inimigos

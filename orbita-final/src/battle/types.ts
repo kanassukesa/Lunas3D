@@ -2,7 +2,7 @@ import type { BossDef, EnemyDef, SentinelBase, SentinelDef, SentinelId, StageDef
 import type { DailyMod } from "../data/modes";
 import type { Mods } from "./StatSystem";
 
-export type Modo = "campanha" | "diario" | "sobrevivencia";
+export type Modo = "campanha" | "diario" | "sobrevivencia" | "jornada";
 
 export interface RunConfig {
   modo: Modo;
@@ -17,6 +17,10 @@ export interface RunConfig {
   perm: Partial<Record<SentinelId, Mods>>;
   daily?: DailyMod;
   tutorial: boolean;
+  /** Efeitos de campo ativos (Jornada). */
+  campos?: string[];
+  /** Etapas da Jornada (a primeira é `stage`). */
+  etapas?: StageDef[];
 }
 
 export interface Visivel {
@@ -67,6 +71,7 @@ export interface Enemy {
   dotTick: number;
   fireT: number;
   alvoavel: boolean;
+  radT?: number;
   boss: BossState | null;
   view?: unknown;
 }

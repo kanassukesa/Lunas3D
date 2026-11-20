@@ -1,5 +1,5 @@
 import type { Battle } from "../battle/Battle";
-import { BALANCE } from "../data/balance";
+import { CAMPOS } from "../data/journey";
 import { fmtInt, fmtTempo, h } from "./dom";
 
 export interface HudAcoes {
@@ -11,6 +11,7 @@ export interface HudAcoes {
 }
 
 const SEGMENTOS = 10;
+const CAMPO_ICONE: Record<string, string> = Object.fromEntries(CAMPOS.map((c) => [c.id, c.icone]));
 
 /** HUD da batalha (DOM por cima do canvas), atualizado só quando os valores mudam. */
 export class Hud {
@@ -31,6 +32,8 @@ export class Hud {
   private foco: HTMLButtonElement;
   private fps: HTMLElement;
   private dica: HTMLElement;
+  private fase: HTMLElement;
+  private campos: HTMLElement;
   readonly flash: HTMLElement;
   private cache: Record<string, string | number | boolean> = {};
 
@@ -55,6 +58,8 @@ export class Hud {
     this.foco = h("button", { class: "btn pequeno hud-foco oculto", onclick: () => acoes.foco() });
     this.fps = h("div", { class: "fps" });
     this.dica = h("div", { class: "dica oculto" });
+    this.fase = h("div", { class: "hud-fase", text: nomeFase });
+    this.campos = h("div", { class: "hud-campos" });
     this.flash = h("div", { class: "flash" });
 
     this.el = h(
@@ -68,7 +73,7 @@ export class Hud {
         h(
           "div",
           { class: "hud-centro" },
-          h("div", { class: "hud-fase", text: nomeFase }),
+          this.fase,
           h(
             "div",
             { class: "hud-botoes" },
@@ -80,6 +85,7 @@ export class Hud {
         h("div", { class: "hud-dir" }, this.tempo, h("div", { class: "hud-nivel" }, this.nivel, h("div", { class: "barra-xp" }, this.xp))),
       ),
       this.chefe,
+      this.campos,
       this.aviso,
       this.dica,
       this.foco,
@@ -117,7 +123,11 @@ export class Hud {
     if (this.set("esc", ef)) this.escudo.style.width = ef + "%";
 
     const modoInf = b.cfg.modo === "sobrevivencia";
-    const tShow = modoInf ? b.t : b.boss ? b.t : Math.max(0, BALANCE.entradaChefe - b.t);
+    const tShow = modoInf ? b.t : b.boss ? b.t : Math.max(0, b.entradaChefe() - b.t);
+    if (b.cfg.modo === "jornada" && this.set("fase", b.etapa)) {
+      this.fase.textContent = `Jornada ${b.etapa + 1}/${b.cfg.etapas?.length ?? 1}`;
+      this.campos.textContent = [...b.campo.ativos].map((id) => CAMPO_ICONE[id] ?? "").join(" ");
+    }
     if (this.set("t", Math.floor(tShow))) this.tempo.textContent = fmtTempo(tShow);
     if (this.set("lv", b.nivel)) this.nivel.textContent = `Lv.${b.nivel}`;
     const xpf = Math.round((b.xp / b.xpNext) * 100);
@@ -142,8 +152,13 @@ export class Hud {
       if (this.set("bossHp", bf)) this.chefeBarra.style.width = Math.max(0, bf) + "%";
     }
     if (this.set("foco", b.focoChefe)) this.foco.textContent = b.focoChefe ? "🎯 Mira no chefe: ON" : "🎯 Mira no chefe: OFF";
-    const aviso = b.avisoChefe && !boss;
-    if (this.set("aviso", aviso)) this.aviso.classList.toggle("oculto", !aviso);
+    const transicao = b.transicao > 0;
+    const aviso = (b.avisoChefe && !boss) || transicao;
+    if (this.set("aviso", aviso) || this.set("trans", transicao)) {
+      this.aviso.classList.toggle("oculto", !aviso);
+      this.aviso.classList.toggle("ok", transicao);
+      this.aviso.textContent = transicao ? `✔ ETAPA ${b.etapa + 1} CONCLUÍDA` : "⚠ CHEFE SE APROXIMANDO ⚠";
+    }
 
     if (this.set("fps", fps === null ? -1 : Math.round(fps))) this.fps.textContent = fps === null ? "" : `${Math.round(fps)} FPS · ${b.inimigosVivos()} inim · ${b.projs.length} proj`;
     const fl = Math.round(flash * 20) / 20;

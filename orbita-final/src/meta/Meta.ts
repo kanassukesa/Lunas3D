@@ -11,6 +11,7 @@ import type { Chip, SentinelId, StageDef } from "../data/types";
 import { Rng, hashString } from "../core/Rng";
 import { stat, type SaveData } from "../core/Save";
 import type { Modo } from "../battle/types";
+import { CAMPOS, JORNADA, type CampoDef } from "../data/journey";
 
 export function snapshot(s: SaveData): MetaSnapshot {
   const niveis: MetaSnapshot["niveis"] = {};
@@ -128,6 +129,41 @@ export function desafioDoDia(): { seed: number; stage: StageDef; mod: DailyMod }
   return { seed, mod, stage: { ...base, nome: `Diário: ${mod.nome}`, mult: base.mult * 0.9 } };
 }
 
+// ------------------------------------------------------------- jornada
+
+/** Semana ISO no formato 2026-W47 (muda toda segunda-feira). */
+export function semanaStr(d = new Date()): string {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dia = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - dia);
+  const ano = t.getUTCFullYear();
+  const semana = Math.ceil(((t.getTime() - Date.UTC(ano, 0, 1)) / 86400000 + 1) / 7);
+  return `${ano}-W${String(semana).padStart(2, "0")}`;
+}
+
+export function jornadaDaSemana(): { seed: number; campos: CampoDef[]; etapas: StageDef[] } {
+  const seed = hashString("jornada-" + semanaStr());
+  const rng = new Rng(seed);
+  const pool = [...CAMPOS];
+  const campos: CampoDef[] = [];
+  for (let i = 0; i < 2; i++) campos.push(pool.splice(Math.floor(rng.next() * pool.length), 1)[0]);
+  const fases = [...JORNADA.poolFases];
+  const etapas: StageDef[] = [];
+  const k = JORNADA.entradaChefe / 280;
+  for (let i = 0; i < JORNADA.etapas; i++) {
+    const base = STAGES[fases.splice(Math.floor(rng.next() * fases.length), 1)[0]];
+    etapas.push({
+      ...base,
+      nome: `Jornada ${i + 1}/${JORNADA.etapas} · ${base.nome}`,
+      duracao: JORNADA.duracao,
+      mult: JORNADA.multEtapa[i],
+      // comprime a linha do tempo da fase para a duração da etapa
+      ondas: base.ondas.map((o) => ({ ...o, t: o.t * k, qtd: Math.max(1, Math.round(o.qtd * k)) })),
+    });
+  }
+  return { seed, campos, etapas };
+}
+
 // ------------------------------------------------------------- recompensas
 
 export interface Recompensa {
@@ -177,6 +213,25 @@ export function calcularRecompensas(s: SaveData, b: Battle, modo: Modo): Recompe
       recorde = true;
       s.diario.melhor = fim.tempo;
     }
+  } else if (modo === "jornada") {
+    const n = fim.etapas;
+    creditos += Math.round(JORNADA.recompensaEtapa.creditos * n * (1 + n * 0.3) * credMult);
+    nucleos = JORNADA.recompensaEtapa.nucleos * n;
+    if (s.jornada.semana !== semanaStr()) s.jornada = { semana: semanaStr(), melhor: 0, concluida: false };
+    if (n > s.jornada.melhor) {
+      recorde = true;
+      s.jornada.melhor = n;
+    }
+    if (fim.vitoria) {
+      if (!s.jornada.concluida) {
+        nucleos += JORNADA.recompensaFinal.nucleos;
+        s.cristais += JORNADA.recompensaFinal.cristais;
+        primeiraVez = true;
+        stat(s, "jornadas", 1);
+      }
+      s.jornada.concluida = true;
+      chip = gerarChip(s, rng, Math.max(2, raridadeDrop(rng, 10, true)));
+    } else if (n >= 2) chip = gerarChip(s, rng, raridadeDrop(rng, 4 + n, false));
   } else {
     nucleos = (b.chefesMortos ?? 0) * 4;
     if (fim.tempo > s.sobrevivenciaMelhor) {

@@ -133,102 +133,151 @@ export class AudioSys {
     this.musica = faixa === "chefe" ? this.faixaChefe(ctx) : this.faixaAmbiente(ctx);
   }
 
-  private faixaAmbiente(ctx: AudioContext): { stop: () => void } {
-    const out = ctx.createGain();
-    out.gain.value = 0;
-    out.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 3);
-    const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass";
-    lp.frequency.value = 700;
-    lp.connect(out);
-    out.connect(this.musicBus);
-    const lfo = ctx.createOscillator();
-    const lfoG = ctx.createGain();
-    lfo.frequency.value = 0.07;
-    lfoG.gain.value = 350;
-    lfo.connect(lfoG);
-    lfoG.connect(lp.frequency);
-    lfo.start();
-    const notas = [55, 82.4, 110, 164.8, 130.8];
-    const oscs = notas.map((f, i) => {
-      const o = ctx.createOscillator();
-      o.type = i % 2 ? "triangle" : "sawtooth";
-      o.frequency.value = f;
-      o.detune.value = (i - 2) * 6;
-      const g = ctx.createGain();
-      g.gain.value = 0.12 / (i + 1);
-      o.connect(g);
-      g.connect(lp);
-      o.start();
-      return o;
-    });
+  /** Sequenciador simples: chama `agendar(passo, tempo)` à frente do relógio do áudio. */
+  private sequenciador(ctx: AudioContext, passoSeg: number, agendar: (passo: number, t: number) => void): { parar: () => void } {
+    let passo = 0;
+    let prox = ctx.currentTime + 0.1;
+    let vivo = true;
+    const tick = () => {
+      if (!vivo) return;
+      while (prox < ctx.currentTime + 0.35) {
+        agendar(passo++, prox);
+        prox += passoSeg;
+      }
+    };
+    const id = setInterval(tick, 90);
+    tick();
+    return { parar: () => { vivo = false; clearInterval(id); } };
+  }
+
+  private nota(ctx: AudioContext, destino: AudioNode, freq: number, t: number, dur: number, vol: number, tipo: OscillatorType, ataque = 0.01): void {
+    const o = ctx.createOscillator();
+    o.type = tipo;
+    o.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + ataque);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g);
+    g.connect(destino);
+    o.start(t);
+    o.stop(t + dur + 0.05);
+  }
+
+  private fim(ctx: AudioContext, out: GainNode, seq: { parar: () => void }, extra?: () => void): { stop: () => void } {
     return {
       stop: () => {
-        const t = ctx.currentTime;
-        out.gain.cancelScheduledValues(t);
-        out.gain.setValueAtTime(out.gain.value, t);
-        out.gain.linearRampToValueAtTime(0, t + 1);
-        setTimeout(() => {
-          oscs.forEach((o) => o.stop());
-          lfo.stop();
-          out.disconnect();
-        }, 1200);
+        seq.parar();
+        out.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
+        setTimeout(() => { extra?.(); out.disconnect(); }, 2500);
       },
     };
   }
 
+  /** Ambiente: pad em progressão menor (i–VI–III–VII) + arpejo suave, 84 BPM. */
+  private faixaAmbiente(ctx: AudioContext): { stop: () => void } {
+    const out = ctx.createGain();
+    out.gain.value = 0;
+    out.gain.linearRampToValueAtTime(0.45, ctx.currentTime + 3);
+    out.connect(this.musicBus);
+    // eco para dar profundidade espacial
+    const eco = ctx.createDelay(1);
+    eco.delayTime.value = 0.36;
+    const fb = ctx.createGain();
+    fb.gain.value = 0.35;
+    const ecoLp = ctx.createBiquadFilter();
+    ecoLp.type = "lowpass";
+    ecoLp.frequency.value = 1800;
+    eco.connect(ecoLp);
+    ecoLp.connect(fb);
+    fb.connect(eco);
+    ecoLp.connect(out);
+    const padLp = ctx.createBiquadFilter();
+    padLp.type = "lowpass";
+    padLp.frequency.value = 900;
+    padLp.connect(out);
+    const arpBus = ctx.createGain();
+    arpBus.gain.value = 1;
+    arpBus.connect(out);
+    arpBus.connect(eco);
+
+    const A = 220;
+    const semi = (n: number) => A * Math.pow(2, n / 12);
+    // acordes em semitons a partir de A3: Am, F, C, G
+    const acordes = [[0, 3, 7], [-4, 0, 3], [3, 7, 10], [-2, 2, 5]];
+    const passoSeg = 60 / 84 / 2; // colcheias
+    const seq = this.sequenciador(ctx, passoSeg, (p, t) => {
+      const compasso = Math.floor(p / 16) % acordes.length;
+      const ac = acordes[compasso];
+      if (p % 16 === 0) {
+        for (const n of ac) {
+          this.nota(ctx, padLp, semi(n - 12), t, passoSeg * 17, 0.045, "sawtooth", 1.2);
+          this.nota(ctx, padLp, semi(n - 12) * 1.004, t, passoSeg * 17, 0.035, "sawtooth", 1.2);
+        }
+        this.nota(ctx, padLp, semi(ac[0] - 24), t, passoSeg * 16, 0.09, "triangle", 0.4);
+      }
+      // arpejo: sobe e desce pelas notas do acorde, com pausas
+      const padrao = [0, 1, 2, 1, 0, 2, 1, -1];
+      const i = padrao[p % padrao.length];
+      if (i >= 0 && (p >> 3) % 2 === 0) this.nota(ctx, arpBus, semi(ac[i] + 12), t, 0.5, 0.05, "triangle");
+    });
+    return this.fim(ctx, out, seq);
+  }
+
+  /** Chefe: baixo pulsante + bumbo + chimbal + stabs, 140 BPM. */
   private faixaChefe(ctx: AudioContext): { stop: () => void } {
     const out = ctx.createGain();
-    out.gain.value = 0.4;
+    out.gain.value = 0.5;
     out.connect(this.musicBus);
     const lp = ctx.createBiquadFilter();
     lp.type = "lowpass";
-    lp.frequency.value = 900;
-    lp.Q.value = 6;
+    lp.frequency.value = 1100;
+    lp.Q.value = 7;
     lp.connect(out);
-    const seq = [55, 55, 65.4, 55, 73.4, 55, 82.4, 77.8];
-    let passo = 0;
-    let proximo = ctx.currentTime + 0.05;
-    let vivo = true;
-    const tick = () => {
-      if (!vivo) return;
-      while (proximo < ctx.currentTime + 0.3) {
-        const o = ctx.createOscillator();
-        o.type = "sawtooth";
-        o.frequency.value = seq[passo % seq.length] * (passo % 16 >= 8 ? 1.5 : 1);
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0.25, proximo);
-        g.gain.exponentialRampToValueAtTime(0.001, proximo + 0.16);
-        o.connect(g);
-        g.connect(lp);
-        o.start(proximo);
-        o.stop(proximo + 0.18);
-        if (passo % 4 === 0) {
-          const k = ctx.createOscillator();
-          const kg = ctx.createGain();
-          k.frequency.setValueAtTime(140, proximo);
-          k.frequency.exponentialRampToValueAtTime(40, proximo + 0.15);
-          kg.gain.setValueAtTime(0.6, proximo);
-          kg.gain.exponentialRampToValueAtTime(0.001, proximo + 0.2);
-          k.connect(kg);
-          kg.connect(out);
-          k.start(proximo);
-          k.stop(proximo + 0.22);
-        }
-        passo++;
-        proximo += 0.15;
+    const baixo = [55, 55, 65.4, 55, 73.4, 55, 82.4, 77.8];
+    const lead = [440, 0, 523.3, 0, 493.9, 440, 0, 392];
+    const passoSeg = 60 / 140 / 2;
+    const seq = this.sequenciador(ctx, passoSeg, (p, t) => {
+      const sobe = p % 32 >= 16 ? 1.335 : 1;
+      this.nota(ctx, lp, baixo[p % 8] * sobe, t, 0.18, 0.22, "sawtooth");
+      // varredura do filtro a cada compasso
+      if (p % 8 === 0) {
+        lp.frequency.setValueAtTime(500, t);
+        lp.frequency.linearRampToValueAtTime(1800, t + passoSeg * 7);
       }
-    };
-    const id = setInterval(tick, 100);
-    tick();
-    return {
-      stop: () => {
-        vivo = false;
-        clearInterval(id);
-        out.gain.setTargetAtTime(0, ctx.currentTime, 0.3);
-        setTimeout(() => out.disconnect(), 1500);
-      },
-    };
+      if (p % 4 === 0) {
+        const k = ctx.createOscillator();
+        const kg = ctx.createGain();
+        k.frequency.setValueAtTime(150, t);
+        k.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+        kg.gain.setValueAtTime(0.7, t);
+        kg.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+        k.connect(kg);
+        kg.connect(out);
+        k.start(t);
+        k.stop(t + 0.25);
+      }
+      if (p % 2 === 1 && this.ruido) {
+        const n = ctx.createBufferSource();
+        n.buffer = this.ruido;
+        const hp = ctx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.value = 7000;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.06, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        n.connect(hp);
+        hp.connect(g);
+        g.connect(out);
+        n.start(t);
+        n.stop(t + 0.06);
+      }
+      if (p % 64 >= 32) {
+        const f = lead[p % 8];
+        if (f) this.nota(ctx, out, f * (sobe > 1 ? 1.122 : 1), t, 0.2, 0.05, "square");
+      }
+    });
+    return this.fim(ctx, out, seq);
   }
 }
 

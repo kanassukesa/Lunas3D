@@ -9,6 +9,7 @@ export interface Config {
   efeitos: "completo" | "leve";
   numeros: boolean;
   brilho: boolean;
+  bloom: boolean;
   som: number;
   musica: number;
   fps: boolean;
@@ -32,6 +33,7 @@ export interface SaveData {
   diario: { data: string; melhor: number; concluido: boolean };
   sobrevivenciaMelhor: number;
   tutorialVisto: boolean;
+  jornada: { semana: string; melhor: number; concluida: boolean };
 }
 
 export function saveNovo(): SaveData {
@@ -51,10 +53,11 @@ export function saveNovo(): SaveData {
     talentos: {},
     estatisticas: {},
     missoesResgatadas: [],
-    config: { efeitos: "completo", numeros: true, brilho: true, som: 0.7, musica: 0.5, fps: false },
+    config: { efeitos: "completo", numeros: true, brilho: true, bloom: true, som: 0.7, musica: 0.5, fps: false },
     diario: { data: "", melhor: 0, concluido: false },
     sobrevivenciaMelhor: 0,
     tutorialVisto: false,
+    jornada: { semana: "", melhor: 0, concluida: false },
   };
 }
 

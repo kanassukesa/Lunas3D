@@ -9,7 +9,7 @@ import type { Chip, SentinelId } from "../../data/types";
 import { audio } from "../../core/Audio";
 import { apagar, salvar, saveNovo, type SaveData } from "../../core/Save";
 import {
-  comprarTalento, desafioDoDia, desbloquear, faseLiberada, formatStat, fundir, hojeStr, melhorar, missoesProntas, podeMelhorar, resgatarMissao,
+  comprarTalento, desafioDoDia, jornadaDaSemana, semanaStr, desbloquear, faseLiberada, formatStat, fundir, hojeStr, melhorar, missoesProntas, podeMelhorar, resgatarMissao,
 } from "../../meta/Meta";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, toast } from "../dom";
 
@@ -20,6 +20,7 @@ export interface Nav {
   jogarCampanha(idx: number, dificil: boolean): void;
   jogarDiario(): void;
   jogarSobrevivencia(): void;
+  jogarJornada(): void;
   aplicarConfig(): void;
   persistir(): void;
 }
@@ -263,9 +264,22 @@ export function telaModos(nav: Nav): HTMLElement {
       h("div", { class: "desc", text: "Ondas sem fim que ficam mais fortes. Um chefe a cada 3 minutos. Até onde você aguenta?" }),
       h("div", { class: "desc", text: `Recorde: ${fmtTempo(s.sobrevivenciaMelhor)}` }),
       h("div", { class: "acoes" }, h("button", { class: "btn primario", text: "Sobreviver", onclick: () => nav.jogarSobrevivencia() }))),
-    h("div", { class: "cartao bloq" },
-      h("div", { class: "nome", style: "font-weight:900;font-size:17px", text: "🧭 Jornada (em breve)" }),
-      h("div", { class: "desc", text: "Sequência de fases sem cura entre elas, com efeitos de campo semanais." })));
+    cartaoJornada(nav));
+}
+
+function cartaoJornada(nav: Nav): HTMLElement {
+  const s = nav.save;
+  const j = jornadaDaSemana();
+  if (s.jornada.semana !== semanaStr()) {
+    s.jornada = { semana: semanaStr(), melhor: 0, concluida: false };
+    nav.persistir();
+  }
+  return h("div", { class: "cartao" },
+    h("div", { class: "nome", style: "font-weight:900;font-size:17px", text: "🧭 Jornada da Semana" }),
+    h("div", { class: "desc", text: `${j.etapas.length} etapas seguidas, sem cura entre elas. A build, o nível e o HP continuam de uma etapa para a outra.` }),
+    ...j.campos.map((c) => h("div", { class: "desc", html: `${c.icone} <b>${c.nome}:</b> ${c.desc}` })),
+    h("div", { class: "desc", text: s.jornada.concluida ? "✓ Concluída nesta semana" : `Melhor nesta semana: ${s.jornada.melhor}/${j.etapas.length} etapas` }),
+    h("div", { class: "acoes" }, h("button", { class: "btn primario", text: "Partir em jornada", onclick: () => nav.jogarJornada() })));
 }
 
 // ------------------------------------------------------------------ CONFIG
@@ -286,7 +300,8 @@ export function painelConfig(nav: Nav, voltar: () => void, noJogo = false): HTML
       h("div", { class: "abas" },
         h("button", { class: "btn pequeno" + (c.efeitos === "completo" ? " ativo" : ""), text: "Completos", onclick: () => { c.efeitos = "completo"; nav.aplicarConfig(); nav.persistir(); voltar(); } }),
         h("button", { class: "btn pequeno" + (c.efeitos === "leve" ? " ativo" : ""), text: "Leves", onclick: () => { c.efeitos = "leve"; nav.aplicarConfig(); nav.persistir(); voltar(); } }))),
-    toggle("Brilho extra (bloom)", c.brilho, (b) => (c.brilho = b)),
+    toggle("Bloom (brilho real)", c.bloom, (b) => (c.bloom = b)),
+    toggle("Halo nos projéteis", c.brilho, (b) => (c.brilho = b)),
     toggle("Números de dano", c.numeros, (b) => (c.numeros = b)),
     toggle("Mostrar FPS", c.fps, (b) => (c.fps = b)),
     slider("Som", c.som, (n) => (c.som = n)),

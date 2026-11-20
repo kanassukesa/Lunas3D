@@ -15,6 +15,8 @@ import { updateEnemies } from "./Enemy";
 import { updateBoss } from "./Boss";
 import { updateSentinels, updateDrones, updateZones, syncDrones } from "./Sentinel";
 import { Ultimate } from "./Ultimate";
+import { Campo } from "./Campo";
+import { CAMPOS, JORNADA } from "../data/journey";
 
 const P = BALANCE.planeta;
 const STAT_KEYS = ["dano", "cadencia", "alcance", "velProj", "perfuracao", "area", "projeteis", "cadeia", "duracao", "lentidao"] as const;
@@ -42,6 +44,8 @@ export interface BattleResult {
   estrelas: number;
   chefeDerrotado: boolean;
   evolucoes: number;
+  /** Etapas da Jornada concluídas. */
+  etapas: number;
 }
 
 /** Estado e regras de uma partida. Sem dependência de render (roda headless no simulador). */
@@ -74,6 +78,16 @@ export class Battle {
   reviveu = false;
   evolucoes = 0;
   chefesMortos = 0;
+  /** Tempo total da partida (na Jornada, soma das etapas). */
+  tTotal = 0;
+  etapa = 0;
+  etapasConcluidas = 0;
+  /** Contagem regressiva entre etapas da Jornada. */
+  transicao = 0;
+  campo: Campo;
+  private campoVel = 1;
+  private campoXp = 1;
+  private campoHp = 1;
   cards: CardSystem;
   spawner: Spawner;
   ult: Ultimate;
@@ -97,6 +111,14 @@ export class Battle {
       semDano: 99, espinhos: 0, espinhosCd: 0, x: P.x, y: P.y,
     };
     this.recalcPlaneta(true);
+    this.campo = new Campo(this, cfg.campos ?? []);
+    for (const id of cfg.campos ?? []) {
+      const c = CAMPOS.find((x) => x.id === id);
+      if (!c) continue;
+      this.campoVel *= c.velInimigoMult ?? 1;
+      this.campoXp *= c.xpMult ?? 1;
+    }
+    if (this.campo.tem("campo_minado")) this.campoHp = 1.2;
     this.cards = new CardSystem(this);
     this.spawner = new Spawner(this);
     this.ult = new Ultimate(this);
@@ -183,7 +205,7 @@ export class Battle {
     const e = this.enemyPool.get();
     const onda = Math.floor(this.t / BALANCE.duracaoOnda);
     const mult = this.multDificuldade();
-    const hpScale = (1 + BALANCE.escalaOnda * onda) * mult * (this.cfg.dificil ? BALANCE.dificil.hpMult : 1) * (this.cfg.daily?.hpInimigoMult ?? 1);
+    const hpScale = (1 + BALANCE.escalaOnda * onda) * mult * (this.cfg.dificil ? BALANCE.dificil.hpMult : 1) * (this.cfg.daily?.hpInimigoMult ?? 1) * this.campoHp;
     const danoScale = (1 + 0.04 * onda) * Math.sqrt(mult) * (this.cfg.dificil ? BALANCE.dificil.danoMult : 1);
     e.id = this.nextId++;
     e.alive = true;
@@ -196,7 +218,7 @@ export class Battle {
     e.hpMax = e.hp = Math.max(1, Math.round(def.hp * hpScale * (opts?.hpMult ?? 1)));
     e.escudo = 0;
     e.dano = def.dano * danoScale;
-    e.vel = def.vel * (this.cfg.daily?.velInimigoMult ?? 1) * this.rng.range(0.92, 1.08);
+    e.vel = def.vel * (this.cfg.daily?.velInimigoMult ?? 1) * this.campoVel * this.rng.range(0.92, 1.08);
     e.xp = def.xp;
     e.idade = 0;
     e.rot = 0;
@@ -370,7 +392,7 @@ export class Battle {
   }
 
   ganharXp(v: number): void {
-    this.xp += v * (1 + (this.globais.pct.xp ?? 0) + (this.globais.add.xp ?? 0));
+    this.xp += v * (1 + (this.globais.pct.xp ?? 0) + (this.globais.add.xp ?? 0)) * this.campoXp;
     while (this.xp >= this.xpNext) {
       this.xp -= this.xpNext;
       this.nivel++;
@@ -394,8 +416,15 @@ export class Battle {
     this.chefesMortos++;
     // limpa barreiras
     for (const o of this.enemies) if (o.alive && o.def.comportamento === "muro") this.killEnemy(o, false);
-    if (this.cfg.modo !== "sobrevivencia") this.terminar(true);
-    else this.spawner.chefeMorto();
+    if (this.cfg.modo === "sobrevivencia") this.spawner.chefeMorto();
+    else if (this.cfg.modo === "jornada" && this.etapa + 1 < (this.cfg.etapas?.length ?? 1)) {
+      this.etapasConcluidas++;
+      this.transicao = 4;
+      for (const s of this.shots) s.alive = false;
+    } else {
+      if (this.cfg.modo === "jornada") this.etapasConcluidas++;
+      this.terminar(true);
+    }
   }
 
   terminar(vitoria: boolean): void {
@@ -409,9 +438,28 @@ export class Battle {
     }
     this.fim = {
       vitoria, tempo: this.t, abates: this.abates, nivel: this.nivel, estrelas,
-      chefeDerrotado: this.chefeDerrotado, evolucoes: this.evolucoes,
+      chefeDerrotado: this.chefeDerrotado, evolucoes: this.evolucoes, etapas: this.etapasConcluidas,
     };
+    this.fim.tempo = this.tTotal;
     this.fx.push({ t: "som", id: vitoria ? "vitoria" : "derrota" });
+  }
+
+  /** Jornada: avança para a próxima etapa mantendo build, nível e HP (sem cura). */
+  proximaEtapa(): void {
+    const etapas = this.cfg.etapas;
+    if (!etapas) return;
+    this.etapa++;
+    this.cfg.stage = etapas[this.etapa];
+    this.t = 0;
+    this.avisoChefe = false;
+    this.boss = null;
+    this.spawner = new Spawner(this);
+    this.fx.push({ t: "som", id: "alerta" });
+  }
+
+  /** Momento em que o chefe entra (a Jornada usa etapas mais curtas). */
+  entradaChefe(): number {
+    return this.cfg.modo === "jornada" ? JORNADA.entradaChefe : BALANCE.entradaChefe;
   }
 
   reviver(): void {
@@ -428,16 +476,21 @@ export class Battle {
 
   step(dt: number): void {
     if (this.fim) return;
-    this.t += dt;
+    this.tTotal += dt;
+    if (this.transicao > 0) {
+      this.transicao -= dt;
+      if (this.transicao <= 0) this.proximaEtapa();
+    } else this.t += dt;
     const p = this.planet;
 
     // planeta
     p.semDano += dt;
     p.espinhosCd -= dt;
-    if (p.semDano >= P.escudoAtraso && p.escudo < p.escudoMax) p.escudo = Math.min(p.escudoMax, p.escudo + p.escudoRegen * dt);
+    if (p.semDano >= P.escudoAtraso && p.escudo < p.escudoMax && this.campo.semRegen <= 0) p.escudo = Math.min(p.escudoMax, p.escudo + p.escudoRegen * dt);
     if (p.regen > 0) this.curar(p.regen * dt);
 
-    this.spawner.step(dt);
+    if (this.transicao <= 0) this.spawner.step(dt);
+    this.campo.step(dt);
 
     updateEnemies(this, dt);
     if (this.boss && this.boss.alive) updateBoss(this, this.boss, dt);

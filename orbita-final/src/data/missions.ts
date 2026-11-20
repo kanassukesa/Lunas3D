@@ -16,5 +16,6 @@ export const MISSIONS: MissionDef[] = [
   ...serie("evolucoes", "evolucoes", (n) => `Evolua sentinelas ${n} vez${n > 1 ? "es" : ""}`, [1, 5, 20], (i) => ({ nucleos: 10 * (i + 1), cristais: 5 })),
   ...serie("estrelas", "estrelas", (n) => `Junte ${n} estrelas na campanha`, [5, 15, 30, 60], (i) => ({ creditos: 300 * (i + 1), nucleos: 6 * (i + 1) })),
   ...serie("partidas", "partidas", (n) => `Jogue ${n} partidas`, [3, 15, 50], (i) => ({ creditos: 250 * (i + 1) })),
+  ...serie("jornadas", "jornadas", (n) => `Complete ${n} Jornada${n > 1 ? "s" : ""}`, [1, 4, 12], (i) => ({ nucleos: 15 * (i + 1), cristais: 10 })),
   ...serie("diarios", "diarios", (n) => `Complete ${n} desafio${n > 1 ? "s" : ""} diário${n > 1 ? "s" : ""}`, [1, 7, 30], (i) => ({ nucleos: 10 * (i + 1), cristais: 10 })),
 ];
