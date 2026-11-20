@@ -2,6 +2,7 @@ import type { Battle } from "../battle/Battle";
 import type { Oferta } from "../battle/CardSystem";
 import { RARIDADE_COR, RARIDADE_NOME } from "../data/balance";
 import { arteCarta, arteSentinela } from "./CardArt";
+import { urlArte } from "../render/Sprites";
 import { h } from "./dom";
 
 /** Linha de slots das sentinelas (6), com a arte e as estrelas de nível. */
@@ -20,7 +21,7 @@ export function slotsSentinelas(b: Battle, destaque?: string): HTMLElement {
     const est = h("div", { class: "estrelinhas" });
     for (let k = 1; k <= 5; k++) est.append(h("i", { class: k <= s.nivel ? (s.evoluido ? "on evo" : "on") : "" }));
     const el = h("div", { class: "slot-sent" + (s.def.id === destaque ? " alvo" : ""), title: s.def.nome },
-      h("img", { src: arteSentinela(s.def.id, s.evoluido), alt: s.def.nome }), est);
+      h("img", { src: urlArte(`sentinela_${s.def.id}`) ?? arteSentinela(s.def.id, s.evoluido), alt: s.def.nome, class: urlArte(`sentinela_${s.def.id}`) ? "real" : "" }), est);
     linha.append(el);
   }
   return linha;

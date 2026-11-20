@@ -37,6 +37,7 @@ class EnemyView implements Freeable {
   shield = new Sprite(tex("anel"));
   bar = new Graphics();
   key = "";
+  real = false;
   constructor(private pool: ViewPool<EnemyView>) {
     this.body.anchor.set(0.5);
     this.shield.anchor.set(0.5);
@@ -137,6 +138,7 @@ export class BattleRenderer {
   private bossSprite = new Sprite();
   private bossAura = new Sprite(tex("glowSoft"));
   private bossRing = new Sprite(tex("anelFino"));
+  private bossReal = false;
 
   leve = false;
   brilho = true;
@@ -357,20 +359,24 @@ export class BattleRenderer {
     if (!v) {
       v = this.enemyPool.get();
       e.view = v;
-      const k = enemyTexKey(e.def.forma, e.def.raio);
+      const idArte = `inimigo_${e.def.id}`;
+      v.real = temArte(idArte);
+      const k = v.real ? idArte : enemyTexKey(e.def.forma, e.def.raio);
       if (v.key !== k) {
         v.body.texture = tex(k);
         v.key = k;
       }
       // inimigos ficam um pouco maiores que a hitbox para leitura em telas pequenas
-      v.body.scale.set(e.def.raio < 16 ? 1.5 : 1.3);
+      if (v.real) v.body.scale.set((e.def.raio * (e.def.raio < 16 ? 3.4 : 2.9)) / v.body.texture.width);
+      else v.body.scale.set(e.def.raio < 16 ? 1.5 : 1.3);
       v.bar.clear();
     }
     v.root.x = e.x;
     v.root.y = e.y;
     v.body.rotation = e.rot;
     const slowed = e.slowT > 0 && e.slowAmt > 0.3;
-    v.body.tint = e.flash > 0 ? 0xffffff : slowed ? 0x9fe8ff : e.def.cor;
+    if (v.real) v.body.tint = e.flash > 0 ? 0xff9090 : slowed ? 0xa8e8ff : 0xffffff;
+    else v.body.tint = e.flash > 0 ? 0xffffff : slowed ? 0x9fe8ff : e.def.cor;
     v.shield.visible = e.escudo > 0;
     if (v.shield.visible) {
       v.shield.scale.set((e.r * 1.9) / 54);
@@ -397,10 +403,14 @@ export class BattleRenderer {
       e.view = { free: () => (this.bossL.visible = false) };
       this.bossSprite.texture = tex(`chefe_${s.def.id}`);
       this.bossAura.tint = s.def.cor;
+      this.bossReal = temArte(`chefe_${s.def.id}`);
+      this.bossSprite.scale.set(this.bossReal ? (s.def.raio * 3.1) / this.bossSprite.texture.width : 1);
     }
     this.bossL.x = e.x;
     this.bossL.y = e.y;
-    this.bossSprite.rotation = s.def.id === "eclipse" || s.def.id === "construtor_muros" ? 0 : e.rot;
+    // arte final: a nave aponta para o planeta (para baixo) e balança de leve; procedural gira
+    if (this.bossReal) this.bossSprite.rotation = Math.PI / 2 + Math.sin(this.tempo * 0.8) * 0.06 + (s.fase === 2 ? Math.sin(this.tempo * 6) * 0.03 : 0);
+    else this.bossSprite.rotation = s.def.id === "eclipse" || s.def.id === "construtor_muros" ? 0 : e.rot;
     this.bossSprite.tint = e.flash > 0 ? 0xffd0d0 : 0xffffff;
     const alvo = s.invisivel > 0 ? 0.12 : 1;
     this.bossL.alpha += (alvo - this.bossL.alpha) * 0.2;

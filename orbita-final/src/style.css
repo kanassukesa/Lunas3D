@@ -208,6 +208,7 @@ input[type="range"] { width: 140px; accent-color: var(--ciano); }
 .slot-sent { position: relative; aspect-ratio: 3 / 4; border-radius: 8px; overflow: hidden; border: 1.5px solid rgba(140, 210, 240, 0.55); background: #071222; }
 .slot-sent.vazio { border-color: rgba(140, 210, 240, 0.18); background: rgba(5, 12, 24, 0.7); }
 .slot-sent img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.slot-sent img.real { object-fit: contain; padding: 4px 3px 14px; background: radial-gradient(circle at 50% 42%, #1c3354, #071222 70%); }
 .slot-sent .estrelinhas { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 0 2px; background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.85)); }
 .estrelinhas { display: flex; justify-content: center; gap: 1px; }
 .estrelinhas i { width: 9px; height: 9px; background: rgba(255, 255, 255, 0.18); clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }

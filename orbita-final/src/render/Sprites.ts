@@ -24,6 +24,12 @@ export async function carregarSprites(): Promise<void> {
   );
 }
 
+/** URL do PNG da arte final (para <img> na interface), ou null. */
+export function urlArte(id: string): string | null {
+  for (const [caminho, url] of Object.entries(URLS)) if (caminho.endsWith(`/${id}.png`)) return url;
+  return null;
+}
+
 export function temArte(id: string): boolean {
   return spritesReais.has(id);
 }
