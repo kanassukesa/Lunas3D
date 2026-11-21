@@ -10,6 +10,8 @@ import { Particles } from "./Particles";
 import { PlanetView } from "./PlanetView";
 import { enemyTexKey, tex } from "./Textures";
 import { temArte } from "./Sprites";
+import { criarTorre, type TorreView } from "./Torre";
+import type { SentinelId } from "../data/types";
 
 interface Freeable {
   free(): void;
@@ -79,28 +81,25 @@ class SpriteView implements Freeable {
 class SentinelView implements Freeable {
   root = new Container();
   glow = new Sprite(tex("glow"));
-  body: Sprite;
+  torre: TorreView;
   ring = new Sprite(tex("anel"));
-  /** Escala base: arte final (256 px) é reduzida para ~110 px do mundo. */
-  escala = 1;
-  constructor(id: string, cor: number) {
+  escalaCabeca: number;
+  escalaBase: number;
+  constructor(id: SentinelId, cor: number) {
     this.glow.anchor.set(0.5);
     this.glow.blendMode = "add";
     this.glow.tint = cor;
     this.glow.scale.set(1.6);
-    this.glow.alpha = 0.6;
-    this.body = new Sprite(tex(`sentinela_${id}`));
-    this.body.anchor.set(0.5);
-    if (temArte(`sentinela_${id}`)) {
-      this.escala = 112 / this.body.texture.width;
-      this.glow.alpha = 0.35;
-    } else this.body.tint = cor;
+    this.torre = criarTorre(id, cor);
+    this.glow.alpha = this.torre.dupla || temArte(`sentinela_${id}`) ? 0.3 : 0.6;
+    this.escalaCabeca = this.torre.cabeca.scale.x;
+    this.escalaBase = this.torre.base?.scale.x ?? 1;
     this.ring.anchor.set(0.5);
     this.ring.tint = 0xffc23d;
     this.ring.blendMode = "add";
-    this.ring.scale.set(temArte(`sentinela_${id}`) ? 1.15 : 0.62);
+    this.ring.scale.set(this.torre.dupla || temArte(`sentinela_${id}`) ? 1.15 : 0.62);
     this.ring.visible = false;
-    this.root.addChild(this.glow, this.ring, this.body);
+    this.root.addChild(this.glow, this.ring, this.torre.root);
   }
   free(): void {
     this.root.destroy({ children: true });
@@ -436,11 +435,15 @@ export class BattleRenderer {
     }
     v.root.x = s.x;
     v.root.y = s.y;
-    v.body.rotation = s.def.id === "laser" && s.raios[0] ? s.raios[0].ang : s.ang;
+    // a cabeça gira para mirar; a base acompanha a órbita devagar
+    v.torre.cabeca.rotation = s.def.id === "laser" && s.raios[0] ? s.raios[0].ang : s.ang;
+    if (v.torre.base) v.torre.base.rotation = this.tempo * 0.15;
     v.ring.visible = s.evoluido;
     if (s.evoluido) v.ring.rotation += 0.03;
     v.glow.visible = !this.leve;
-    v.body.scale.set(v.escala * (1.0 + 0.06 * (s.nivel - 1)));
+    const k = 1.0 + 0.05 * (s.nivel - 1);
+    v.torre.cabeca.scale.set(v.escalaCabeca * k);
+    if (v.torre.base) v.torre.base.scale.set(v.escalaBase * k);
   }
 
   private syncProj(p: Projectile, trail: boolean): void {

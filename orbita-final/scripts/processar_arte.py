@@ -21,6 +21,8 @@ CONFIG = {
     "planeta_mapa": ("mapa", 1024),
     "planeta_nuvens": ("nuvens", 1024),
     "planeta": ("fundo", 512),
+    "torre_base": ("fundo", 256),
+    "cabeca_": ("cabeca", 256),
     "escudo": ("aditivo", 512),
     "sentinela_": ("fundo", 256),
     "inimigo_": ("fundo", 256),
@@ -116,11 +118,45 @@ def mapa_esfera(arq, nome, tam, nuvens):
         print(f"{nome}.jpg  {tam}x{tam // 2}  (mapa da esfera)")
 
 
+def cabeca(arq, nome, tam):
+    """Cabeça de torre: centraliza no PIVÔ (centro do corpo, não da imagem) e mede o raio do corpo.
+
+    O pivô fica no centro do sprite para a cabeça girar no lugar certo. Grava em cabecas.json a razão
+    corpo/raio total, para o jogo deixar todos os corpos do mesmo tamanho (o cano pode sobrar).
+    """
+    import json
+    rgb = np.asarray(Image.open(os.path.join(ORIG, arq)).convert("RGB")).astype(np.float32)
+    rgba = remover_fundo(rgb)
+    a = rgba[..., 3] > 128
+    ys, xs = np.nonzero(a)
+    alturas = a.sum(axis=0)
+    corpo = alturas > alturas.max() * 0.6  # colunas "gordas" = corpo (o cano é fino)
+    cols = np.nonzero(corpo)[0]
+    px = float(cols.mean())
+    py = float(ys.mean())
+    r_total = float(np.sqrt((xs - px) ** 2 + (ys - py) ** 2).max()) * 1.03
+    # raio do corpo: até onde vai o opaco a partir do pivô, para a esquerda/cima/baixo (o cano vai para a direita)
+    r_corpo = max(px - xs.min(), py - ys.min(), ys.max() - py)
+    lado = int(np.ceil(r_total * 2))
+    img = Image.fromarray(rgba, "RGBA")
+    out = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
+    out.paste(img, (int(round(lado / 2 - px)), int(round(lado / 2 - py))))
+    out = out.resize((tam, tam), Image.LANCZOS)
+    out.save(os.path.join(SAIDA, nome + ".png"), optimize=True)
+    meta_p = os.path.join(SAIDA, "cabecas.json")
+    meta = json.load(open(meta_p)) if os.path.exists(meta_p) else {}
+    meta[nome.replace("cabeca_", "")] = round(r_corpo / r_total, 4)
+    json.dump(meta, open(meta_p, "w"), indent=1, sort_keys=True)
+    print(f"{nome}.png  {tam}x{tam}  (cabeça: corpo = {r_corpo / r_total:.2f} do raio)")
+
+
 def processar(arq):
     nome = os.path.splitext(arq)[0]
     modo, tam = next((v for k, v in CONFIG.items() if nome.startswith(k)), ("fundo", 256))
     if modo in ("mapa", "nuvens"):
         return mapa_esfera(arq, nome, tam, modo == "nuvens")
+    if modo == "cabeca":
+        return cabeca(arq, nome, tam)
     src = Image.open(os.path.join(ORIG, arq)).convert("RGB")
     rgb = np.asarray(src).astype(np.float32)
     rgba = aditivo(rgb) if modo == "aditivo" else remover_fundo(rgb)

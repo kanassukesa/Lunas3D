@@ -4,13 +4,13 @@ import { SENTINELS } from "../data/sentinels";
 import type { SentinelId } from "../data/types";
 import { PlanetView } from "./PlanetView";
 import { tex } from "./Textures";
-import { temArte } from "./Sprites";
+import { criarTorre } from "./Torre";
 
 /** Vitrine do hub: planeta girando com as sentinelas do deck orbitando. */
 export class HubScene {
   readonly layer = new Container();
   private planeta = new PlanetView();
-  private sents: { s: Container; slot: number }[] = [];
+  private sents: { s: Container; slot: number; cabeca: Sprite; fase: number }[] = [];
   private t = 0;
 
   constructor(deck: SentinelId[]) {
@@ -24,14 +24,11 @@ export class HubScene {
       g.blendMode = "add";
       g.tint = SENTINELS[id].cor;
       g.scale.set(1.6);
-      g.alpha = 0.6;
-      const b = new Sprite(tex(`sentinela_${id}`));
-      b.anchor.set(0.5);
-      if (temArte(`sentinela_${id}`)) b.scale.set(112 / b.texture.width);
-      else b.tint = SENTINELS[id].cor;
-      c.addChild(g, b);
+      g.alpha = 0.35;
+      const t = criarTorre(id, SENTINELS[id].cor);
+      c.addChild(g, t.root);
       this.layer.addChild(c);
-      this.sents.push({ s: c, slot });
+      this.sents.push({ s: c, slot, cabeca: t.cabeca, fase: slot * 1.3 });
     });
   }
 
@@ -44,13 +41,14 @@ export class HubScene {
   update(dt: number): void {
     this.t += dt;
     this.planeta.update(dt, 1, this.t);
-    for (const { s, slot } of this.sents) {
+    for (const { s, slot, cabeca, fase } of this.sents) {
       const anel = slot < 3 ? 0 : 1;
       const cfg = BALANCE.aneis[anel];
       const a = ((slot % 3) / 3) * Math.PI * 2 + this.t * cfg.velAngular * 1.5 + (anel ? Math.PI / 3 : -Math.PI / 2);
       s.x = Math.cos(a) * cfg.raio;
       s.y = Math.sin(a) * cfg.raio;
-      s.rotation = a + Math.PI / 2 * (anel ? -1 : 1);
+      // na vitrine as cabeças "vigiam": apontam para fora e varrem de um lado para o outro
+      cabeca.rotation = a + Math.sin(this.t * 0.9 + fase) * 0.6;
     }
   }
 
