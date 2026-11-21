@@ -1,3 +1,4 @@
+import { BALANCE } from "../data/balance";
 import type { Battle } from "../battle/Battle";
 import type { Modo } from "../battle/types";
 import { BONUS_DIARIAS, CORREIO, LOGIN_DIAS, LOJA, MISSOES_DIARIAS, PASSE, PASSE_PREMIOS, PATENTES, SKINS, type MissaoDiariaDef, type Patente, type Premio } from "../data/comandante";
@@ -17,6 +18,7 @@ export function pontosDaPartida(b: Battle, modo: Modo): number {
   if (modo === "jornada") p += f.etapas * 900;
   if (modo === "sobrevivencia") p += f.tempo * 2;
   if (b.cfg.dificil) p *= 2;
+  if (b.desistiu) p *= BALANCE.recompensas.fatorDesistencia;
   return Math.round(p);
 }
 

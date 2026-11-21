@@ -176,6 +176,18 @@ export interface Recompensa {
   pontos?: number;
   /** Nome da patente alcançada nesta partida, se subiu. */
   novaPatente?: string;
+  /** Créditos perdidos por desistir (0 se não desistiu). */
+  perdaDesistencia?: number;
+  /** Pontos perdidos por desistir. */
+  perdaPontos?: number;
+}
+
+/** Créditos que a partida renderia agora se terminasse em derrota (para a prévia ao desistir). */
+export function creditosParciais(b: Battle): number {
+  const R = BALANCE.recompensas;
+  const credMult = 1 + (b.cfg.globais.pct.creditos ?? 0);
+  const dif = b.cfg.dificil ? 2 : 1;
+  return Math.round((b.abates * R.creditosPorAbate + b.t * R.creditosPorSegundo) * (1 + b.cfg.stage.id * 0.15) * credMult * dif);
 }
 
 export function calcularRecompensas(s: SaveData, b: Battle, modo: Modo): Recompensa {
@@ -245,6 +257,14 @@ export function calcularRecompensas(s: SaveData, b: Battle, modo: Modo): Recompe
     if (fim.tempo > 300) chip = gerarChip(s, rng, raridadeDrop(rng, Math.min(10, fim.tempo / 60), false));
   }
 
+  let perdaDesistencia = 0;
+  if (b.desistiu) {
+    const antes = creditos;
+    creditos = Math.round(creditos * R.fatorDesistencia);
+    perdaDesistencia = antes - creditos;
+    nucleos = 0;
+    chip = null;
+  }
   s.creditos += creditos;
   s.nucleos += nucleos;
   if (chip) s.chips.push(chip);
@@ -253,7 +273,7 @@ export function calcularRecompensas(s: SaveData, b: Battle, modo: Modo): Recompe
   stat(s, "evolucoes", fim.evolucoes);
   if (fim.chefeDerrotado || (b.chefesMortos ?? 0) > 0) stat(s, "chefes", Math.max(1, b.chefesMortos ?? 0));
   s.estatisticas.estrelas = s.campanha.normal.reduce((a, x) => a + x, 0) + s.campanha.dificil.reduce((a, x) => a + x, 0);
-  return { creditos, nucleos, chip, primeiraVez, recorde };
+  return { creditos, nucleos, chip, primeiraVez, recorde, perdaDesistencia };
 }
 
 // ------------------------------------------------------------- missões

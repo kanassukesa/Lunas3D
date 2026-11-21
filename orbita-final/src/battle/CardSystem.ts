@@ -1,7 +1,7 @@
 import { BALANCE } from "../data/balance";
 import { CARD_MAP, CARDS } from "../data/cards";
 import { SENTINELS } from "../data/sentinels";
-import type { CardDef, Raridade } from "../data/types";
+import type { CardDef, Raridade, SentinelId } from "../data/types";
 import type { Battle } from "./Battle";
 
 const ORDEM: Raridade[] = ["comum", "rara", "epica", "lendaria"];
@@ -55,6 +55,18 @@ export class CardSystem {
       default:
         return true;
     }
+  }
+
+  /** Situação da evolução (Supremo) de uma sentinela: o que já tem e o que falta. */
+  evolucaoDe(id: SentinelId): { nome: string; desc: string; nivel: number; passiva: string; temPassiva: boolean; evoluido: boolean; pronta: boolean } | null {
+    const def = SENTINELS[id];
+    if (!def?.evolucao) return null;
+    const s = this.b.getSentinel(id);
+    const nivel = s?.nivel ?? 0;
+    const temPassiva = this.qtd(def.evolucao.passiva) > 0;
+    const evoluido = !!s?.evoluido;
+    return { nome: def.evolucao.nome, desc: def.evolucao.desc, nivel, passiva: CARD_MAP[def.evolucao.passiva]?.nome ?? def.evolucao.passiva,
+      temPassiva, evoluido, pronta: !evoluido && nivel >= 5 && temPassiva };
   }
 
   textoDe(c: CardDef): { texto: string; nivel?: number } {

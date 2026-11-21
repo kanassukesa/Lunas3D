@@ -1,11 +1,23 @@
 import type { Battle } from "../battle/Battle";
 import type { Recompensa } from "../meta/Meta";
+import type { SentinelId } from "../data/types";
 import { RARIDADE_COR } from "../data/balance";
 import { CARD_MAP } from "../data/cards";
 import { CHIP_RARIDADE_COR, CHIP_SET_MAP, CHIP_SLOT_NOME } from "../data/chips";
 import { formatStat } from "../meta/Meta";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg } from "./dom";
 import { ic, icT } from "./Icones";
+
+/** Linha "Supremo" do painel de build: o que falta para evoluir. */
+function evolucaoTexto(b: Battle, id: SentinelId): HTMLElement | null {
+  const ev = b.cards.evolucaoDe(id);
+  if (!ev || ev.evoluido) return null;
+  const falta: string[] = [];
+  if (ev.nivel < 5) falta.push(`nível ${ev.nivel}/5`);
+  if (!ev.temPassiva) falta.push(`carta ${ev.passiva}`);
+  return h("div", { class: "build-evo" + (falta.length ? "" : " pronta"),
+    html: `${ic("coroa")} Supremo ${ev.nome}: ${falta.length ? "falta " + falta.join(" e ") : "pronto! Aparece no próximo nível"}` });
+}
 
 function painelBuild(b: Battle): HTMLElement {
   const p = h("div", { class: "painel" });
@@ -19,7 +31,8 @@ function painelBuild(b: Battle): HTMLElement {
         h("i", { class: "dot", style: `background:${hex(s.def.cor)}` }),
         h("div", { style: "flex:1" },
           h("div", { style: "font-weight:800", html: s.evoluido ? `${ic("coroa", "ic ic-ouro")} ${s.def.evolucao.nome}` : s.def.nome }, pips),
-          h("div", { style: "font-size:12px;color:var(--texto2)", text: `Dano ${fmtInt(s.stats.dano)} · ${s.stats.cadencia.toFixed(2)}/s · crít ${(s.stats.critChance * 100).toFixed(0)}%` })),
+          h("div", { style: "font-size:12px;color:var(--texto2)", text: `Dano ${fmtInt(s.stats.dano)} · ${s.stats.cadencia.toFixed(2)}/s · crít ${(s.stats.critChance * 100).toFixed(0)}%` }),
+          evolucaoTexto(b, s.def.id)),
         h("div", { style: "font-size:12px;text-align:right;color:var(--texto2)", text: `${Math.round((s.danoCausado / total) * 100)}%` })),
     );
   }
@@ -76,6 +89,9 @@ export function telaResultado(
   }
   if (rec.pontos) {
     linhas.push(h("div", { class: "pontos-ganhos", html: `+${fmtInt(rec.pontos)} pontos${rec.novaPatente ? ` · ${ic("estrela", "ic-estrela")} Nova patente: <b>${rec.novaPatente}</b>` : ""}` }));
+  }
+  if (rec.perdaDesistencia || rec.perdaPontos) {
+    linhas.push(h("div", { class: "penalidade", html: `${ic("alerta")} Penalidade por desistir: <b>-${fmtInt(rec.perdaDesistencia ?? 0)}</b> créditos · <b>-${fmtInt(rec.perdaPontos ?? 0)}</b> pontos · sem núcleos e chip` }));
   }
   linhas.push(
     h("div", { class: "recompensas" },

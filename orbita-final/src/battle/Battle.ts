@@ -76,6 +76,8 @@ export class Battle {
   focoChefe = true;
   fim: BattleResult | null = null;
   reviveu = false;
+  /** O jogador desistiu pela pausa (recompensa reduzida). */
+  desistiu = false;
   evolucoes = 0;
   chefesMortos = 0;
   /** Combo de abates seguidos. */

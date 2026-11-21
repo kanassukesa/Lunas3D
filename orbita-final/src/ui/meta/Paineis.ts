@@ -17,7 +17,6 @@ import {
 import { urlArte } from "../../render/Sprites";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg, toast } from "../dom";
 import { ic, icT } from "../Icones";
-import { secaoAparencia } from "./Hub";
 import { moedas, proximaFase, type Nav } from "./Screens";
 
 // ------------------------------------------------------------------ moldura comum
@@ -100,7 +99,8 @@ export function telaPlanetaV2(nav: Nav): HTMLElement {
             onclick: () => { if (comprarTalento(s, t.id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("planeta"); } } }))));
   });
   const el = telaBanner(nav, "PLANETA", urlArte("banner_planeta") ? "banner_planeta" : "tile_planeta",
-    ...talentos, h("div", { class: "secao-titulo", text: "Aparência" }), secaoAparencia(nav));
+    ...talentos,
+    h("button", { class: "btn roxo", style: "align-self:center", html: icT("estrela", "Skins do planeta e do escudo"), onclick: () => nav.ir("skins") }));
   return el;
 }
 
@@ -140,6 +140,7 @@ export function telaChipsV2(nav: Nav): HTMLElement {
     const c = s.chips.find((x) => x.uid === s.equipados[slot]);
     if (!c) return h("div", { class: "slot-v2" }, h("span", { class: "slot-ic", html: ic(SLOT_IC[slot]) }), h("b", { text: CHIP_SLOT_NOME[slot] }), h("small", { text: "Vazio" }));
     return h("button", { class: "slot-v2 cheio", style: `--cor:${CHIP_RARIDADE_COR[c.raridade]}`, onclick: () => { delete s.equipados[slot]; nav.persistir(); nav.ir("chips"); } },
+      h("span", { class: "slot-rar", text: CHIP_RARIDADES[c.raridade] }),
       h("span", { class: "slot-img", html: iconeImg(`chip_${c.set}`, ic(SLOT_IC[slot])) }), h("b", { text: CHIP_SLOT_NOME[slot] }), h("small", { text: formatStat(c.principal.stat, c.principal.valor) }));
   }));
   const porSet: Record<string, number> = {};

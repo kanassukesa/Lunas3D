@@ -19,6 +19,8 @@ export class PlanetView {
   private hits: { s: Sprite; life: number }[] = [];
   private escudoBrilho = 0;
   private dano = 0;
+  private skinPlaneta = aparencia.planeta;
+  private skinEscudo = aparencia.escudo;
 
   constructor() {
     const atm = new Sprite(tex("atmosfera"));
@@ -68,7 +70,25 @@ export class PlanetView {
     this.dano = 1;
   }
 
+  /** Troca a skin na hora se o jogador equipou outra (o menu reaproveita a mesma cena). */
+  private conferirSkin(): void {
+    if (this.skinPlaneta !== aparencia.planeta) {
+      this.skinPlaneta = aparencia.planeta;
+      const nova = new PlanetSphere(P.raio, aparencia.planeta);
+      const i = this.layer.getChildIndex(this.esfera.mesh);
+      this.layer.removeChild(this.esfera.mesh);
+      this.esfera.mesh.destroy();
+      this.esfera = nova;
+      this.layer.addChildAt(nova.mesh, i);
+    }
+    if (this.skinEscudo !== aparencia.escudo) {
+      this.skinEscudo = aparencia.escudo;
+      this.escudo.tint = this.escudo2.tint = corEscudo();
+    }
+  }
+
   update(dt: number, escudoFrac: number, tempo: number): void {
+    this.conferirSkin();
     this.escudoBrilho = Math.max(0, this.escudoBrilho - dt * 3);
     this.dano = Math.max(0, this.dano - dt * 4);
     this.esfera.update(tempo, this.dano);

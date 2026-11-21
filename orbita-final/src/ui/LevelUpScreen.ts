@@ -1,6 +1,8 @@
 import type { Battle } from "../battle/Battle";
 import type { Oferta } from "../battle/CardSystem";
 import { RARIDADE_COR, RARIDADE_NOME } from "../data/balance";
+import { SENTINELS } from "../data/sentinels";
+import type { SentinelId } from "../data/types";
 import { arteCarta, arteSentinela } from "./CardArt";
 import { urlArte } from "../render/Sprites";
 import { h, ICONE_MOEDA } from "./dom";
@@ -28,6 +30,33 @@ export function slotsSentinelas(b: Battle, destaque?: string): HTMLElement {
   return linha;
 }
 
+/** Sentinela cuja evolução (Supremo) esta carta ajuda: a própria sentinela ou a passiva que a evolução exige. */
+function sentinelaDaEvolucao(c: Oferta["card"]): SentinelId | null {
+  if ((c.tipo === "nova_sentinela" || c.tipo === "sentinela_nivel") && c.alvo) return c.alvo as SentinelId;
+  const dono = (Object.keys(SENTINELS) as SentinelId[]).find((id) => SENTINELS[id].evolucao?.passiva === c.id);
+  return dono ?? null;
+}
+
+/** Quadrinho "Supremo": o que falta para evoluir (nível 5 + carta passiva). */
+function blocoEvolucao(b: Battle, o: Oferta): HTMLElement | null {
+  const c = o.card;
+  if (c.tipo === "evolucao") return h("div", { class: "cl-evo pronta", html: `${ic("coroa")}<span>Requisitos completos!</span>` });
+  const id = sentinelaDaEvolucao(c);
+  if (!id) return null;
+  const ev = b.cards.evolucaoDe(id);
+  if (!ev || ev.evoluido) return null;
+  // nível depois de pegar esta carta / passiva depois de pegar esta carta
+  const nivel = c.tipo === "sentinela_nivel" ? (o.nivel ?? ev.nivel + 1) : c.tipo === "nova_sentinela" ? 1 : ev.nivel;
+  const passiva = ev.temPassiva || SENTINELS[id].evolucao?.passiva === c.id;
+  const ok = (v: boolean) => (v ? ic("check") : ic("fechar"));
+  const libera = nivel >= 5 && passiva;
+  return h("div", { class: "cl-evo" + (libera ? " pronta" : "") },
+    h("div", { class: "cl-evo-tit", html: `${ic("coroa")}<span>Supremo: <b>${ev.nome}</b></span>` }),
+    h("div", { class: "cl-evo-req" + (nivel >= 5 ? " ok" : "") , html: `${ok(nivel >= 5)}<span>Nível ${Math.min(nivel, 5)}/5</span>` }),
+    h("div", { class: "cl-evo-req" + (passiva ? " ok" : ""), html: `${ok(passiva)}<span>${ev.passiva}</span>` }),
+    libera ? h("div", { class: "cl-evo-lib", text: "Libera o Supremo!" }) : null);
+}
+
 /** Tela de level-up: slots no topo, cartas lado a lado (título, ilustração, descrição) e rerrolagem. */
 export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrolar: () => void, anuncio = false): HTMLElement {
   const ofertas = b.cards.ofertas;
@@ -50,6 +79,7 @@ export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrol
         h("div", { class: "cl-titulo", text: c.nome }),
         h("div", { class: "cl-arte" }, h("img", { src: arteCarta(c), alt: "" }), tag, est),
         h("div", { class: "cl-desc", text: o.texto }),
+        blocoEvolucao(b, o),
         h("div", { class: "cl-rodape" },
           h("span", { style: `color:${cor}`, text: RARIDADE_NOME[c.raridade] }),
           pilhas > 0 && max > 1 && max < 99 ? h("span", { text: `${pilhas}/${max}` }) : null)),

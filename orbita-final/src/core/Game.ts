@@ -5,7 +5,7 @@ import type { Oferta } from "../battle/CardSystem";
 import type { Modo } from "../battle/types";
 import { BALANCE } from "../data/balance";
 import { STAGES } from "../data/stages";
-import { calcularRecompensas, CUSTO_REVIVER, desafioDoDia, faseLiberada, hojeStr, jornadaDaSemana, snapshot, type Recompensa } from "../meta/Meta";
+import { calcularRecompensas, creditosParciais, CUSTO_REVIVER, desafioDoDia, faseLiberada, hojeStr, jornadaDaSemana, snapshot, type Recompensa } from "../meta/Meta";
 import { Background } from "../render/Background";
 import { BattleRenderer } from "../render/BattleRenderer";
 import { HubScene } from "../render/HubScene";
@@ -21,12 +21,12 @@ import { sincronizarCompras } from "../meta/Pagamentos";
 import { nuvem } from "./Nuvem";
 import { toast } from "../ui/dom";
 import { h, ICONE_MOEDA } from "../ui/dom";
-import { ic } from "../ui/Icones";
+import { ic, icT } from "../ui/Icones";
 import {
   painelConfig, telaConfig, telaMissoes, type Nav,
 } from "../ui/meta/Screens";
 import {
-  telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaPasse, telaProgresso, telaRecompensas,
+  telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaPasse, telaProgresso, telaRecompensas, telaSkins,
 } from "../ui/meta/Hub";
 import { patenteDe, registrarPartida } from "../meta/Comandante";
 import { telaChipsV2, telaFases, telaHangarV2, telaModosV2, telaPlanetaV2 } from "../ui/meta/Paineis";
@@ -191,6 +191,7 @@ export class Game implements Nav {
       inventario: () => telaInventario(this),
       passe: () => telaPasse(this),
       modos: () => telaModosV2(this),
+      skins: () => telaSkins(this),
       config: () => telaConfig(this),
     };
     const el = (mapa[tela] ?? mapa.hub)();
@@ -201,10 +202,10 @@ export class Game implements Nav {
       const c = el.querySelector(".tela-conteudo");
       if (c) c.scrollTop = scroll;
     }
-    if (tela === "hangar" || tela === "hub" || tela === "planeta") this.recriarHub();
+    if (tela === "hangar" || tela === "hub" || tela === "planeta" || tela === "skins") this.recriarHub();
     this.bg.setFundo(1);
     // vitrine do planeta: só no início (e na tela de login, atrás do formulário fica escondida)
-    if (this.hub) this.hub.layer.visible = tela === "hub" || tela === "planeta";
+    if (this.hub) this.hub.layer.visible = tela === "hub" || tela === "planeta" || tela === "skins";
     requestAnimationFrame(() => this.posicionarVitrine());
     el.querySelector(".tela-conteudo")?.addEventListener("scroll", () => this.posicionarVitrine(), { passive: true });
     audio.tocarMusica("ambiente");
@@ -334,14 +335,39 @@ export class Game implements Nav {
       telaPausa({
         continuar: () => this.fechar(),
         config: () => this.abrirConfigJogo(),
-        desistir: () => {
-          this.fechar();
-          run.b.terminar(false);
-          run.b.reviveu = true; // desistir não oferece reviver
-        },
+        desistir: () => this.confirmarDesistencia(),
       }),
       "pausa",
     );
+  }
+
+  /** Mostra quanto o jogador perde antes de desistir. */
+  private confirmarDesistencia(): void {
+    const run = this.run;
+    if (!run || run.b.fim) return;
+    const b = run.b;
+    const F = BALANCE.recompensas.fatorDesistencia;
+    const cheio = creditosParciais(b);
+    const fica = Math.round(cheio * F);
+    const pct = Math.round((1 - F) * 100);
+    const linha = (icone: string, texto: string, valor: string, ruim = true) =>
+      h("div", { class: "desist-linha" + (ruim ? " ruim" : "") }, h("span", { class: "desist-ic", html: icone }), h("span", { text: texto }), h("b", { html: valor }));
+    const el = h("div", { class: "overlay desistir" },
+      h("div", { class: "titulo", style: "color:var(--vermelho)", text: "DESISTIR?" }),
+      h("div", { class: "subtitulo", text: "Abandonar a missão tem penalidade. Lutar até o fim, mesmo perdendo, rende a recompensa completa." }),
+      h("div", { class: "cartao neon desist-cartao" },
+        linha(ICONE_MOEDA.creditos, "Créditos", `<s>${cheio}</s> ${fica} <em>-${pct}%</em>`),
+        linha(ic("estrela", "ic-estrela"), "Pontos de comandante", `<em>-${pct}%</em>`),
+        linha(ICONE_MOEDA.nucleos, "Núcleos", "<em>perdidos</em>"),
+        linha(ic("chip"), "Chip da partida", "<em>perdido</em>")),
+      h("button", { class: "btn primario", style: "min-width:240px", html: icT("play", "Voltar a lutar"), onclick: () => this.fechar() }),
+      h("button", { class: "btn", style: "min-width:240px;color:var(--vermelho)", html: icT("fechar", "Desistir mesmo assim"), onclick: () => {
+        this.fechar();
+        b.desistiu = true;
+        b.terminar(false);
+        b.reviveu = true; // desistir não oferece reviver
+      } }));
+    this.abrir(el, "pausa");
   }
 
   private abrirConfigJogo(): void {
@@ -417,6 +443,7 @@ export class Game implements Nav {
       const antes = patenteDe(this.save).indice;
       run.recompensa = calcularRecompensas(this.save, b, run.modo);
       run.recompensa.pontos = registrarPartida(this.save, b, run.modo);
+      if (b.desistiu) run.recompensa.perdaPontos = Math.round(run.recompensa.pontos / BALANCE.recompensas.fatorDesistencia - run.recompensa.pontos);
       const depois = patenteDe(this.save);
       if (depois.indice > antes) { run.recompensa.novaPatente = depois.atual.nome; run.promocao = { de: antes, para: depois.indice }; }
       if (run.tutorial) this.save.tutorialVisto = true;

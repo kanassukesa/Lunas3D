@@ -410,6 +410,11 @@ export function telaProgresso(nav: Nav): HTMLElement {
         h("div", { class: "desc", text: pt.prox ? `${fmtInt(s.pontos)} / ${fmtInt(pt.prox.pontos)} pontos para ${pt.prox.nome}` : `${fmtInt(s.pontos)} pontos · patente máxima` }),
         pt.trava ? h("div", { class: "pat-trava", html: `${ic("cadeado")} ${pt.trava}` }) : null),
       h("button", { class: "btn icone", html: ic("usuario"), "aria-label": "Editar perfil", onclick: () => nav.ir("login") })),
+    h("button", { class: "cartao neon roxo skins-atalho", onclick: () => nav.ir("skins") },
+      h("span", { class: "skins-atalho-ic", html: previaSkin(SKINS.find((k) => k.id === s.skins.planeta) ?? SKINS[0]) }),
+      h("div", { style: "flex:1;text-align:left" }, h("div", { class: "nome", text: "Skins" }),
+        h("div", { class: "desc", text: `${SKINS.filter((k) => k.preco === 0 || s.skins.possui.includes(k.id)).length}/${SKINS.length} desbloqueadas · troque o visual do planeta e do escudo` })),
+      h("span", { html: ic("play") })),
     h("div", { class: "estatisticas" },
       est("espadas", "Partidas", fmtInt(e.partidas ?? 0)), est("mira", "Abates", fmtInt(e.abates ?? 0)), est("coroa2", "Chefes", fmtInt(e.chefes ?? 0)),
       est("estrela", "Estrelas", fmtInt(e.estrelas ?? 0)), est("evoluir", "Evoluções", fmtInt(e.evolucoes ?? 0)), est("trofeu", "Melhor partida", `${fmtInt(e.melhorPartida ?? 0)} pts`),
@@ -466,34 +471,55 @@ export function previaSkin(k: SkinDef): string {
   return `<span class="previa-planeta" style="${u ? `background-image:url('${u}')` : ""}"></span>`;
 }
 
-/** Seção "Aparência" (usada na tela do Planeta). */
-export function secaoAparencia(nav: Nav): HTMLElement {
+/** De onde vem cada skin (texto curto + para onde o botão leva). */
+function origemSkin(k: SkinDef): { texto: string; destino: string } {
+  if (k.preco === 0) return { texto: "Padrão", destino: "" };
+  if (k.preco !== null) return { texto: `Loja · ${k.preco} cristais`, destino: "loja" };
+  const nf = PASSE_PREMIOS.findIndex((p) => p.skin === k.id);
+  if (nf >= 0) return { texto: `Passe grátis · nível ${nf + 1}`, destino: "passe" };
+  const np = PASSE_PREMIUM.findIndex((p) => p.skin === k.id);
+  if (np >= 0) return { texto: `Passe Premium · nível ${np + 1}`, destino: "passe" };
+  const prod = PRODUTOS.find((p) => p.skin === k.id);
+  if (prod) return { texto: prod.nome, destino: "loja" };
+  return { texto: "Evento", destino: "" };
+}
+
+let abaSkins: "escudo" | "planeta" = "escudo";
+
+/** Tela de skins (aberta pelo Progresso): vitrine com o planeta girando + coleção por tipo. */
+export function telaSkins(nav: Nav): HTMLElement {
   const s = nav.save;
-  const nivelPasseDe = (id: string) => PASSE_PREMIOS.findIndex((p) => p.skin === id) + 1;
-  const opcao = (k: SkinDef) => {
-    const tem = s.skins.possui.includes(k.id);
+  const lista = SKINS.filter((k) => k.tipo === abaSkins);
+  const possui = lista.filter((k) => s.skins.possui.includes(k.id) || k.preco === 0).length;
+  const card = (k: SkinDef) => {
+    const tem = s.skins.possui.includes(k.id) || k.preco === 0;
     const emUso = s.skins.escudo === k.id || s.skins.planeta === k.id;
     const disp = skinDisponivel(k);
-    let rot = "Usar";
-    if (emUso) rot = "Em uso";
-    else if (!disp) rot = "Em breve";
-    else if (!tem) rot = k.preco === null ? `Passe nv ${nivelPasseDe(k.id)}` : "Na loja";
-    return h("button", { class: "skin-op" + (emUso ? " sel" : "") + (tem ? "" : " bloq"), disabled: !disp && !tem,
-      onclick: () => {
-        if (tem) { usarSkin(s, k.id); nav.persistir(); audio.sfx("carta"); nav.ir("planeta"); }
-        else if (disp && k.preco !== null) nav.ir("loja");
-        else if (disp) nav.ir("passe");
-      } },
-      h("span", { html: previaSkin(k) }), h("b", { text: k.nome }), h("small", { text: rot }));
+    const o = origemSkin(k);
+    let botao: HTMLElement;
+    if (emUso) botao = h("span", { class: "skin-tag uso", html: icT("check", "Em uso") });
+    else if (tem) botao = h("button", { class: "btn ciano pequeno", text: "Equipar", onclick: () => {
+      if (!s.skins.possui.includes(k.id)) s.skins.possui.push(k.id);
+      usarSkin(s, k.id); nav.persistir(); audio.sfx("carta"); toast(nav.root, `${k.nome} equipado!`); nav.ir("skins");
+    } });
+    else if (!disp) botao = h("span", { class: "skin-tag", text: "Em breve" });
+    else botao = h("button", { class: "btn pequeno", html: icT("cadeado", "Obter"), onclick: () => o.destino && nav.ir(o.destino) });
+    return h("div", { class: "skin-card neon" + (emUso ? " ouro sel" : "") + (tem ? "" : " bloq") },
+      h("span", { class: "skin-previa", html: previaSkin(k) }),
+      h("b", { text: k.nome }),
+      h("small", { text: tem ? (emUso ? "Equipado" : "Desbloqueado") : o.texto }),
+      botao);
   };
-  return h("div", { class: "aparencia-bloco" },
-    h("div", { class: "aparencia-vitrine", "data-vitrine": "1" }),
-    h("div", { class: "cartao neon aparencia" },
-    h("div", { class: "nome", text: "Aparência" }),
-    h("small", { class: "secao-titulo", text: "Escudo" }),
-    h("div", { class: "skins" }, ...SKINS.filter((k) => k.tipo === "escudo").map(opcao)),
-    h("small", { class: "secao-titulo", text: "Planeta" }),
-    h("div", { class: "skins" }, ...SKINS.filter((k) => k.tipo === "planeta").map(opcao))));
+  const abas = h("div", { class: "abas-v2" },
+    h("button", { class: "aba" + (abaSkins === "escudo" ? " ativa" : ""), html: icT("escudo", "Escudos"), onclick: () => { abaSkins = "escudo"; nav.ir("skins"); } }),
+    h("button", { class: "aba" + (abaSkins === "planeta" ? " ativa" : ""), html: icT("planeta", "Planetas"), onclick: () => { abaSkins = "planeta"; nav.ir("skins"); } }));
+  const el = tela(nav, "SKINS",
+    h("div", { class: "aparencia-vitrine skins-vitrine", "data-vitrine": "1" }),
+    abas,
+    h("div", { class: "desc", style: "text-align:center", text: `Coleção: ${possui}/${lista.length}` }),
+    h("div", { class: "skins-grade" }, ...lista.map(card)));
+  el.append(barraInferior(nav, "progresso"));
+  return el;
 }
 
 // ------------------------------------------------------------------ PASSE DE BATALHA

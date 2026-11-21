@@ -47,6 +47,8 @@ export const BALANCE = {
     creditosVitoriaPorFase: 60,
     nucleosChefeBase: 3,
     sucataPorAbate: 1,
+    /** Desistir pela pausa: fica só com esta fração dos créditos e pontos, sem núcleos nem chip. */
+    fatorDesistencia: 0.4,
   },
   estrelas: { hp2: 0.5, hp3: 0.9 },
   /** Combo: abates seguidos dentro da janela; a cada `passo` abates o multiplicador sobe `bonus` (até `max`). */
