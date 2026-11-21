@@ -11,6 +11,8 @@ async function main(): Promise<void> {
     resolution: Math.min(window.devicePixelRatio || 1, 2),
     autoDensity: true,
     powerPreference: "high-performance",
+    // o planeta 3D usa shader GLSL: força WebGL (padrão no iPhone de qualquer forma)
+    preference: "webgl",
     width: window.innerWidth,
     height: window.innerHeight,
   });

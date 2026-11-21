@@ -1,54 +1,46 @@
-import { Container, Graphics, Sprite, TilingSprite } from "pixi.js";
+import { Container, Sprite } from "pixi.js";
 import { BALANCE } from "../data/balance";
-import { tex } from "./Textures";
+import { PlanetSphere } from "./PlanetSphere";
 import { temArte } from "./Sprites";
+import { tex } from "./Textures";
 
 const P = BALANCE.planeta;
 
-/** Planeta com continentes girando, sombra, atmosfera e escudo hexagonal que acende no impacto. */
+/**
+ * Planeta 3D girando (shader de esfera) + escudo hexagonal em duas camadas que giram em sentidos opostos
+ * e acendem no ponto do impacto.
+ */
 export class PlanetView {
   readonly layer = new Container();
-  private terra: TilingSprite;
+  private esfera: PlanetSphere;
   private escudo: Sprite;
+  private escudo2: Sprite;
   private hits: { s: Sprite; life: number }[] = [];
   private escudoBrilho = 0;
   private dano = 0;
-  private base: Sprite;
 
   constructor() {
     const atm = new Sprite(tex("atmosfera"));
     atm.anchor.set(0.5);
     atm.blendMode = "add";
-    atm.alpha = 0.8;
+    atm.alpha = 0.6;
     this.layer.addChild(atm);
 
-    this.base = new Sprite(tex("planeta"));
-    this.base.anchor.set(0.5);
-    this.layer.addChild(this.base);
+    this.esfera = new PlanetSphere(P.raio);
+    this.layer.addChild(this.esfera.mesh);
 
-    this.terra = new TilingSprite({ texture: tex("planetaTerra"), width: P.raio * 2, height: P.raio * 2 });
-    this.terra.anchor.set(0.5);
-    const mask = new Graphics().circle(0, 0, P.raio - 1).fill(0xffffff);
-    this.layer.addChild(mask);
-    this.terra.mask = mask;
-    this.layer.addChild(this.terra);
-
-    const sombra = new Sprite(tex("planetaSombra"));
-    sombra.anchor.set(0.5);
-    this.layer.addChild(sombra);
-    if (temArte("planeta")) {
-      // a imagem já tem continentes, nuvens e iluminação: dispensa as camadas procedurais
-      this.base.scale.set((P.raio * 2) / (this.base.texture.width * 0.96));
-      this.terra.visible = false;
-      sombra.visible = false;
-      atm.alpha = 0.55;
-    }
-
+    const escala = temArte("escudo") ? (P.raioEscudo * 2) / (tex("escudo").width * 0.96) : 1;
     this.escudo = new Sprite(tex("escudo"));
     this.escudo.anchor.set(0.5);
-    if (temArte("escudo")) this.escudo.scale.set((P.raioEscudo * 2) / (this.escudo.texture.width * 0.96));
+    this.escudo.scale.set(escala);
     this.escudo.blendMode = "add";
-    this.layer.addChild(this.escudo);
+    // segunda camada um pouco maior girando ao contrário: dá volume ao campo de força
+    this.escudo2 = new Sprite(tex("escudo"));
+    this.escudo2.anchor.set(0.5);
+    this.escudo2.scale.set(escala * 1.035);
+    this.escudo2.blendMode = "add";
+    this.escudo2.rotation = 0.5;
+    this.layer.addChild(this.escudo2, this.escudo);
 
     for (let i = 0; i < 8; i++) {
       const s = new Sprite(tex("escudoHit"));
@@ -75,14 +67,18 @@ export class PlanetView {
   }
 
   update(dt: number, escudoFrac: number, tempo: number): void {
-    this.terra.tilePosition.x -= dt * 9;
     this.escudoBrilho = Math.max(0, this.escudoBrilho - dt * 3);
     this.dano = Math.max(0, this.dano - dt * 4);
+    this.esfera.update(tempo, this.dano);
+
     const temEscudo = escudoFrac > 0.001;
-    this.escudo.visible = temEscudo;
-    this.escudo.alpha = (0.12 + 0.22 * escudoFrac + 0.55 * this.escudoBrilho) * (0.92 + 0.08 * Math.sin(tempo * 3));
-    this.escudo.rotation += dt * 0.05;
-    this.base.tint = this.dano > 0 ? 0xff8080 : 0xffffff;
+    this.escudo.visible = this.escudo2.visible = temEscudo;
+    const base = (0.14 + 0.24 * escudoFrac + 0.55 * this.escudoBrilho) * (0.9 + 0.1 * Math.sin(tempo * 3));
+    this.escudo.alpha = base;
+    this.escudo2.alpha = base * 0.45;
+    this.escudo.rotation += dt * 0.22;
+    this.escudo2.rotation -= dt * 0.15;
+
     for (const h of this.hits) {
       if (h.life <= 0) continue;
       h.life -= dt;
