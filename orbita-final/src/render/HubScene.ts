@@ -32,6 +32,13 @@ export class HubScene {
     });
   }
 
+  /** Posiciona a vitrine num espaço da tela (centro e raio em pixels CSS). */
+  encaixar(cx: number, cy: number, raio: number): void {
+    const k = Math.max(0.22, raio / 330);
+    this.layer.scale.set(k);
+    this.layer.position.set(cx, cy);
+  }
+
   resize(w: number, h: number): void {
     // cabe entre o logo e o botão de batalha (órbita externa + torres ≈ 340 de raio)
     const k = Math.min((w * 0.92) / 720, (h * 0.2) / 340);

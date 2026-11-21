@@ -172,6 +172,10 @@ export interface Recompensa {
   chip: Chip | null;
   primeiraVez: boolean;
   recorde: boolean;
+  /** Pontos de comandante ganhos na partida. */
+  pontos?: number;
+  /** Nome da patente alcançada nesta partida, se subiu. */
+  novaPatente?: string;
 }
 
 export function calcularRecompensas(s: SaveData, b: Battle, modo: Modo): Recompensa {

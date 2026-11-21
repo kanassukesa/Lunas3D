@@ -27,6 +27,8 @@ CONFIG = {
     "vortice": ("aditivo", 512),
     "explosao_sheet": ("sheet", 1024),
     "carta_": ("carta", 600),
+    "tile_": ("carta", 520),
+    "avatar_": ("avatar", 256),
     "fundo_": ("fundo_tela", 720),
     "icone_app": ("icone_app", 512),
     "logo": ("recorte", 900),
@@ -172,6 +174,12 @@ def processar(arq):
         return mapa_esfera(arq, nome, tam, modo == "nuvens")
     if modo == "cabeca":
         return cabeca(arq, nome, tam)
+    if modo == "avatar":
+        im = Image.open(os.path.join(ORIG, arq)).convert("RGB")
+        lado = min(im.size)
+        im = im.crop(((im.width - lado) // 2, (im.height - lado) // 2, (im.width + lado) // 2, (im.height + lado) // 2))
+        im.resize((tam, tam), Image.LANCZOS).save(os.path.join(SAIDA, nome + ".jpg"), quality=88)
+        return print(f"{nome}.jpg  {tam}x{tam}  (avatar)")
     if modo == "fundo_tela":
         im = Image.open(os.path.join(ORIG, arq)).convert("RGB")
         im = im.resize((tam, round(tam * im.height / im.width)), Image.LANCZOS)

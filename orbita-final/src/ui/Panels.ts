@@ -71,6 +71,9 @@ export function telaResultado(
   if (!f.vitoria && !inf && b.boss === null && !f.chefeDerrotado) {
     linhas.push(h("div", { class: "subtitulo", text: `Chegou a ${Math.min(100, Math.round((f.tempo / 280) * 100))}% da fase` }));
   }
+  if (rec.pontos) {
+    linhas.push(h("div", { class: "pontos-ganhos", html: `+${fmtInt(rec.pontos)} pontos${rec.novaPatente ? ` · ${ic("estrela", "ic-estrela")} Nova patente: <b>${rec.novaPatente}</b>` : ""}` }));
+  }
   linhas.push(
     h("div", { class: "recompensas" },
       h("span", { class: "moeda", html: `${ICONE_MOEDA.creditos} +${fmtInt(rec.creditos)}` }),

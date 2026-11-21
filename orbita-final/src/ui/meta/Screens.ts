@@ -9,12 +9,10 @@ import type { Chip, SentinelId } from "../../data/types";
 import { audio } from "../../core/Audio";
 import { apagar, salvar, saveNovo, type SaveData } from "../../core/Save";
 import {
-  comprarTalento, desafioDoDia, jornadaDaSemana, semanaStr, desbloquear, faseLiberada, formatStat, fundir, hojeStr, melhorar, missoesProntas, podeMelhorar, resgatarMissao,
+  comprarTalento, desafioDoDia, jornadaDaSemana, semanaStr, desbloquear, faseLiberada, formatStat, fundir, hojeStr, melhorar, podeMelhorar, resgatarMissao,
 } from "../../meta/Meta";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg, toast } from "../dom";
-import { urlArte } from "../../render/Sprites";
 import { ic, icT } from "../Icones";
-import { CHIP_SLOTS as _SLOTS } from "../../data/chips";
 
 export interface Nav {
   save: SaveData;
@@ -28,71 +26,32 @@ export interface Nav {
   persistir(): void;
 }
 
-function moedas(s: SaveData): HTMLElement {
-  return h("div", { class: "moedas" },
-    h("span", { class: "moeda", html: `${ICONE_MOEDA.creditos} ${fmtInt(s.creditos)}` }),
-    h("span", { class: "moeda", html: `${ICONE_MOEDA.nucleos} ${fmtInt(s.nucleos)}` }),
-    h("span", { class: "moeda", html: `${ICONE_MOEDA.cristais} ${fmtInt(s.cristais)}` }));
+export function moedas(nav: Nav): HTMLElement {
+  const s = nav.save;
+  const pilula = (icone: string, v: number) =>
+    h("button", { class: "pilula", "aria-label": "Loja", onclick: () => nav.ir("loja") },
+      h("span", { class: "moeda", html: `${icone} ${fmtInt(v)}` }), h("span", { class: "pil-mais", html: ic("mais") }));
+  return h("div", { class: "moedas" }, pilula(ICONE_MOEDA.creditos, s.creditos), pilula(ICONE_MOEDA.nucleos, s.nucleos), pilula(ICONE_MOEDA.cristais, s.cristais));
 }
 
-function topo(nav: Nav, titulo: string | null): HTMLElement {
+export function topo(nav: Nav, titulo: string | null): HTMLElement {
   return h("div", { class: "topo" },
     titulo ? h("button", { class: "btn icone", html: ic("voltar"), "aria-label": "Voltar", onclick: () => nav.ir("hub") })
       : h("button", { class: "btn icone", html: ic("config"), "aria-label": "Configurações", onclick: () => nav.ir("config") }),
     titulo ? h("div", { style: "font-weight:900;letter-spacing:.08em;font-size:18px", text: titulo }) : null,
-    moedas(nav.save));
+    moedas(nav));
 }
 
-function tela(nav: Nav, titulo: string, ...conteudo: (HTMLElement | null)[]): HTMLElement {
+export function tela(nav: Nav, titulo: string, ...conteudo: (HTMLElement | null)[]): HTMLElement {
   return h("div", { class: "tela", style: "background:rgba(5,7,15,0.78)" }, topo(nav, titulo), h("div", { class: "tela-conteudo" }, ...conteudo));
 }
 
-function proximaFase(s: SaveData): number {
+export function proximaFase(s: SaveData): number {
   const i = s.campanha.normal.findIndex((x) => x === 0);
   return i < 0 ? STAGES.length - 1 : i;
 }
 
 // ------------------------------------------------------------------ HUB
-
-export function telaHub(nav: Nav): HTMLElement {
-  const s = nav.save;
-  const idx = proximaFase(s);
-  const st = STAGES[idx];
-  const m = missoesProntas(s);
-  const estrelasFase = s.campanha.normal[idx];
-  const totalEstrelas = s.campanha.normal.reduce((x, y) => x + y, 0);
-  const vencidas = s.campanha.normal.filter((x) => x > 0).length;
-  const desbloq = SENTINEL_IDS.filter((id) => s.sentinelas[id].desbloqueada).length;
-  const talentos = Object.values(s.talentos).reduce((x, y) => x + y, 0);
-  const equip = Object.keys(s.equipados).length;
-  const estrelas = h("span", { class: "hub-estrelas", html: [1, 2, 3].map((i) => ic("estrela", "ic-estrela" + (i <= estrelasFase ? "" : " off"))).join("") });
-
-  const tile = (icone: string, nome: string, info: string, alvo: string, cor: string, badge = 0) =>
-    h("button", { class: "tile", style: `--acc:${cor}`, onclick: () => nav.ir(alvo) },
-      h("span", { class: "tile-ic", html: ic(icone) }),
-      h("span", { class: "tile-nome", text: nome }),
-      h("span", { class: "tile-info", text: info }),
-      badge ? h("i", { class: "badge", text: String(badge) }) : null);
-
-  return h("div", { class: "tela" },
-    topo(nav, null),
-    urlArte("logo")
-      ? h("div", { class: "logo-img" }, h("img", { src: urlArte("logo")!, alt: "Órbita Final" }), h("small", { text: "DEFESA PLANETÁRIA" }))
-      : h("div", { class: "logo", html: "ÓRBITA FINAL<small>DEFESA PLANETÁRIA</small>" }),
-    h("div", { class: "hub-base" },
-      h("button", { class: "btn primario btn-batalha", onclick: () => nav.jogarCampanha(idx, false) },
-        h("span", { class: "bb-ic", html: ic("play") }),
-        h("span", { class: "bb-txt" }, h("b", { text: "BATALHA" }), h("small", { text: `Fase ${st.id} · ${st.nome}` })),
-        estrelas),
-      h("div", { class: "grade" },
-        tile("mapa", "Fases", `${vencidas}/${STAGES.length} · ${totalEstrelas} estrelas`, "mapa", "#4fd6ff"),
-        tile("hangar", "Hangar", `${desbloq}/${SENTINEL_IDS.length} sentinelas`, "hangar", "#ff9a3c"),
-        tile("chip", "Chips", `${equip}/${_SLOTS.length} equipados`, "chips", "#b36bff"),
-        tile("planeta", "Planeta", `${talentos} melhorias`, "planeta", "#49e07a"),
-        tile("missoes", "Missões", m ? `${m} para resgatar` : "em andamento", "missoes", "#ffc23d", m),
-        tile("modos", "Modos", "Diário · Jornada", "modos", "#ff5aa5"),
-      )));
-}
 
 // ------------------------------------------------------------------ MAPA
 
@@ -262,7 +221,7 @@ export function telaMissoes(nav: Nav): HTMLElement {
       h("div", { class: "prog" }, h("b", { style: `width:${Math.min(100, (v / m.meta) * 100)}%` }))) };
   });
   itens.sort((a, b) => Number(b.pronta) - Number(a.pronta) || Number(a.feita) - Number(b.feita));
-  return tela(nav, "MISSÕES", ...itens.map((i) => i.el));
+  return tela(nav, "CONQUISTAS", ...itens.map((i) => i.el));
 }
 
 // ------------------------------------------------------------------ MODOS
@@ -329,6 +288,8 @@ export function painelConfig(nav: Nav, voltar: () => void, noJogo = false): HTML
     slider("Música", c.musica, (n) => (c.musica = n)),
   );
   if (!noJogo) {
+    p.append(h("div", { class: "config-linha" }, h("span", { text: `Comandante: ${nav.save.perfil.nome || "—"}` }),
+      h("button", { class: "btn pequeno", html: icT("usuario", "Editar perfil"), onclick: () => nav.ir("login") })));
     p.append(h("div", { class: "config-linha" }, h("span", { text: "Apagar progresso" }),
       h("button", { class: "btn pequeno", style: "color:var(--vermelho)", text: "Apagar", onclick: () => {
         if (!confirm("Apagar todo o progresso? Isso não pode ser desfeito.")) return;

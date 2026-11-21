@@ -34,6 +34,13 @@ export interface SaveData {
   sobrevivenciaMelhor: number;
   tutorialVisto: boolean;
   jornada: { semana: string; melhor: number; concluida: boolean };
+  /** Login local do comandante. */
+  perfil: { nome: string; avatar: number };
+  /** Pontuação acumulada (define a patente). */
+  pontos: number;
+  dia: { data: string; stats: Record<string, number>; resgatadas: string[]; bonus: boolean; lojaGratis: boolean };
+  login: { ultimoDia: string; dias: number };
+  correio: { lidas: string[]; resgatadas: string[] };
 }
 
 export function saveNovo(): SaveData {
@@ -58,6 +65,11 @@ export function saveNovo(): SaveData {
     sobrevivenciaMelhor: 0,
     tutorialVisto: false,
     jornada: { semana: "", melhor: 0, concluida: false },
+    perfil: { nome: "", avatar: 1 },
+    pontos: 0,
+    dia: { data: "", stats: {}, resgatadas: [], bonus: false, lojaGratis: false },
+    login: { ultimoDia: "", dias: 0 },
+    correio: { lidas: [], resgatadas: [] },
   };
 }
 

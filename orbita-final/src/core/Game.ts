@@ -15,8 +15,12 @@ import { telaLevelUp } from "../ui/LevelUpScreen";
 import { telaBuild, telaPausa, telaResultado } from "../ui/Panels";
 import { h, ICONE_MOEDA } from "../ui/dom";
 import {
-  painelConfig, telaChips, telaConfig, telaHangar, telaHub, telaMapa, telaMissoes, telaModos, telaPlaneta, type Nav,
+  painelConfig, telaChips, telaConfig, telaHangar, telaMapa, telaMissoes, telaModos, telaPlaneta, type Nav,
 } from "../ui/meta/Screens";
+import {
+  telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaProgresso, telaRecompensas,
+} from "../ui/meta/Hub";
+import { patenteDe, registrarPartida } from "../meta/Comandante";
 import { audio } from "./Audio";
 import { FixedLoop } from "./Loop";
 import { carregar, salvar, type SaveData } from "./Save";
@@ -80,7 +84,7 @@ export class Game implements Nav {
       if ((e.target as HTMLElement).closest("button")) audio.sfx("clique");
     });
     this.app.ticker.add((t) => this.tick(t.deltaMS / 1000));
-    this.ir("hub");
+    this.ir(this.save.perfil.nome ? "hub" : "login");
     this.resize();
   }
 
@@ -115,7 +119,15 @@ export class Game implements Nav {
       hangar: () => telaHangar(this),
       chips: () => telaChips(this),
       planeta: () => telaPlaneta(this),
-      missoes: () => telaMissoes(this),
+      missoes: () => telaDiarias(this),
+      conquistas: () => telaMissoes(this),
+      login: () => telaLogin(this),
+      correio: () => telaCorreio(this),
+      eventos: () => telaEventos(this),
+      recompensas: () => telaRecompensas(this),
+      loja: () => telaLoja(this),
+      progresso: () => telaProgresso(this),
+      inventario: () => telaInventario(this),
       modos: () => telaModos(this),
       config: () => telaConfig(this),
     };
@@ -129,7 +141,18 @@ export class Game implements Nav {
     }
     if (tela === "hangar" || tela === "hub") this.recriarHub();
     this.bg.setFundo(1);
+    // vitrine do planeta: só no início (e na tela de login, atrás do formulário fica escondida)
+    if (this.hub) this.hub.layer.visible = tela === "hub";
+    requestAnimationFrame(() => this.posicionarVitrine());
     audio.tocarMusica("ambiente");
+  }
+
+  /** Encaixa o planeta da vitrine no espaço reservado do menu (div .hub-vitrine). */
+  private posicionarVitrine(): void {
+    const alvo = this.telaEl?.querySelector<HTMLElement>("[data-vitrine]");
+    if (!this.hub || !alvo) return;
+    const r = alvo.getBoundingClientRect();
+    this.hub.encaixar(r.left + r.width / 2, r.top + r.height / 2, Math.min(r.width, r.height) / 2);
   }
 
   private recriarHub(): void {
@@ -298,7 +321,11 @@ export class Game implements Nav {
       return;
     }
     if (!run.recompensa) {
+      const antes = patenteDe(this.save.pontos).indice;
       run.recompensa = calcularRecompensas(this.save, b, run.modo);
+      run.recompensa.pontos = registrarPartida(this.save, b, run.modo);
+      const depois = patenteDe(this.save.pontos);
+      if (depois.indice > antes) run.recompensa.novaPatente = depois.atual.nome;
       if (run.tutorial) this.save.tutorialVisto = true;
       this.persistir();
     }
@@ -363,6 +390,7 @@ export class Game implements Nav {
     this.app.renderer.resize(w, hh);
     this.bg.resize(w, hh);
     this.hub?.resize(w, hh);
+    this.posicionarVitrine();
     const run = this.run;
     if (!run) return;
     // mundo lógico 1080×1920: encaixa pela largura em telas altas (mostra mais espaço acima), pela altura em telas largas
