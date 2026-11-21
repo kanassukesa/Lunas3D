@@ -31,6 +31,7 @@ CONFIG = {
     "avatar_": ("avatar", 256),
     "botao_batalha": ("recorte", 1024),
     "banner_": ("recorte", 900),
+    "bau_": ("recorte", 640),
     "fase_": ("carta", 640),
     "modo_": ("carta", 640),
     "talento_": ("recorte", 192),

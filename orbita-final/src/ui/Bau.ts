@@ -13,6 +13,7 @@ export interface ConteudoBau {
 import { CHIP_RARIDADE_COR, CHIP_RARIDADES, CHIP_SET_MAP, CHIP_SLOT_NOME } from "../data/chips";
 import { formatStat } from "../meta/Meta";
 import { audio } from "../core/Audio";
+import { urlArte } from "../render/Sprites";
 import { fmtInt, h, ICONE_MOEDA, iconeImg } from "./dom";
 import { ic } from "./Icones";
 
@@ -63,12 +64,16 @@ const SVG_CORPO = `<svg viewBox="0 0 220 120" aria-hidden="true">
 export function telaBau(rec: ConteudoBau, aoTerminar: () => void): HTMLElement {
   // cor do brilho: raridade do chip, se houver; senão azul-ciano
   const cor = rec.chip ? CHIP_RARIDADE_COR[rec.chip.raridade] : "#4fd6ff";
-  const bau = h("div", { class: "bau3", style: `--cor:${cor}` },
+  // arte final (bau_fechado / bau_entreaberto / bau_aberto) quando existir; senão o baú em SVG
+  const artes = { f: urlArte("bau_fechado"), m: urlArte("bau_entreaberto"), a: urlArte("bau_aberto") };
+  const comArte = !!(artes.f && artes.a);
+  const bau = h("div", { class: "bau3" + (comArte ? " com-arte" : ""), style: `--cor:${cor}` },
     h("div", { class: "bau3-raios" }),
     h("div", { class: "bau3-sombra" }),
     h("div", { class: "bau3-luz" }),
-    h("div", { class: "bau3-corpo", html: SVG_CORPO }),
-    h("div", { class: "bau3-tampa", html: SVG_TAMPA }));
+    ...(comArte
+      ? [h("img", { class: "bau3-img f", src: artes.f!, alt: "" }), artes.m ? h("img", { class: "bau3-img m", src: artes.m, alt: "" }) : null, h("img", { class: "bau3-img a", src: artes.a!, alt: "" })]
+      : [h("div", { class: "bau3-corpo", html: SVG_CORPO }), h("div", { class: "bau3-tampa", html: SVG_TAMPA })]));
   const premios = h("div", { class: "bau3-premios" });
   const titulo = h("div", { class: "titulo bau3-titulo", text: rec.titulo ?? "RECOMPENSAS" });
   const dica = h("div", { class: "subtitulo bau-dica", text: "Toque para abrir" });
