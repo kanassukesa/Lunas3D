@@ -74,14 +74,14 @@ export function avatar(n: number, classe = "avatar"): HTMLElement {
 }
 
 /** Insígnia da patente (arte final `patente_N`), ou null. */
-function insignia(indice: number, classe = "insignia"): HTMLElement | null {
+export function insignia(indice: number, classe = "insignia"): HTMLElement | null {
   const u = urlArte(`patente_${indice + 1}`);
   return u ? h("img", { class: classe, src: u, alt: "" }) : null;
 }
 
 function perfilCard(nav: Nav): HTMLElement {
   const s = nav.save;
-  const pt = patenteDe(s.pontos);
+  const pt = patenteDe(s);
   return h("button", { class: "perfil", onclick: () => nav.ir("progresso") },
     h("span", { class: "perfil-av" }, avatar(s.perfil.avatar), insignia(pt.indice, "insignia mini")),
     h("span", { class: "perfil-txt" },
@@ -396,7 +396,7 @@ export function telaLoja(nav: Nav): HTMLElement {
 
 export function telaProgresso(nav: Nav): HTMLElement {
   const s = nav.save;
-  const pt = patenteDe(s.pontos);
+  const pt = patenteDe(s);
   const e = s.estatisticas;
   const est = (icone: string, k: string, v: string) => h("div", { class: "est-item neon" }, h("span", { class: "est-ic", html: ic(icone) }), h("b", { text: v }), h("small", { text: k }));
   const el = tela(nav, "PROGRESSO",
@@ -407,7 +407,8 @@ export function telaProgresso(nav: Nav): HTMLElement {
         h("div", { class: "pat-nome", text: pt.atual.nome }),
         pt.prox ? h("div", { class: "pat-prox" }, h("span", { text: "Próxima:" }), insignia(pt.indice + 1, "insignia micro"), h("b", { text: pt.prox.nome })) : null,
         h("div", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(pt.frac * 100)}%` })),
-        h("div", { class: "desc", text: pt.prox ? `${fmtInt(s.pontos)} / ${fmtInt(pt.prox.pontos)} pontos para ${pt.prox.nome}` : `${fmtInt(s.pontos)} pontos · patente máxima` })),
+        h("div", { class: "desc", text: pt.prox ? `${fmtInt(s.pontos)} / ${fmtInt(pt.prox.pontos)} pontos para ${pt.prox.nome}` : `${fmtInt(s.pontos)} pontos · patente máxima` }),
+        pt.trava ? h("div", { class: "pat-trava", html: `${ic("cadeado")} ${pt.trava}` }) : null),
       h("button", { class: "btn icone", html: ic("usuario"), "aria-label": "Editar perfil", onclick: () => nav.ir("login") })),
     h("div", { class: "estatisticas" },
       est("espadas", "Partidas", fmtInt(e.partidas ?? 0)), est("mira", "Abates", fmtInt(e.abates ?? 0)), est("coroa2", "Chefes", fmtInt(e.chefes ?? 0)),
@@ -416,7 +417,7 @@ export function telaProgresso(nav: Nav): HTMLElement {
     h("div", { class: "cartao neon patentes" }, h("div", { class: "nome", style: "margin-bottom:6px", text: "Patentes" }),
       ...PATENTES.map((p, i) => h("div", { class: "pat-linha" + (i <= pt.indice ? " ok" : "") + (i === pt.indice ? " atual" : "") },
         h("span", { class: "pat-ic", html: urlArte(`patente_${i + 1}`) ? `<img src="${urlArte(`patente_${i + 1}`)}" alt="">` : i <= pt.indice ? ic("estrela", "ic-estrela") : ic("cadeado") }),
-        h("b", { text: p.nome }), h("small", { text: `${fmtInt(p.pontos)} pts` })))));
+        h("b", { text: p.nome }), h("small", { text: p.fase ? `${fmtInt(p.pontos)} pts · Fase ${p.fase}` : `${fmtInt(p.pontos)} pts` })))));
   el.append(barraInferior(nav, "progresso"));
   return el;
 }

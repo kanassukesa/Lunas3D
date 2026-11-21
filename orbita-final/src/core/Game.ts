@@ -15,6 +15,7 @@ import { Hud } from "../ui/Hud";
 import { telaLevelUp } from "../ui/LevelUpScreen";
 import { telaBuild, telaPausa, telaResultado } from "../ui/Panels";
 import { telaBau } from "../ui/Bau";
+import { telaPromocao } from "../ui/Promocao";
 import { anuncioRecompensado, anunciosRestantes, talvezIntersticial } from "../meta/Anuncios";
 import { sincronizarCompras } from "../meta/Pagamentos";
 import { nuvem } from "./Nuvem";
@@ -63,6 +64,8 @@ interface Run {
   tutorial: boolean;
   recompensa: Recompensa | null;
   bauVisto?: boolean;
+  promocao?: { de: number; para: number };
+  promocaoVista?: boolean;
   dobrou?: boolean;
 }
 
@@ -397,11 +400,11 @@ export class Game implements Nav {
       return;
     }
     if (!run.recompensa) {
-      const antes = patenteDe(this.save.pontos).indice;
+      const antes = patenteDe(this.save).indice;
       run.recompensa = calcularRecompensas(this.save, b, run.modo);
       run.recompensa.pontos = registrarPartida(this.save, b, run.modo);
-      const depois = patenteDe(this.save.pontos);
-      if (depois.indice > antes) run.recompensa.novaPatente = depois.atual.nome;
+      const depois = patenteDe(this.save);
+      if (depois.indice > antes) { run.recompensa.novaPatente = depois.atual.nome; run.promocao = { de: antes, para: depois.indice }; }
       if (run.tutorial) this.save.tutorialVisto = true;
       this.persistir();
     }
@@ -409,6 +412,13 @@ export class Game implements Nav {
     if (!run.bauVisto && (run.recompensa.creditos > 0 || run.recompensa.chip)) {
       run.bauVisto = true;
       this.abrir(telaBau(run.recompensa, () => this.mostrarFim()), "resultado");
+      return;
+    }
+    // cerimônia de promoção (depois do baú, uma vez)
+    if (run.promocao && !run.promocaoVista) {
+      run.promocaoVista = true;
+      const p = run.promocao;
+      this.abrir(telaPromocao(p.de, p.para, this.save.perfil.nome, () => this.mostrarFim()), "resultado");
       return;
     }
     const idx = run.idx;

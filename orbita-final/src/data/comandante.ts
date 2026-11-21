@@ -2,21 +2,27 @@
 
 export interface Patente {
   nome: string;
+  /** Pontos de comandante acumulados. */
   pontos: number;
+  /** Fase da campanha (1-10) que precisa estar vencida para receber a patente. */
+  fase: number;
 }
 
-/** Progressão por pontuação acumulada (não por nível). */
+/**
+ * Progressão por pontuação acumulada (não por nível) + exigência de fase vencida.
+ * Uma partida rende ~4.000-10.000 pts: Cadete sai em ~4 partidas, Capitão em ~40, Lenda em ~350.
+ */
 export const PATENTES: Patente[] = [
-  { nome: "Recruta", pontos: 0 },
-  { nome: "Cadete", pontos: 1500 },
-  { nome: "Sargento", pontos: 4000 },
-  { nome: "Tenente", pontos: 9000 },
-  { nome: "Capitão", pontos: 18000 },
-  { nome: "Major", pontos: 35000 },
-  { nome: "Coronel", pontos: 65000 },
-  { nome: "General", pontos: 120000 },
-  { nome: "Almirante", pontos: 220000 },
-  { nome: "Lenda da Órbita", pontos: 400000 },
+  { nome: "Recruta", pontos: 0, fase: 0 },
+  { nome: "Cadete", pontos: 20_000, fase: 1 },
+  { nome: "Sargento", pontos: 60_000, fase: 2 },
+  { nome: "Tenente", pontos: 140_000, fase: 3 },
+  { nome: "Capitão", pontos: 280_000, fase: 4 },
+  { nome: "Major", pontos: 500_000, fase: 5 },
+  { nome: "Coronel", pontos: 850_000, fase: 6 },
+  { nome: "General", pontos: 1_400_000, fase: 8 },
+  { nome: "Almirante", pontos: 2_200_000, fase: 9 },
+  { nome: "Lenda da Órbita", pontos: 3_500_000, fase: 10 },
 ];
 
 /** Avatares (arte final `avatar_1..6`; sem ela, um capacete desenhado na cor). */

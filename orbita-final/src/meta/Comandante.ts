@@ -20,13 +20,17 @@ export function pontosDaPartida(b: Battle, modo: Modo): number {
   return Math.round(p);
 }
 
-export function patenteDe(pontos: number): { atual: Patente; prox: Patente | null; frac: number; indice: number } {
+/** Patente atual: exige os pontos E a fase da campanha vencida. `trava` diz o que falta quando os pontos já bastam. */
+export function patenteDe(s: Pick<SaveData, "pontos" | "campanha">): { atual: Patente; prox: Patente | null; frac: number; indice: number; trava: string | null } {
+  const vencidas = s.campanha.normal.filter((x) => x > 0).length;
+  const ok = (p: Patente) => s.pontos >= p.pontos && (p.fase <= 0 || (s.campanha.normal[p.fase - 1] ?? 0) > 0 || vencidas >= p.fase);
   let i = 0;
-  while (i + 1 < PATENTES.length && pontos >= PATENTES[i + 1].pontos) i++;
+  while (i + 1 < PATENTES.length && ok(PATENTES[i + 1])) i++;
   const atual = PATENTES[i];
   const prox = PATENTES[i + 1] ?? null;
-  const frac = prox ? (pontos - atual.pontos) / (prox.pontos - atual.pontos) : 1;
-  return { atual, prox, frac, indice: i };
+  const frac = prox ? Math.min(1, (s.pontos - atual.pontos) / (prox.pontos - atual.pontos)) : 1;
+  const trava = prox && s.pontos >= prox.pontos ? `Vença a Fase ${prox.fase} para ser promovido` : null;
+  return { atual, prox, frac, indice: i, trava };
 }
 
 // ------------------------------------------------------------- prêmios
