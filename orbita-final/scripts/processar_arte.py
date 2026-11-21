@@ -18,6 +18,8 @@ SAIDA = os.path.join(RAIZ, "src", "assets", "sprites")
 
 # nome -> (modo, tamanho final)
 CONFIG = {
+    "planeta_mapa": ("mapa", 1024),
+    "planeta_nuvens": ("nuvens", 1024),
     "planeta": ("fundo", 512),
     "escudo": ("aditivo", 512),
     "sentinela_": ("fundo", 256),
@@ -93,9 +95,32 @@ def recortar_quadrado(img, margem=0.04):
     return out
 
 
+def mapa_esfera(arq, nome, tam, nuvens):
+    """Mapa equirretangular: redimensiona para 2:1 e funde as bordas esquerda/direita (sem emenda ao girar)."""
+    im = Image.open(os.path.join(ORIG, arq)).convert("RGB").resize((tam, tam // 2), Image.LANCZOS)
+    a = np.asarray(im).astype(np.float32)
+    faixa = max(8, tam // 64)
+    esq = a[:, :faixa].copy()
+    dir_ = a[:, -faixa:].copy()
+    for i in range(faixa):
+        t = 0.5 * (1 - i / faixa)  # na borda, média das duas pontas; some para dentro
+        a[:, i] = esq[:, i] * (1 - t) + dir_[:, -1] * t
+        a[:, -1 - i] = dir_[:, -1 - i] * (1 - t) + esq[:, 0] * t
+    if nuvens:
+        alfa = np.clip((a.max(axis=2) - 20) / 200, 0, 1)
+        rgba = np.dstack([np.full(alfa.shape + (3,), 255.0), alfa * 255]).astype(np.uint8)
+        Image.fromarray(rgba, "RGBA").save(os.path.join(SAIDA, nome + ".png"), optimize=True)
+        print(f"{nome}.png  {tam}x{tam // 2}  (nuvens: brilho vira transparência)")
+    else:
+        Image.fromarray(a.astype(np.uint8)).save(os.path.join(SAIDA, nome + ".jpg"), quality=90)
+        print(f"{nome}.jpg  {tam}x{tam // 2}  (mapa da esfera)")
+
+
 def processar(arq):
     nome = os.path.splitext(arq)[0]
     modo, tam = next((v for k, v in CONFIG.items() if nome.startswith(k)), ("fundo", 256))
+    if modo in ("mapa", "nuvens"):
+        return mapa_esfera(arq, nome, tam, modo == "nuvens")
     src = Image.open(os.path.join(ORIG, arq)).convert("RGB")
     rgb = np.asarray(src).astype(np.float32)
     rgba = aditivo(rgb) if modo == "aditivo" else remover_fundo(rgb)
