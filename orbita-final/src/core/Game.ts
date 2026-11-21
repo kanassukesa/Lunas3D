@@ -215,6 +215,8 @@ export class Game implements Nav {
       this.hub.destruir();
       this.hub = null;
     }
+    aparencia.planeta = this.save.skins.planeta;
+    aparencia.escudo = this.save.skins.escudo;
     const tutorial = modo === "campanha" && idx === 0 && !this.save.tutorialVisto;
     const cfg = montarRun({ modo, stage, dificil, seed, meta: snapshot(this.save), daily, tutorial, campos, etapas: etapas?.map((e) => ({ ...e })) });
     const b = new Battle(cfg);

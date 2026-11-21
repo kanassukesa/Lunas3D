@@ -124,7 +124,7 @@ def mapa_esfera(arq, nome, tam, nuvens):
     """Mapa equirretangular: redimensiona para 2:1 e funde as bordas esquerda/direita (sem emenda ao girar)."""
     im = Image.open(os.path.join(ORIG, arq)).convert("RGB").resize((tam, tam // 2), Image.LANCZOS)
     a = np.asarray(im).astype(np.float32)
-    faixa = max(8, tam // 64)
+    faixa = max(8, tam // (64 if nome == "planeta_mapa" else 24))
     esq = a[:, :faixa].copy()
     dir_ = a[:, -faixa:].copy()
     for i in range(faixa):
