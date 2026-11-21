@@ -15,7 +15,7 @@ export function spawnBoss(b: Battle, id: string, hpMult = 1): Enemy {
   e.xp = 40;
   e.boss = {
     def, fase: 1, t1: 2, t2: 3, t3: 0, ang: 0, invisivel: 0, campo: 0, chegou: false,
-    alvoY: Math.max(b.vis.top + 280, 360),
+    alvoY: Math.max(b.vis.top + 480, 420), // abaixo da barra de HP do chefe no HUD
   };
   b.boss = e;
   b.fx.push({ t: "tremor", força: 12 });

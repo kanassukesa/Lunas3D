@@ -84,7 +84,7 @@ export function updateEnemies(b: Battle, dt: number): void {
         const len = Math.hypot(e.vx, e.vy) || 1;
         e.vx = (e.vx / len) * vel;
         e.vy = (e.vy / len) * vel;
-        e.rot += dt * 2;
+        e.rot = Math.atan2(e.vy, e.vx); // cauda de fogo para trás
         if (e.y > v.bottom + 100 || e.x < v.left - 300 || e.x > v.right + 300) {
           e.alive = false;
           continue;
@@ -108,7 +108,7 @@ export function updateEnemies(b: Battle, dt: number): void {
         }
         e.vx = nx * vel;
         e.vy = ny * vel;
-        e.rot += dt * 0.8;
+        e.rot = Math.atan2(ny, nx);
         break;
       }
       default:

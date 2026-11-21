@@ -366,7 +366,7 @@ export class BattleRenderer {
         v.key = k;
       }
       // inimigos ficam um pouco maiores que a hitbox para leitura em telas pequenas
-      if (v.real) v.body.scale.set((e.def.raio * (e.def.raio < 16 ? 3.4 : 2.9)) / v.body.texture.width);
+      if (v.real) v.body.scale.set((e.def.raio * (e.def.raio < 16 ? 4.2 : 3.4)) / v.body.texture.width);
       else v.body.scale.set(e.def.raio < 16 ? 1.5 : 1.3);
       v.bar.clear();
     }
@@ -408,7 +408,11 @@ export class BattleRenderer {
     this.bossL.x = e.x;
     this.bossL.y = e.y;
     // arte final: a nave aponta para o planeta (para baixo) e balança de leve; procedural gira
-    if (this.bossReal) this.bossSprite.rotation = Math.PI / 2 + Math.sin(this.tempo * 0.8) * 0.06 + (s.fase === 2 ? Math.sin(this.tempo * 6) * 0.03 : 0);
+    // arte final já vem de frente para o planeta (para baixo): esferas giram, naves só balançam
+    if (this.bossReal) {
+      const gira = s.def.id === "colosso_igneo" || s.def.id === "singularidade";
+      this.bossSprite.rotation = gira ? e.rot * 0.35 : Math.sin(this.tempo * 0.8) * 0.06 + (s.fase === 2 ? Math.sin(this.tempo * 6) * 0.03 : 0);
+    }
     else this.bossSprite.rotation = s.def.id === "eclipse" || s.def.id === "construtor_muros" ? 0 : e.rot;
     this.bossSprite.tint = e.flash > 0 ? 0xffd0d0 : 0xffffff;
     const alvo = s.invisivel > 0 ? 0.12 : 1;
