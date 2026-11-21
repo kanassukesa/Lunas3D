@@ -20,7 +20,7 @@ export const BALANCE = {
   ],
   maxSlots: 6,
   critBase: { chance: 0.05, dano: 1.5 },
-  xp: { base: 3.2, expoente: 1.3 },
+  xp: { base: 4.6, expoente: 1.45 },
   /** Nível em que aparecem 5 cartas (múltiplos). */
   nivelCincoCartas: 10,
   raridades: { comum: 60, rara: 28, epica: 10, lendaria: 2 } as Record<Raridade, number>,

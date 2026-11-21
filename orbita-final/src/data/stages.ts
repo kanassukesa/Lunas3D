@@ -82,7 +82,7 @@ export const STAGES: StageDef[] = [
     ],
   },
   {
-    id: 6, nome: "Cinturão de Ferro", duracao: 300, chefe: "colosso_igneo", mult: 2.0, modificadores: [],
+    id: 6, nome: "Cinturão de Ferro", duracao: 300, chefe: "colosso_igneo", mult: 1.85, modificadores: [],
     ondas: [
       fluxo("batedor", 1, 270, 0.55),
       fluxo("escudeiro", 30, 270, 9),
@@ -94,7 +94,7 @@ export const STAGES: StageDef[] = [
     ],
   },
   {
-    id: 7, nome: "Muralha Viva", duracao: 300, chefe: "rainha_colmeia", mult: 2.5, modificadores: [],
+    id: 7, nome: "Muralha Viva", duracao: 300, chefe: "rainha_colmeia", mult: 2.1, modificadores: [],
     ondas: [
       fluxo("batedor", 1, 270, 0.5),
       fluxo("escudeiro", 20, 270, 7),
@@ -106,7 +106,7 @@ export const STAGES: StageDef[] = [
     ],
   },
   {
-    id: 8, nome: "Fogo Cruzado", duracao: 300, chefe: "construtor_muros", mult: 3.1, modificadores: [],
+    id: 8, nome: "Fogo Cruzado", duracao: 300, chefe: "construtor_muros", mult: 2.15, modificadores: [],
     ondas: [
       fluxo("batedor", 1, 270, 0.45),
       fluxo("atirador", 20, 270, 6),
@@ -118,7 +118,7 @@ export const STAGES: StageDef[] = [
     ],
   },
   {
-    id: 9, nome: "Mar de Cometas", duracao: 300, chefe: "eclipse", mult: 3.8, modificadores: [],
+    id: 9, nome: "Mar de Cometas", duracao: 300, chefe: "eclipse", mult: 2.7, modificadores: [],
     ondas: [
       fluxo("batedor", 1, 270, 0.42),
       fluxo("kamikaze", 10, 270, 3.5),
@@ -130,7 +130,7 @@ export const STAGES: StageDef[] = [
     ],
   },
   {
-    id: 10, nome: "Horizonte de Eventos", duracao: 300, chefe: "singularidade", mult: 4.6, modificadores: [],
+    id: 10, nome: "Horizonte de Eventos", duracao: 300, chefe: "singularidade", mult: 3.15, modificadores: [],
     ondas: [
       fluxo("batedor", 1, 270, 0.4),
       fluxo("tanque", 20, 270, 6),

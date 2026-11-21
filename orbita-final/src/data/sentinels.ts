@@ -23,7 +23,7 @@ export const SENTINELS: Record<SentinelId, SentinelDef> = {
     papel: "Dano único",
     desc: "Disparo rápido e preciso no alvo mais próximo.",
     cor: 0xff9a3c,
-    base: B({ dano: 20, cadencia: 2, alcance: 900, velProj: 1500 }),
+    base: B({ dano: 22, cadencia: 2.1, alcance: 900, velProj: 1500 }),
     alvoPadrao: "proximo",
     niveis: [
       { texto: "+30% de dano", efeito: { danoPct: 0.3 } },
@@ -49,8 +49,8 @@ export const SENTINELS: Record<SentinelId, SentinelDef> = {
     papel: "Alvo único forte",
     desc: "Raio contínuo que gira até o alvo e causa dano por tick.",
     cor: 0xff4d6d,
-    base: B({ dano: 10, cadencia: 6, alcance: 700, velProj: 0 }),
-    alvoPadrao: "maisHp",
+    base: B({ dano: 12, cadencia: 6, alcance: 720, velProj: 0 }),
+    alvoPadrao: "proximo",
     niveis: [
       { texto: "+30% de dano", efeito: { danoPct: 0.3 } },
       { texto: "+20% de alcance e +20% de dano", efeito: { alcancePct: 0.2, danoPct: 0.2 } },
@@ -75,8 +75,8 @@ export const SENTINELS: Record<SentinelId, SentinelDef> = {
     papel: "Perfuração",
     desc: "Carrega e dispara um projétil que atravessa tudo em linha reta.",
     cor: 0xb8f2ff,
-    base: B({ dano: 75, cadencia: 0.6, alcance: 1100, velProj: 2400, perfuracao: 99 }),
-    alvoPadrao: "maisHp",
+    base: B({ dano: 50, cadencia: 1.1, alcance: 1100, velProj: 2400, perfuracao: 99 }),
+    alvoPadrao: "proximo",
     niveis: [
       { texto: "+30% de dano", efeito: { danoPct: 0.3 } },
       { texto: "+25% de cadência", efeito: { cadenciaPct: 0.25 } },
@@ -101,7 +101,7 @@ export const SENTINELS: Record<SentinelId, SentinelDef> = {
     papel: "Grupos",
     desc: "Feixe que salta entre vários inimigos em corrente.",
     cor: 0x7df9ff,
-    base: B({ dano: 16, cadencia: 1.2, alcance: 750, cadeia: 4, area: 300 }),
+    base: B({ dano: 16, cadencia: 1.25, alcance: 750, cadeia: 4, area: 300 }),
     alvoPadrao: "proximo",
     niveis: [
       { texto: "+1 salto", efeito: { cadeia: 1 } },
@@ -127,7 +127,7 @@ export const SENTINELS: Record<SentinelId, SentinelDef> = {
     papel: "Área",
     desc: "Salva de mísseis teleguiados que explodem em área.",
     cor: 0xffd25e,
-    base: B({ dano: 14, cadencia: 0.5, alcance: 950, velProj: 650, projeteis: 4, area: 75 }),
+    base: B({ dano: 13, cadencia: 0.52, alcance: 950, velProj: 650, projeteis: 4, area: 75 }),
     alvoPadrao: "aleatorio",
     niveis: [
       { texto: "+2 mísseis", efeito: { projeteis: 2 } },
@@ -153,7 +153,7 @@ export const SENTINELS: Record<SentinelId, SentinelDef> = {
     papel: "Controle",
     desc: "Cria uma zona que puxa, desacelera e esmaga inimigos.",
     cor: 0xa66bff,
-    base: B({ dano: 7, cadencia: 0.25, alcance: 850, area: 170, duracao: 3.5, lentidao: 0.45 }),
+    base: B({ dano: 6, cadencia: 0.24, alcance: 850, area: 160, duracao: 3.2, lentidao: 0.38 }),
     alvoPadrao: "proximo",
     niveis: [
       { texto: "+25% de área", efeito: { areaPct: 0.25 } },
@@ -205,7 +205,7 @@ export const SENTINELS: Record<SentinelId, SentinelDef> = {
     papel: "Invocação",
     desc: "Solta drones que caçam inimigos sozinhos.",
     cor: 0x9dff5e,
-    base: B({ dano: 8, cadencia: 3, alcance: 1100, velProj: 1100, projeteis: 2 }),
+    base: B({ dano: 8, cadencia: 3, alcance: 1100, velProj: 1100, projeteis: 3 }),
     alvoPadrao: "proximo",
     niveis: [
       { texto: "+1 drone", efeito: { projeteis: 1 } },
@@ -231,7 +231,7 @@ export const SENTINELS: Record<SentinelId, SentinelDef> = {
     papel: "Controle",
     desc: "Projéteis que congelam e desaceleram.",
     cor: 0x9fe8ff,
-    base: B({ dano: 12, cadencia: 1.5, alcance: 900, velProj: 1100, duracao: 2, lentidao: 0.4 }),
+    base: B({ dano: 24, cadencia: 2.4, alcance: 900, velProj: 1300, perfuracao: 1, duracao: 2, lentidao: 0.45 }),
     alvoPadrao: "proximo",
     niveis: [
       { texto: "+30% de dano", efeito: { danoPct: 0.3 } },
