@@ -57,9 +57,13 @@ export function telaFases(nav: Nav, dificil: boolean): HTMLElement {
     const fundo = arte(`fase_${st.id}`, ARTE_FASE[i % ARTE_FASE.length]);
     return h("button", { class: "fase-v2" + (lib ? "" : " bloq") + (ehAtual ? " atual" : ""), disabled: !lib, onclick: () => nav.jogarCampanha(i, dificil) },
       fundo ? h("img", { class: "fase-arte", src: fundo, alt: "" }) : null,
-      h("span", { class: "fase-num", html: lib ? String(st.id) : ic("cadeado") }),
-      h("span", { class: "fase-txt" }, h("b", { text: st.nome }), h("small", { text: `Chefe: ${BOSSES[st.chefe].nome}` })),
-      h("span", { class: "fase-est", html: [1, 2, 3].map((k) => ic("estrela", "ic-estrela" + (k <= est ? "" : " off"))).join("") }));
+      h("span", { class: "fase-num" + (est > 0 ? " feita" : ""), html: lib ? `<b>${st.id}</b>` : ic("cadeado") }),
+      h("span", { class: "fase-txt" },
+        h("b", { text: st.nome }),
+        h("small", { text: `Chefe: ${BOSSES[st.chefe].nome}` }),
+        lib ? h("span", { class: "fase-est", html: [1, 2, 3].map((k) => ic("estrela", "ic-estrela" + (k <= est ? "" : " off"))).join("") })
+          : h("span", { class: "fase-bloq", text: `Vença a Fase ${st.id - 1} para liberar` })),
+      ehAtual ? h("span", { class: "fase-tag", text: "PRÓXIMA" }) : null);
   });
   const el = telaBanner(nav, "FASES", arte("banner_fases", "tile_mapa") ? (urlArte("banner_fases") ? "banner_fases" : "tile_mapa") : null, abas, ...linhas);
   return el;

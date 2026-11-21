@@ -969,3 +969,52 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 .btn:disabled, .btn-preco:disabled { opacity: 0.45; filter: grayscale(0.8); }
 .btn-fundir, .btn-jogar { min-height: 48px; }
 .aba { min-height: 44px; }
+
+/* =================== FASES (1.9): moldura neon, selo hexagonal, estrelas fora da arte =================== */
+.fase-v2 { --borda-neon: rgba(79, 214, 255, 0.8); border: 0 !important; border-radius: 0; box-shadow: none; padding: 10px 14px 10px 12px; min-height: 88px;
+  background: var(--borda-neon);
+  clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px);
+  filter: drop-shadow(0 0 6px rgba(79, 214, 255, 0.35)); }
+.fase-v2::before { content: ""; position: absolute; inset: 2px; z-index: -2; clip-path: inherit; background: linear-gradient(90deg, #081530 35%, #0a1a38); }
+.fase-arte { z-index: -1; width: 60%; -webkit-mask-image: linear-gradient(90deg, transparent, #000 50%); mask-image: linear-gradient(90deg, transparent, #000 50%); }
+.fase-v2.atual { --borda-neon: #ffb33d; box-shadow: none; filter: drop-shadow(0 0 10px rgba(255, 170, 50, 0.55)); }
+.fase-v2.bloq { --borda-neon: rgba(120, 150, 190, 0.35); filter: none; }
+.fase-v2.bloq .fase-arte { opacity: 0.25; filter: grayscale(0.8); }
+
+/* selo hexagonal do número */
+.fase-num { position: relative; width: 50px; height: 56px; border: 0; border-radius: 0; background: #4fd6ff; display: grid; place-items: center;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); isolation: isolate; }
+.fase-num::before { content: ""; position: absolute; inset: 2px; z-index: -1; clip-path: inherit; background: radial-gradient(circle at 50% 30%, #1b4f8c, #0a1c3c 75%); }
+.fase-num b { font-size: 22px; font-weight: 900; color: #fff; text-shadow: 0 0 8px rgba(79, 214, 255, 0.9); }
+.fase-num.feita { background: #49e07a; }
+.fase-num.feita::before { background: radial-gradient(circle at 50% 30%, #1d6b45, #0a2a1c 75%); }
+.fase-num.feita b { text-shadow: 0 0 8px rgba(73, 224, 122, 0.9); }
+.fase-v2.atual .fase-num { background: #ffc23d; }
+.fase-v2.atual .fase-num::before { background: radial-gradient(circle at 50% 30%, #ffb33d, #a85400 80%); }
+.fase-v2.atual .fase-num b { color: #2a1200; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5); }
+.fase-v2.bloq .fase-num { background: rgba(130, 150, 180, 0.45); }
+.fase-v2.bloq .fase-num::before { background: #0c1424; }
+.fase-num .ic { width: 20px; height: 20px; color: #8fa3c0; }
+
+/* texto + estrelas embaixo do nome (sobre o fundo escuro, longe da arte) */
+.fase-txt { gap: 2px; }
+.fase-txt b { font-size: 17px; }
+.fase-txt small { font-size: 12.5px; color: #b9cbe4; }
+.fase-est { display: flex; gap: 2px; margin-top: 3px; }
+.fase-est .ic-estrela { width: 16px; height: 16px; color: #ffd24a; filter: drop-shadow(0 0 3px rgba(255, 200, 60, 0.7)); }
+.fase-est .ic-estrela.off { color: rgba(150, 170, 200, 0.3); filter: none; }
+.fase-bloq { margin-top: 3px; font-size: 11.5px; color: #8fa3c0; font-weight: 700; }
+.fase-tag { position: absolute; top: 0; right: 18px; padding: 2px 10px 3px; font-size: 10px; font-weight: 900; letter-spacing: 0.12em; color: #2a1200;
+  background: linear-gradient(180deg, #ffd36b, #ffa21f); clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 6px 100%); }
+
+/* botões quadradinhos (cantos retos, como os painéis) */
+.btn, .btn-preco, .aba, .btn-fundir, .btn-jogar, .btn-voltar, .btn.icone, .btn.pequeno { border-radius: 4px !important; }
+/* demais caixas e botões: mesmo canto reto */
+.lat, .dia, .est-item, .chip-v2, .slot-v2, .loja-item, .skin-op, .skin-tag, .nav-item, .campo-linha, .cartao-ic, .chip-equip, .modo-status,
+.passe-prem, .ad-caixa, .bau-chip, .hg-mini, .penalidade, .selo-teste, .tuto-cartas, .chip, .slot { border-radius: 4px !important; }
+/* números do passe no mesmo selo hexagonal das fases */
+.passe-n { position: relative; isolation: isolate; width: 32px; height: 36px; border-radius: 0; background: rgba(79, 214, 255, 0.8);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); color: #fff; }
+.passe-n::before { content: ""; position: absolute; inset: 1.5px; z-index: -1; clip-path: inherit; background: radial-gradient(circle at 50% 30%, #1b4f8c, #0a1c3c 75%); }
+.passe-nivel.ouro .passe-n { background: #ffc23d; color: #2a1200; }
+.passe-nivel.ouro .passe-n::before { background: radial-gradient(circle at 50% 30%, #ffb33d, #a85400 80%); }
