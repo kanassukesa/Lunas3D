@@ -1,5 +1,6 @@
 import type { Battle } from "../battle/Battle";
 import { CAMPOS } from "../data/journey";
+import { BALANCE } from "../data/balance";
 import { fmtInt, fmtTempo, h, iconeImg } from "./dom";
 import { ic } from "./Icones";
 
@@ -8,6 +9,7 @@ export interface HudAcoes {
   velocidade(): void;
   cartas(): void;
   ultimate(): void;
+  habilidade(): void;
   foco(): void;
 }
 
@@ -33,6 +35,8 @@ export class Hud {
   private foco: HTMLButtonElement;
   private fps: HTMLElement;
   private dica: HTMLElement;
+  private combo: HTMLElement;
+  private hab: HTMLButtonElement;
   private fase: HTMLElement;
   private campos: HTMLElement;
   readonly flash: HTMLElement;
@@ -59,6 +63,9 @@ export class Hud {
     this.foco = h("button", { class: "btn pequeno hud-foco oculto", onclick: () => acoes.foco() });
     this.fps = h("div", { class: "fps" });
     this.dica = h("div", { class: "dica oculto" });
+    this.combo = h("div", { class: "hud-combo oculto" });
+    this.hab = h("button", { class: "hud-hab", "aria-label": "Onda de choque", onclick: () => acoes.habilidade() },
+      h("span", { html: ic("radiacao") }), h("small", { text: "CHOQUE" }));
     this.fase = h("div", { class: "hud-fase", text: nomeFase });
     this.campos = h("div", { class: "hud-campos" });
     this.flash = h("div", { class: "flash" });
@@ -91,6 +98,8 @@ export class Hud {
       this.dica,
       this.foco,
       this.ult,
+      this.hab,
+      this.combo,
       this.fps,
     );
   }
@@ -99,6 +108,32 @@ export class Hud {
     if (this.cache[k] === v) return false;
     this.cache[k] = v;
     return true;
+  }
+
+  private tuto: HTMLElement | null = null;
+
+  /** Balão do tutorial apontando para um elemento do HUD (seta embaixo/em cima conforme a posição). */
+  apontar(seletor: string | null, texto = ""): void {
+    this.tuto?.remove();
+    this.tuto = null;
+    if (!seletor) return;
+    const alvo = this.el.querySelector<HTMLElement>(seletor);
+    if (!alvo) return;
+    const r = alvo.getBoundingClientRect();
+    const embaixo = r.top > window.innerHeight / 2;
+    const b = h("div", { class: "tuto " + (embaixo ? "acima" : "abaixo") }, h("span", { text: texto }));
+    const cx = r.left + r.width / 2;
+    const larg = Math.min(250, window.innerWidth - 24);
+    const left = Math.max(12, Math.min(window.innerWidth - larg - 12, cx - larg / 2));
+    b.style.width = larg + "px";
+    b.style.left = left + "px";
+    b.style.setProperty("--seta", `${cx - left}px`);
+    if (embaixo) b.style.bottom = `${window.innerHeight - r.top + 14}px`;
+    else b.style.top = `${r.bottom + 14}px`;
+    const anel = h("div", { class: "tuto-anel", style: `left:${r.left - 6}px;top:${r.top - 6}px;width:${r.width + 12}px;height:${r.height + 12}px` });
+    const wrap = h("div", { class: "tuto-wrap" }, anel, b);
+    this.el.append(wrap);
+    this.tuto = wrap;
   }
 
   mostrarDica(txt: string | null): void {
@@ -140,6 +175,25 @@ export class Hud {
     if (this.set("ult", up) || this.set("ultp", pronto)) {
       this.ult.style.setProperty("--p", String(up));
       this.ult.classList.toggle("pronto", pronto);
+    }
+
+    // habilidade ativa
+    const habP = Math.round((1 - Math.max(0, b.habilidadeCd) / BALANCE.habilidade.recarga) * 100);
+    if (this.set("hab", habP)) {
+      this.hab.style.setProperty("--p", String(habP));
+      this.hab.classList.toggle("pronto", habP >= 100);
+    }
+    // combo
+    const mostra = b.combo >= 5;
+    if (this.set("comboV", mostra ? b.combo : 0)) {
+      this.combo.classList.toggle("oculto", !mostra);
+      if (mostra) {
+        const m = b.multCombo();
+        this.combo.innerHTML = `<b>${b.combo}</b><span>COMBO</span>${m > 1 ? `<em>x${m.toFixed(1)}</em>` : ""}`;
+        this.combo.classList.remove("pulo");
+        void this.combo.offsetWidth;
+        this.combo.classList.add("pulo");
+      }
     }
 
     const boss = b.boss && b.boss.alive ? b.boss : null;

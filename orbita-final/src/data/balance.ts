@@ -40,6 +40,10 @@ export const BALANCE = {
     sucataPorAbate: 1,
   },
   estrelas: { hp2: 0.5, hp3: 0.9 },
+  /** Combo: abates seguidos dentro da janela; a cada `passo` abates o multiplicador sobe `bonus` (até `max`). */
+  combo: { janela: 2.2, passo: 15, bonus: 0.1, max: 2.5, pontosPorAbate: 1 },
+  /** Habilidade ativa do planeta: onda de choque. */
+  habilidade: { recarga: 22, raio: 620, empurrao: 260, dano: 40, escudoPct: 0.2 },
   hangar: {
     nivelMax: 30,
     danoPorNivel: 0.06,

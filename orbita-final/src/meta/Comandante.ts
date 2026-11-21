@@ -1,6 +1,6 @@
 import type { Battle } from "../battle/Battle";
 import type { Modo } from "../battle/types";
-import { BONUS_DIARIAS, CORREIO, LOGIN_DIAS, LOJA, MISSOES_DIARIAS, PATENTES, type MissaoDiariaDef, type Patente, type Premio } from "../data/comandante";
+import { BONUS_DIARIAS, CORREIO, LOGIN_DIAS, LOJA, MISSOES_DIARIAS, PASSE, PASSE_PREMIOS, PATENTES, SKINS, type MissaoDiariaDef, type Patente, type Premio } from "../data/comandante";
 import { Rng, hashString } from "../core/Rng";
 import type { SaveData } from "../core/Save";
 import { gerarChip, hojeStr } from "./Meta";
@@ -11,7 +11,7 @@ import type { Chip } from "../data/types";
 /** Pontos ganhos numa partida. */
 export function pontosDaPartida(b: Battle, modo: Modo): number {
   const f = b.fim!;
-  let p = f.abates * 2 + f.tempo * 1 + b.chefesMortos * 300 + f.evolucoes * 200;
+  let p = f.abates * 2 + f.tempo * 1 + b.chefesMortos * 300 + f.evolucoes * 200 + b.pontosCombo + b.melhorCombo * 3;
   if (modo === "campanha") p += (f.vitoria ? 400 * b.cfg.stage.id : 0) + f.estrelas * 150;
   if (modo === "diario" && f.vitoria) p += 1500;
   if (modo === "jornada") p += f.etapas * 900;
@@ -96,6 +96,8 @@ export function registrarPartida(s: SaveData, b: Battle, modo: Modo): number {
   const f = b.fim!;
   const pts = pontosDaPartida(b, modo);
   s.pontos += pts;
+  atualizarTemporada(s);
+  s.passe.pontos += pts;
   statDia(s, "partidas", 1);
   statDia(s, "abates", f.abates);
   statDia(s, "chefes", b.chefesMortos);
@@ -159,4 +161,57 @@ export function textoPremio(p: Premio, ic: { creditos: string; nucleos: string; 
   if (p.cristais) partes.push(`${ic.cristais} ${p.cristais}`);
   if (p.chip !== undefined) partes.push(["Chip", "Chip raro", "Chip épico", "Chip lendário"][p.chip]);
   return partes.join(" &nbsp;");
+}
+
+// ------------------------------------------------------------- passe de batalha
+
+/** Temporada = mês corrente (AAAA-MM). Ao virar o mês, o passe recomeça. */
+export function temporadaAtual(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function atualizarTemporada(s: SaveData): void {
+  const t = temporadaAtual();
+  if (s.passe.temporada !== t) s.passe = { temporada: t, pontos: 0, resgatados: [] };
+}
+
+export function nivelPasse(s: SaveData): { nivel: number; frac: number } {
+  atualizarTemporada(s);
+  const n = Math.min(PASSE.niveis, Math.floor(s.passe.pontos / PASSE.pontosPorNivel));
+  const frac = n >= PASSE.niveis ? 1 : (s.passe.pontos % PASSE.pontosPorNivel) / PASSE.pontosPorNivel;
+  return { nivel: n, frac };
+}
+
+export function passeProntos(s: SaveData): number {
+  const { nivel } = nivelPasse(s);
+  let n = 0;
+  for (let i = 1; i <= nivel; i++) if (!s.passe.resgatados.includes(i)) n++;
+  return n;
+}
+
+export function resgatarPasse(s: SaveData, nivel: number): { chip: Chip | null; skin?: string } | null {
+  if (nivelPasse(s).nivel < nivel || s.passe.resgatados.includes(nivel)) return null;
+  s.passe.resgatados.push(nivel);
+  const p = PASSE_PREMIOS[nivel - 1];
+  if (p.skin && !s.skins.possui.includes(p.skin)) s.skins.possui.push(p.skin);
+  return { chip: darPremio(s, p), skin: p.skin };
+}
+
+// ------------------------------------------------------------- skins
+
+export function comprarSkin(s: SaveData, id: string): boolean {
+  const sk = SKINS.find((x) => x.id === id);
+  if (!sk || sk.preco === null || s.skins.possui.includes(id) || s.cristais < sk.preco) return false;
+  s.cristais -= sk.preco;
+  s.skins.possui.push(id);
+  return true;
+}
+
+export function usarSkin(s: SaveData, id: string): boolean {
+  const sk = SKINS.find((x) => x.id === id);
+  if (!sk || !s.skins.possui.includes(id)) return false;
+  if (sk.tipo === "escudo") s.skins.escudo = id;
+  else s.skins.planeta = id;
+  return true;
 }

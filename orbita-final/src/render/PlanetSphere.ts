@@ -130,10 +130,12 @@ function gerarMapa(W: number, H: number, nuvens: boolean): Texture {
   return Texture.from(cv);
 }
 
-let mapas: { terra: Texture; nuvens: Texture } | null = null;
-function obterMapas(): { terra: Texture; nuvens: Texture } {
+const mapasCache = new Map<string, { terra: Texture; nuvens: Texture }>();
+function obterMapas(skin = "planeta_terra"): { terra: Texture; nuvens: Texture } {
+  let mapas = mapasCache.get(skin) ?? null;
   if (!mapas) {
-    const terra = spritesReais.get("planeta_mapa") ?? gerarMapa(512, 256, false);
+    const idMapa = skin === "planeta_terra" ? "planeta_mapa" : `planeta_mapa_${skin.replace("planeta_", "")}`;
+    const terra = spritesReais.get(idMapa) ?? spritesReais.get("planeta_mapa") ?? gerarMapa(512, 256, false);
     const nuvens = spritesReais.get("planeta_nuvens") ?? gerarMapa(512, 256, true);
     for (const t of [terra, nuvens]) {
       t.source.style.addressModeU = "repeat";
@@ -141,6 +143,7 @@ function obterMapas(): { terra: Texture; nuvens: Texture } {
       t.source.style.scaleMode = "linear";
     }
     mapas = { terra, nuvens };
+    mapasCache.set(skin, mapas);
   }
   return mapas;
 }
@@ -152,8 +155,8 @@ export class PlanetSphere {
   velocidade = 0.012;
   velNuvem = 0.018;
 
-  constructor(raio: number) {
-    const { terra, nuvens } = obterMapas();
+  constructor(raio: number, skin?: string) {
+    const { terra, nuvens } = obterMapas(skin);
     const geometry = new MeshGeometry({
       positions: new Float32Array([-raio, -raio, raio, -raio, raio, raio, -raio, raio]),
       uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),

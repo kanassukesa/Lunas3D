@@ -13,6 +13,12 @@ import {
 } from "../../meta/Meta";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg, toast } from "../dom";
 import { ic, icT } from "../Icones";
+import { urlArte } from "../../render/Sprites";
+import metaCabecas from "../../assets/sprites/cabecas.json";
+import { secaoAparencia } from "./Hub";
+import { CARD_MAP } from "../../data/cards";
+
+const CARTA_NOME: Record<string, string> = Object.fromEntries(Object.values(CARD_MAP).map((c) => [c.id, c.nome]));
 
 export interface Nav {
   save: SaveData;
@@ -55,71 +61,172 @@ export function proximaFase(s: SaveData): number {
 
 // ------------------------------------------------------------------ MAPA
 
+/** Cores dos planetas de cada fase no mapa (gradiente da esfera). */
+const COR_FASE = ["#4fd6ff", "#ff9a3c", "#7df9ff", "#ff5aa5", "#7dff6b", "#b36bff", "#ffd04a", "#ff4d5e", "#5ec8ff", "#c28bff"];
+
 export function telaMapa(nav: Nav, dificil: boolean): HTMLElement {
   const s = nav.save;
   const difLib = s.campanha.normal[STAGES.length - 1] > 0;
+  const arr = dificil ? s.campanha.dificil : s.campanha.normal;
+  const atual = Math.max(0, arr.findIndex((x) => x === 0) === -1 ? STAGES.length - 1 : arr.findIndex((x) => x === 0));
   const abas = h("div", { class: "abas" },
     h("button", { class: "btn pequeno" + (!dificil ? " ativo" : ""), text: "Normal", onclick: () => nav.ir("mapa") }),
     h("button", { class: "btn pequeno" + (dificil ? " ativo" : ""), html: difLib ? "Difícil" : icT("cadeado", "Difícil"), disabled: !difLib, onclick: () => nav.ir("mapaDificil") }));
-  const lista = STAGES.map((st, i) => {
-    const lib = faseLiberada(s, i, dificil);
-    const est = (dificil ? s.campanha.dificil : s.campanha.normal)[i];
-    return h("button", { class: "fase-item" + (lib ? "" : " bloq"), disabled: !lib, onclick: () => nav.jogarCampanha(i, dificil) },
-      h("div", { class: "num", html: lib ? String(st.id) : ic("cadeado") }),
-      h("div", null, h("div", { style: "font-weight:800", text: st.nome }), h("div", { class: "desc", style: "font-size:12px;color:var(--texto2)", text: `Chefe: ${BOSSES[st.chefe].nome}` })),
-      h("div", { class: "est", html: [1, 2, 3].map((i) => ic("estrela", "ic-estrela" + (i <= est ? "" : " off"))).join("") }));
+
+  // caminho em zigue-zague de baixo (fase 1) para cima (fase 10)
+  const PASSO = 150;
+  const altura = STAGES.length * PASSO + 60;
+  const xs = [30, 70, 38, 72, 28, 64, 34, 70, 30, 60];
+  const pos = STAGES.map((_, i) => ({ x: xs[i % xs.length], y: altura - 90 - i * PASSO }));
+  let d = "";
+  pos.forEach((p, i) => {
+    if (i === 0) d += `M ${p.x} ${p.y}`;
+    else {
+      const a = pos[i - 1];
+      d += ` C ${a.x} ${a.y - PASSO * 0.55}, ${p.x} ${p.y + PASSO * 0.55}, ${p.x} ${p.y}`;
+    }
   });
-  return tela(nav, "FASES", abas, ...lista);
+  const pctVenc = arr.filter((x) => x > 0).length;
+  const caminho = `<svg class="mapa-caminho" viewBox="0 0 100 ${altura}" preserveAspectRatio="none" aria-hidden="true">
+    <path d="${d}" class="trilha" vector-effect="non-scaling-stroke"/>
+    <path d="${d}" class="trilha-feita" vector-effect="non-scaling-stroke" pathLength="100" style="stroke-dasharray:${(Math.max(0, pctVenc) / (STAGES.length - 1)) * 100} 100"/></svg>`;
+
+  const nos = STAGES.map((st, i) => {
+    const lib = faseLiberada(s, i, dificil);
+    const est = arr[i];
+    const chefe = urlArte(`chefe_${st.chefe}`);
+    const p = pos[i];
+    return h("button", { class: "no-fase" + (lib ? "" : " bloq") + (i === atual && lib ? " atual" : "") + (est > 0 ? " vencida" : ""),
+      style: `left:${p.x}%;top:${p.y}px;--cor:${COR_FASE[i % COR_FASE.length]}`, disabled: !lib, onclick: () => nav.jogarCampanha(i, dificil) },
+      h("span", { class: "no-planeta" }, chefe ? h("img", { class: "no-chefe", src: chefe, alt: "" }) : null, h("b", { html: lib ? String(st.id) : ic("cadeado") })),
+      h("span", { class: "no-est", html: [1, 2, 3].map((k) => ic("estrela", "ic-estrela" + (k <= est ? "" : " off"))).join("") }),
+      h("span", { class: "no-nome", text: st.nome }),
+      h("small", { class: "no-chefe-nome", text: BOSSES[st.chefe].nome }));
+  });
+  const mapa = h("div", { class: "mapa-fases", style: `height:${altura}px`, html: caminho }, ...nos);
+  const el = tela(nav, "FASES", abas, mapa);
+  // rola até a fase atual
+  requestAnimationFrame(() => {
+    const c = el.querySelector(".tela-conteudo") as HTMLElement | null;
+    if (c) c.scrollTop = Math.max(0, pos[atual].y - c.clientHeight / 2);
+  });
+  return el;
 }
 
 // ------------------------------------------------------------------ HANGAR
 
+let hangarSel: SentinelId = "canhao";
+
+const CABECA_DE: Record<SentinelId, string> = {
+  canhao: "canhao", laser: "laser", trilho: "trilho", feixe: "prisma", missil: "missil",
+  gravidade: "gravidade", campo: "domo", drone: "colmeia", gelo: "gelo",
+};
+
+/** Torre montada (base + cabeça girando) para a vitrine do hangar, com o tiro piscando. */
+function vitrineTorre(id: SentinelId, cor: string): HTMLElement {
+  const base = urlArte("torre_base");
+  const cab = urlArte(`cabeca_${CABECA_DE[id]}`);
+  const k = (metaCabecas as Record<string, number>)[CABECA_DE[id]] ?? 0.8;
+  if (base && cab) {
+    return h("div", { class: "torre-vitrine", style: `--cor:${cor};--cab:${(0.66 / k) * 100}%` },
+      h("img", { class: "tv-base", src: base, alt: "" }),
+      h("span", { class: "tv-giro" }, h("img", { class: "tv-cab", src: cab, alt: "" }), h("i", { class: "tv-tiro" })));
+  }
+  const inteira = urlArte(`sentinela_${id}`);
+  return h("div", { class: "torre-vitrine", style: `--cor:${cor}` }, inteira ? h("img", { class: "tv-base", src: inteira, alt: "" }) : null);
+}
+
 export function telaHangar(nav: Nav): HTMLElement {
   const s = nav.save;
-  const info = h("div", { class: "cartao" },
-    h("div", { class: "desc", html: `<b>Deck:</b> 1 sentinela <b>base</b> (começa a partida e define o ultimate) + até ${BALANCE.maxSlots - 1} que podem aparecer como carta. Os slots da partida são as sentinelas do deck: hoje <b>${new Set([s.deck.base, ...s.deck.pool]).size}/${BALANCE.maxSlots}</b>.` }));
-  const cards = SENTINEL_IDS.map((id) => {
-    const def = SENTINELS[id];
-    const st = s.sentinelas[id];
-    const ehBase = s.deck.base === id;
-    const noPool = s.deck.pool.includes(id);
-    const acoes = h("div", { class: "acoes" });
-    if (!st.desbloqueada) {
-      acoes.append(h("button", { class: "btn ciano pequeno", disabled: s.nucleos < def.desbloqueio, html: `Desbloquear ${ICONE_MOEDA.nucleos} ${def.desbloqueio}`,
-        onclick: () => { if (desbloquear(s, id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("hangar"); } } }));
-    } else {
-      const { ok, custo } = podeMelhorar(s, id);
-      const max = st.nivel >= BALANCE.hangar.nivelMax;
-      acoes.append(h("button", { class: "btn primario pequeno", disabled: !ok, html: max ? "Nível máximo" : `Melhorar ${ICONE_MOEDA.creditos} ${fmtInt(custo)}`,
-        onclick: () => { if (melhorar(s, id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("hangar"); } } }));
-      acoes.append(h("button", { class: "btn pequeno" + (ehBase ? " ativo" : ""), html: ehBase ? icT("estrela", "Base") : "Definir base",
+  if (!SENTINELS[hangarSel]) hangarSel = s.deck.base;
+  const id = hangarSel;
+  const def = SENTINELS[id];
+  const st = s.sentinelas[id];
+  const cor = hex(def.cor);
+  const ehBase = s.deck.base === id;
+  const noPool = s.deck.pool.includes(id);
+
+  // atributos (com o bônus de dano do nível do hangar), normalizados pelo maior entre as sentinelas
+  const mult = 1 + BALANCE.hangar.danoPorNivel * (st.nivel - 1);
+  const dps = (d: typeof def) => d.base.dano * d.base.cadencia * Math.max(1, d.base.projeteis) * (1 + d.base.cadeia * 0.7);
+  const maxDps = Math.max(...SENTINEL_IDS.map((x) => dps(SENTINELS[x]))) * 1.6;
+  const maxAlc = Math.max(...SENTINEL_IDS.map((x) => SENTINELS[x].base.alcance));
+  const maxCad = Math.max(...SENTINEL_IDS.map((x) => SENTINELS[x].base.cadencia));
+  const barra = (nome: string, v: number, max: number, txt: string) =>
+    h("div", { class: "attr" }, h("span", { text: nome }), h("i", null, h("b", { style: `width:${Math.min(100, (v / max) * 100)}%` })), h("small", { text: txt }));
+
+  const acoes = h("div", { class: "hg-acoes" });
+  if (!st.desbloqueada) {
+    acoes.append(h("button", { class: "btn ciano", disabled: s.nucleos < def.desbloqueio, html: `Desbloquear ${ICONE_MOEDA.nucleos} ${def.desbloqueio}`,
+      onclick: () => { if (desbloquear(s, id)) { audio.sfx("vitoria"); nav.persistir(); nav.ir("hangar"); } } }));
+  } else {
+    const { ok, custo } = podeMelhorar(s, id);
+    const max = st.nivel >= BALANCE.hangar.nivelMax;
+    acoes.append(h("button", { class: "btn primario", disabled: !ok, html: max ? "Nível máximo" : `Melhorar ${ICONE_MOEDA.creditos} ${fmtInt(custo)}`,
+      onclick: () => {
+        if (!melhorar(s, id)) return;
+        audio.sfx("nivel");
+        nav.persistir();
+        nav.ir("hangar");
+        const v = nav.root.querySelector(".hg-vitrine");
+        v?.classList.add("subiu");
+        v?.append(h("span", { class: "hg-up", text: `NÍVEL ${s.sentinelas[id].nivel}` }));
+      } }));
+    acoes.append(h("button", { class: "btn" + (ehBase ? " ativo" : ""), html: ehBase ? icT("estrela", "Base") : "Definir base",
+      onclick: () => {
+        const antiga = s.deck.base;
+        s.deck.base = id;
+        s.deck.pool = s.deck.pool.filter((x) => x !== id);
+        if (!s.deck.pool.includes(antiga) && s.deck.pool.length < BALANCE.maxSlots - 1) s.deck.pool.unshift(antiga);
+        nav.persistir();
+        nav.ir("hangar");
+      } }));
+    if (!ehBase) {
+      acoes.append(h("button", { class: "btn" + (noPool ? " ativo" : ""), html: noPool ? icT("check", "No deck") : icT("mais", "Deck"),
         onclick: () => {
-          const antiga = s.deck.base;
-          s.deck.base = id;
-          s.deck.pool = s.deck.pool.filter((x) => x !== id);
-          if (!s.deck.pool.includes(antiga) && s.deck.pool.length < BALANCE.maxSlots - 1) s.deck.pool.unshift(antiga);
-          nav.persistir();
-          nav.ir("hangar");
+          if (noPool) s.deck.pool = s.deck.pool.filter((x) => x !== id);
+          else if (s.deck.pool.length < BALANCE.maxSlots - 1) s.deck.pool.push(id);
+          else { toast(nav.root, `Deck cheio (máx. ${BALANCE.maxSlots - 1})`); return; }
+          nav.persistir(); nav.ir("hangar");
         } }));
-      if (!ehBase) {
-        acoes.append(h("button", { class: "btn pequeno" + (noPool ? " ativo" : ""), html: noPool ? icT("check", "No deck") : icT("mais", "Deck"),
-          onclick: () => {
-            if (noPool) s.deck.pool = s.deck.pool.filter((x) => x !== id);
-            else if (s.deck.pool.length < BALANCE.maxSlots - 1) s.deck.pool.push(id);
-            else { toast(nav.root, `Deck cheio (máx. ${BALANCE.maxSlots - 1})`); return; }
-            nav.persistir(); nav.ir("hangar");
-          } }));
-      }
     }
-    const tracos = h("div", { class: "tracos" }, ...def.tracos.map((t) => h("span", { class: "traco" + (st.nivel >= t.nivel ? " on" : ""), text: `Nv${t.nivel}: ${t.texto}` })));
-    const danoBonus = Math.round(BALANCE.hangar.danoPorNivel * (st.nivel - 1) * 100);
-    return h("div", { class: "cartao" + (st.desbloqueada ? "" : " bloq") },
-      h("div", { class: "cab" }, h("i", { class: "dot", style: `background:${hex(def.cor)};width:18px;height:18px` }),
-        h("div", { style: "flex:1" }, h("div", { class: "nome", text: def.nome }), h("div", { style: "font-size:12px;color:var(--texto2)", text: `${def.papel} · Nível ${st.nivel}/${BALANCE.hangar.nivelMax}${danoBonus ? ` · +${danoBonus}% dano` : ""}` }))),
-      h("div", { class: "desc", text: `${def.desc} Ultimate: ${def.ultimate.nome} — ${def.ultimate.desc} Evolução: ${def.evolucao.nome}.` }),
-      tracos, acoes);
-  });
-  return tela(nav, "HANGAR", info, ...cards);
+  }
+
+  const carrossel = h("div", { class: "hg-carrossel" }, ...SENTINEL_IDS.map((x) => {
+    const sx = s.sentinelas[x];
+    const img = urlArte(`sentinela_${x}`);
+    return h("button", { class: "hg-mini" + (x === id ? " sel" : "") + (sx.desbloqueada ? "" : " bloq") + (s.deck.base === x ? " base" : s.deck.pool.includes(x) ? " deck" : ""),
+      style: `--cor:${hex(SENTINELS[x].cor)}`, onclick: () => { hangarSel = x; nav.ir("hangar"); } },
+      img ? h("img", { src: img, alt: SENTINELS[x].nome }) : h("span", { html: ic("hangar") }),
+      sx.desbloqueada ? h("small", { text: `Nv ${sx.nivel}` }) : h("small", { html: ic("cadeado") }));
+  }));
+
+  const evoArte = urlArte(`carta_evo_${id}`);
+  return tela(nav, "HANGAR",
+    carrossel,
+    h("div", { class: "hg-vitrine neon" + (st.desbloqueada ? "" : " bloq"), style: `--cor:${cor}` },
+      vitrineTorre(id, cor),
+      h("div", { class: "hg-info" },
+        h("small", { class: "hg-papel", text: def.papel.toUpperCase() }),
+        h("b", { class: "hg-nome", text: def.nome }),
+        h("div", { class: "hg-nivel", html: `Nível <b>${st.nivel}</b>/${BALANCE.hangar.nivelMax}${st.nivel > 1 ? ` · +${Math.round((mult - 1) * 100)}% dano` : ""}` }),
+        h("div", { class: "hg-deck", text: ehBase ? "Sentinela base" : noPool ? "No deck" : st.desbloqueada ? "Fora do deck" : "Bloqueada" }))),
+    h("div", { class: "cartao neon" },
+      h("div", { class: "desc", text: def.desc }),
+      barra("Dano", dps(def) * mult, maxDps, fmtInt(def.base.dano * mult)),
+      barra("Cadência", def.base.cadencia, maxCad, `${def.base.cadencia}/s`),
+      barra("Alcance", def.base.alcance, maxAlc, fmtInt(def.base.alcance))),
+    acoes,
+    h("div", { class: "cartao neon ouro hg-evo" },
+      evoArte ? h("img", { src: evoArte, alt: "" }) : null,
+      h("div", null,
+        h("small", { text: "EVOLUÇÃO NA PARTIDA" }),
+        h("b", { text: def.evolucao.nome }),
+        h("div", { class: "desc", text: `${def.evolucao.desc} Nível 5 + carta "${CARTA_NOME[def.evolucao.passiva] ?? def.evolucao.passiva}".` }))),
+    h("div", { class: "cartao neon" },
+      h("div", { class: "nome", text: `Ultimate: ${def.ultimate.nome}` }), h("div", { class: "desc", text: def.ultimate.desc })),
+    h("div", { class: "cartao neon" }, h("div", { class: "nome", style: "margin-bottom:6px", text: "Traços (a cada 5 níveis)" }),
+      h("div", { class: "tracos" }, ...def.tracos.map((t) => h("span", { class: "traco" + (st.nivel >= t.nivel ? " on" : ""), text: `Nv${t.nivel}: ${t.texto}` })))));
 }
 
 // ------------------------------------------------------------------ CHIPS
@@ -191,7 +298,7 @@ export function telaChips(nav: Nav): HTMLElement {
 
 export function telaPlaneta(nav: Nav): HTMLElement {
   const s = nav.save;
-  return tela(nav, "PLANETA", ...TALENTS.map((t) => {
+  const el = tela(nav, "PLANETA", secaoAparencia(nav), h("div", { class: "secao-titulo", text: "Talentos" }), ...TALENTS.map((t) => {
     const n = s.talentos[t.id] ?? 0;
     const max = n >= t.max;
     const custo = max ? 0 : t.custo(n);
@@ -203,6 +310,8 @@ export function telaPlaneta(nav: Nav): HTMLElement {
       h("div", { class: "acoes" }, h("button", { class: "btn primario pequeno", disabled: !pode, html: max ? "Máximo" : `Melhorar ${ICONE_MOEDA[t.moeda]} ${fmtInt(custo)}`,
         onclick: () => { if (comprarTalento(s, t.id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("planeta"); } } })));
   }));
+  el.style.background = "rgba(5,7,15,0.45)"; // deixa ver o planeta da vitrine
+  return el;
 }
 
 // ------------------------------------------------------------------ MISSÕES

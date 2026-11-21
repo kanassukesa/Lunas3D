@@ -96,3 +96,48 @@ export const CORREIO: Mensagem[] = [
   { id: "arte_nova", data: "2026-11-21", titulo: "Frota renovada", texto: "Sentinelas, inimigos e chefes ganharam visual novo. Um presente pela espera.", premio: { nucleos: 8 } },
   { id: "jornada", data: "2026-11-21", titulo: "Jornada da Semana", texto: "Toda segunda-feira começa uma Jornada nova com efeitos de campo diferentes. Veja em Eventos." },
 ];
+
+// ------------------------------------------------------------- skins
+
+export interface SkinDef {
+  id: string;
+  nome: string;
+  tipo: "escudo" | "planeta";
+  /** Cor do escudo (tint) ou id do mapa do planeta (`planeta_mapa_<id>`, `planeta_nuvens` compartilhado). */
+  cor?: number;
+  /** Preço na loja em cristais; null = só pelo Passe de Batalha. */
+  preco: number | null;
+}
+
+export const SKINS: SkinDef[] = [
+  { id: "escudo_azul", nome: "Escudo Padrão", tipo: "escudo", cor: 0xffffff, preco: 0 },
+  { id: "escudo_verde", nome: "Escudo Esmeralda", tipo: "escudo", cor: 0x8dffb0, preco: 35 },
+  { id: "escudo_vermelho", nome: "Escudo Rubi", tipo: "escudo", cor: 0xff8a8a, preco: 35 },
+  { id: "escudo_roxo", nome: "Escudo Nebulosa", tipo: "escudo", cor: 0xd0a0ff, preco: null },
+  { id: "escudo_dourado", nome: "Escudo Solar", tipo: "escudo", cor: 0xffd77a, preco: null },
+  { id: "planeta_terra", nome: "Terra Nova", tipo: "planeta", preco: 0 },
+  { id: "planeta_lava", nome: "Mundo de Lava", tipo: "planeta", preco: 60 },
+  { id: "planeta_gelo", nome: "Mundo Congelado", tipo: "planeta", preco: 60 },
+  { id: "planeta_deserto", nome: "Mundo Desértico", tipo: "planeta", preco: 60 },
+  { id: "planeta_alien", nome: "Mundo Alienígena", tipo: "planeta", preco: null },
+];
+
+// ------------------------------------------------------------- passe de batalha (gratuito)
+
+export const PASSE = {
+  niveis: 30,
+  /** Pontos de comandante por nível do passe. */
+  pontosPorNivel: 1200,
+};
+
+/** Recompensa de cada nível (índice 0 = nível 1). */
+export const PASSE_PREMIOS: (Premio & { skin?: string })[] = Array.from({ length: 30 }, (_, i) => {
+  const n = i + 1;
+  if (n === 15) return { skin: "escudo_roxo" };
+  if (n === 30) return { skin: "escudo_dourado", cristais: 20 };
+  if (n === 25) return { skin: "planeta_alien" };
+  if (n % 10 === 0) return { chip: 2 };
+  if (n % 5 === 0) return { cristais: 8 };
+  if (n % 3 === 0) return { nucleos: 6 };
+  return { creditos: 250 + n * 25 };
+});

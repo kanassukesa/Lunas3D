@@ -78,6 +78,14 @@ export class Battle {
   reviveu = false;
   evolucoes = 0;
   chefesMortos = 0;
+  /** Combo de abates seguidos. */
+  combo = 0;
+  comboT = 0;
+  melhorCombo = 0;
+  pontosCombo = 0;
+  /** Recarga da habilidade ativa (onda de choque), em segundos. */
+  habilidadeCd = 6;
+  habilidadeUsos = 0;
   /** Tempo total da partida (na Jornada, soma das etapas). */
   tTotal = 0;
   etapa = 0;
@@ -350,7 +358,12 @@ export class Battle {
     this.fx.push({ t: "morte", x: e.x, y: e.y, cor: e.def.cor, r: e.r });
     if (!recompensa) return;
     this.abates++;
-    this.sucata += BALANCE.recompensas.sucataPorAbate;
+    this.combo++;
+    this.comboT = BALANCE.combo.janela;
+    if (this.combo > this.melhorCombo) this.melhorCombo = this.combo;
+    const mult = this.multCombo();
+    this.pontosCombo += BALANCE.combo.pontosPorAbate * (mult - 1) * 10;
+    this.sucata += BALANCE.recompensas.sucataPorAbate * mult;
     this.ganharXp(e.xp);
     this.ult.aoAbater();
     const explo = this.gAdd("explosaoAoMatar");
@@ -366,8 +379,50 @@ export class Battle {
     if (e.boss) this.onChefeDerrotado(e);
   }
 
+  multCombo(): number {
+    const C = BALANCE.combo;
+    return Math.min(C.max, 1 + Math.floor(this.combo / C.passo) * C.bonus);
+  }
+
+  habilidadePronta(): boolean {
+    return this.habilidadeCd <= 0 && !this.fim;
+  }
+
+  /** Onda de choque: empurra e fere os inimigos perto do planeta e recarrega parte do escudo. */
+  usarHabilidade(): boolean {
+    if (!this.habilidadePronta()) return false;
+    const H = BALANCE.habilidade;
+    this.habilidadeCd = H.recarga;
+    this.habilidadeUsos++;
+    const p = this.planet;
+    const dano = H.dano * this.ult.poder();
+    for (const e of this.enemies) {
+      if (!e.alive || !e.alvoavel) continue;
+      const dx = e.x - p.x;
+      const dy = e.y - p.y;
+      const d = Math.hypot(dx, dy) || 1;
+      if (d > H.raio) continue;
+      if (!e.boss && e.def.comportamento !== "muro") {
+        const f = H.empurrao * (1 - d / H.raio * 0.5);
+        e.x += (dx / d) * f;
+        e.y += (dy / d) * f;
+        e.slowAmt = Math.max(e.slowAmt, 0.5);
+        e.slowT = Math.max(e.slowT, 1.2);
+      }
+      this.hitEnemy(e, dano, null, { semMods: true });
+    }
+    for (const s of this.shots) if (s.alive && Math.hypot(s.x - p.x, s.y - p.y) < H.raio) s.alive = false;
+    p.escudo = Math.min(p.escudoMax, p.escudo + p.escudoMax * H.escudoPct);
+    this.beam("pulso", p.x, p.y, H.raio, 0, 0x7df9ff, 0.6, 26);
+    this.fx.push({ t: "tremor", força: 12 });
+    this.fx.push({ t: "flash", força: 0.35 });
+    this.fx.push({ t: "som", id: "pulso" });
+    return true;
+  }
+
   danoPlaneta(v: number, x: number, y: number): void {
     if (this.fim) return;
+    this.combo = 0; // tomar dano quebra o combo
     const p = this.planet;
     const orig = v;
     v = Math.max(1, v - p.armadura);
@@ -507,6 +562,11 @@ export class Battle {
     for (const e of this.enemies) if (e.alive && e.alvoavel) this.grid.insert(e);
 
     this.ult.step(dt);
+    if (this.habilidadeCd > 0) this.habilidadeCd -= dt;
+    if (this.comboT > 0) {
+      this.comboT -= dt;
+      if (this.comboT <= 0) this.combo = 0;
+    }
     updateSentinels(this, dt);
     updateDrones(this, dt);
     updateZones(this, dt);

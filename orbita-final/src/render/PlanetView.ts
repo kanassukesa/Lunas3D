@@ -3,6 +3,7 @@ import { BALANCE } from "../data/balance";
 import { PlanetSphere } from "./PlanetSphere";
 import { temArte } from "./Sprites";
 import { tex } from "./Textures";
+import { aparencia, corEscudo } from "./Aparencia";
 
 const P = BALANCE.planeta;
 
@@ -26,7 +27,7 @@ export class PlanetView {
     atm.alpha = 0.6;
     this.layer.addChild(atm);
 
-    this.esfera = new PlanetSphere(P.raio);
+    this.esfera = new PlanetSphere(P.raio, aparencia.planeta);
     this.layer.addChild(this.esfera.mesh);
 
     const escala = temArte("escudo") ? (P.raioEscudo * 2) / (tex("escudo").width * 0.96) : 1;
@@ -40,6 +41,7 @@ export class PlanetView {
     this.escudo2.scale.set(escala * 1.035);
     this.escudo2.blendMode = "add";
     this.escudo2.rotation = 0.5;
+    this.escudo.tint = this.escudo2.tint = corEscudo();
     this.layer.addChild(this.escudo2, this.escudo);
 
     for (let i = 0; i < 8; i++) {

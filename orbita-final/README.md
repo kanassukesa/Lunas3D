@@ -46,6 +46,11 @@ Imagens geradas por IA vão em `arte/original/<id>.jpg` (lista e prompts em `doc
 `python3 scripts/processar_arte.py` para recortar o fundo e gerar `src/assets/sprites/<id>.png`.
 O jogo carrega sozinho qualquer sprite com o mesmo ID da textura procedural; o resto continua procedural.
 
+## Publicar (Vercel)
+1. Em vercel.com → **Add New → Project** → importe o repositório `kanassukesa/Lunas3D`.
+2. Em **Root Directory** escolha `orbita-final` (o resto é lido do `vercel.json`).
+3. Deploy. No iPhone: abra o link no Safari → Compartilhar → **Adicionar à Tela de Início**.
+
 ## Pendências
 - Arena assíncrona (precisa de backend)
 - Arte final (sprites) e música composta; hoje tudo é procedural

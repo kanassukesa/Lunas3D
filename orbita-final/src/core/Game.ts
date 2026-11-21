@@ -10,15 +10,17 @@ import { Background } from "../render/Background";
 import { BattleRenderer } from "../render/BattleRenderer";
 import { HubScene } from "../render/HubScene";
 import { initTextures } from "../render/Textures";
+import { aparencia } from "../render/Aparencia";
 import { Hud } from "../ui/Hud";
 import { telaLevelUp } from "../ui/LevelUpScreen";
 import { telaBuild, telaPausa, telaResultado } from "../ui/Panels";
+import { telaBau } from "../ui/Bau";
 import { h, ICONE_MOEDA } from "../ui/dom";
 import {
   painelConfig, telaChips, telaConfig, telaHangar, telaMapa, telaMissoes, telaModos, telaPlaneta, type Nav,
 } from "../ui/meta/Screens";
 import {
-  telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaProgresso, telaRecompensas,
+  telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaPasse, telaProgresso, telaRecompensas,
 } from "../ui/meta/Hub";
 import { patenteDe, registrarPartida } from "../meta/Comandante";
 import { audio } from "./Audio";
@@ -31,8 +33,15 @@ const H = BALANCE.mundo.altura;
 const DICAS: [number, number, string][] = [
   [0.5, 6, "As sentinelas atiram sozinhas. Proteja o planeta!"],
   [6.5, 12.5, "Inimigos destruídos dão XP. A cada nível, escolha uma carta de melhoria."],
-  [13, 19, "Quando o botão do raio encher, toque nele para soltar o ultimate."],
-  [19.5, 25.5, "Use x2 para acelerar e o botão de cartas para ver sua build."],
+];
+
+/** Tutorial guiado: cada passo aparece uma vez, quando fizer sentido, apontando o botão certo. */
+const PASSOS: { id: string; alvo: string; texto: string; quando: (b: Battle) => boolean; feito?: (b: Battle) => boolean }[] = [
+  { id: "ultimate", alvo: ".hud-ult", texto: "Ultimate carregado! Toque aqui para soltar o poder da sua sentinela base.", quando: (b) => b.ult.pronto(), feito: (b) => b.ult.usos > 0 },
+  { id: "choque", alvo: ".hud-hab", texto: "Onda de choque: empurra os inimigos perto do planeta e recarrega o escudo.", quando: (b) => b.habilidadePronta() && b.inimigosVivos() > 6, feito: (b) => b.habilidadeUsos > 0 },
+  { id: "combo", alvo: ".hud-combo", texto: "Abates seguidos fazem COMBO: mais pontos e mais sucata. Tomar dano zera o combo.", quando: (b) => b.combo >= 15 },
+  { id: "build", alvo: ".hud-botoes .btn:nth-child(3)", texto: "Aqui você vê sua build: sentinelas, níveis e cartas pegas.", quando: (b) => b.nivel >= 4 },
+  { id: "velocidade", alvo: ".hud-botoes .btn:nth-child(2)", texto: "Toque para acelerar a partida (x2).", quando: (b) => b.t > 50 },
 ];
 
 interface Run {
@@ -47,6 +56,7 @@ interface Run {
   dificil: boolean;
   tutorial: boolean;
   recompensa: Recompensa | null;
+  bauVisto?: boolean;
 }
 
 /** Máquina de estados do jogo: Hub (menus) ↔ Batalha (LevelUp, Pausa, Resultado). */
@@ -104,6 +114,8 @@ export class Game implements Nav {
 
   ir(tela: string): void {
     this.sairDaBatalha();
+    aparencia.planeta = this.save.skins.planeta;
+    aparencia.escudo = this.save.skins.escudo;
     if (!this.hub) {
       this.hub = new HubScene([this.save.deck.base, ...this.save.deck.pool]);
       this.cena.addChild(this.hub.layer);
@@ -128,6 +140,7 @@ export class Game implements Nav {
       loja: () => telaLoja(this),
       progresso: () => telaProgresso(this),
       inventario: () => telaInventario(this),
+      passe: () => telaPasse(this),
       modos: () => telaModos(this),
       config: () => telaConfig(this),
     };
@@ -139,11 +152,12 @@ export class Game implements Nav {
       const c = el.querySelector(".tela-conteudo");
       if (c) c.scrollTop = scroll;
     }
-    if (tela === "hangar" || tela === "hub") this.recriarHub();
+    if (tela === "hangar" || tela === "hub" || tela === "planeta") this.recriarHub();
     this.bg.setFundo(1);
     // vitrine do planeta: só no início (e na tela de login, atrás do formulário fica escondida)
-    if (this.hub) this.hub.layer.visible = tela === "hub";
+    if (this.hub) this.hub.layer.visible = tela === "hub" || tela === "planeta";
     requestAnimationFrame(() => this.posicionarVitrine());
+    el.querySelector(".tela-conteudo")?.addEventListener("scroll", () => this.posicionarVitrine(), { passive: true });
     audio.tocarMusica("ambiente");
   }
 
@@ -152,6 +166,9 @@ export class Game implements Nav {
     const alvo = this.telaEl?.querySelector<HTMLElement>("[data-vitrine]");
     if (!this.hub || !alvo) return;
     const r = alvo.getBoundingClientRect();
+    // fora da área visível (rolou para longe): esconde o planeta
+    const tela = this.telaEl!.dataset.tela;
+    if (this.hub) this.hub.layer.visible = tela === "hub" || (r.bottom > 60 && r.top < window.innerHeight - 40);
     this.hub.encaixar(r.left + r.width / 2, r.top + r.height / 2, Math.min(r.width, r.height) / 2);
   }
 
@@ -216,6 +233,9 @@ export class Game implements Nav {
       ultimate: () => {
         if (!this.run?.overlay) b.ult.ativar();
       },
+      habilidade: () => {
+        if (!this.run?.overlay) b.usarHabilidade();
+      },
       foco: () => {
         b.focoChefe = !b.focoChefe;
       },
@@ -232,6 +252,7 @@ export class Game implements Nav {
   private sairDaBatalha(): void {
     const run = this.run;
     if (!run) return;
+    this.tutoAtivo = null;
     run.r.destruir();
     run.hud.el.remove();
     run.overlay?.remove();
@@ -295,7 +316,13 @@ export class Game implements Nav {
     const rerrolar = () => {
       if (b.cards.rerrolar()) this.abrir(telaLevelUp(b, escolher, rerrolar), "nivel");
     };
-    this.abrir(telaLevelUp(b, escolher, rerrolar), "nivel");
+    const tela = telaLevelUp(b, escolher, rerrolar);
+    if (!this.save.tutorialPassos.includes("cartas")) {
+      this.save.tutorialPassos.push("cartas");
+      this.persistir();
+      tela.insertBefore(h("div", { class: "tuto-cartas", text: "Escolha uma carta: nova sentinela, subir o nível de uma que você já tem ou um bônus. Monte sua build!" }), tela.querySelector(".cartas-lv"));
+    }
+    this.abrir(tela, "nivel");
   }
 
   private mostrarFim(): void {
@@ -328,6 +355,12 @@ export class Game implements Nav {
       if (depois.indice > antes) run.recompensa.novaPatente = depois.atual.nome;
       if (run.tutorial) this.save.tutorialVisto = true;
       this.persistir();
+    }
+    // baú animado antes do resultado (uma vez por partida, só se houve prêmio)
+    if (!run.bauVisto && (run.recompensa.creditos > 0 || run.recompensa.chip)) {
+      run.bauVisto = true;
+      this.abrir(telaBau(run.recompensa, () => this.mostrarFim()), "resultado");
+      return;
     }
     const idx = run.idx;
     const temProxima = run.modo === "campanha" && f.vitoria && idx + 1 < STAGES.length && faseLiberada(this.save, idx + 1, run.dificil);
@@ -381,7 +414,36 @@ export class Game implements Nav {
       const d = DICAS.find(([a, z]) => b.t >= a && b.t < z);
       run.hud.mostrarDica(d ? d[2] : null);
     }
+    this.tutorialGuiado(run, dt);
     audio.tocarMusica(b.boss && b.boss.alive ? "chefe" : "ambiente");
+  }
+
+  private tutoAtivo: { id: string; t: number } | null = null;
+
+  private tutorialGuiado(run: Run, dt: number): void {
+    const b = run.b;
+    const feitos = this.save.tutorialPassos;
+    if (run.overlay || b.fim) {
+      run.hud.apontar(null);
+      return;
+    }
+    if (this.tutoAtivo) {
+      const p = PASSOS.find((x) => x.id === this.tutoAtivo!.id)!;
+      const antes = this.tutoAtivo.t;
+      this.tutoAtivo.t += dt;
+      if (this.tutoAtivo.t > 7 || p.feito?.(b)) {
+        this.tutoAtivo = null;
+        run.hud.apontar(null);
+      } else if (antes === 0 || (antes < 0.4 && this.tutoAtivo.t >= 0.4)) {
+        run.hud.apontar(p.alvo, p.texto); // aparece e reposiciona uma vez (o alvo pode ter acabado de surgir)
+      }
+      return;
+    }
+    const prox = PASSOS.find((p) => !feitos.includes(p.id) && p.quando(b));
+    if (!prox) return;
+    feitos.push(prox.id);
+    this.persistir();
+    this.tutoAtivo = { id: prox.id, t: 0 };
   }
 
   private resize(): void {

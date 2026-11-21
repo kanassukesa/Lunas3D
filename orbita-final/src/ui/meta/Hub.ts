@@ -1,12 +1,12 @@
-import { AVATARES, CORREIO, LOGIN_DIAS, LOJA, BONUS_DIARIAS, PATENTES } from "../../data/comandante";
+import { AVATARES, CORREIO, LOGIN_DIAS, LOJA, BONUS_DIARIAS, PASSE, PASSE_PREMIOS, PATENTES, SKINS, type SkinDef } from "../../data/comandante";
 import { CHIP_RARIDADE_COR, CHIP_RARIDADES, CHIP_SET_MAP, CHIP_SLOTS, CHIP_SLOT_NOME } from "../../data/chips";
 import { SENTINEL_IDS } from "../../data/sentinels";
 import { STAGES } from "../../data/stages";
 import { audio } from "../../core/Audio";
 import type { Chip } from "../../data/types";
 import {
-  atualizarDia, comprar, diariasProntas, loginDisponivel, mensagensNovas, missoesDoDia, patenteDe, resgatarBonusDiario,
-  resgatarDiaria, resgatarLogin, resgatarMensagem, textoPremio,
+  atualizarDia, comprar, comprarSkin, diariasProntas, loginDisponivel, mensagensNovas, missoesDoDia, nivelPasse, passeProntos, patenteDe,
+  resgatarBonusDiario, resgatarDiaria, resgatarLogin, resgatarMensagem, resgatarPasse, temporadaAtual, textoPremio, usarSkin,
 } from "../../meta/Comandante";
 import { desafioDoDia, formatStat, hojeStr, missoesProntas, semanaStr } from "../../meta/Meta";
 import { urlArte } from "../../render/Sprites";
@@ -118,7 +118,7 @@ export function telaHub(nav: Nav): HTMLElement {
       h("div", { class: "lat-col dir" },
         lateral("config", "Ajustes", () => nav.ir("config")),
         lateral("presente", "Recompensas", () => nav.ir("recompensas"), loginDisponivel(s) ? 1 : 0),
-        lateral("passe", "Passe de Batalha", emBreve(nav, "Passe de Batalha")),
+        lateral("passe", "Passe de Batalha", () => nav.ir("passe"), passeProntos(s)),
         lateral("carrinho", "Loja", () => nav.ir("loja"), s.dia.lojaGratis ? 0 : 1, "lat-ouro"))),
     h("button", { class: "btn-batalha" + (urlArte("botao_batalha") ? " com-arte" : ""), style: urlArte("botao_batalha") ? `--arte:url("${urlArte("botao_batalha")}")` : "", onclick: () => nav.jogarCampanha(idx, false) },
       h("span", { class: "bb-play", html: ic("play") }),
@@ -320,8 +320,17 @@ export function telaLoja(nav: Nav): HTMLElement {
           nav.ir("loja");
         } }));
   });
+  const skins = SKINS.filter((k) => k.preco && skinDisponivel(k)).map((k) => {
+    const tem = s.skins.possui.includes(k.id);
+    return h("div", { class: "loja-item neon" + (tem ? "" : " roxo") },
+      h("span", { class: "loja-ic", html: previaSkin(k) }),
+      h("div", { class: "loja-txt" }, h("b", { text: k.nome }), h("span", { text: k.tipo === "escudo" ? "Cor do escudo hexagonal." : "Aparência do planeta." })),
+      h("button", { class: "btn-preco", disabled: tem || s.cristais < (k.preco ?? 0), html: tem ? "Comprado" : `${ICONE_MOEDA.cristais} ${k.preco}`,
+        onclick: () => { if (comprarSkin(s, k.id)) { usarSkin(s, k.id); audio.sfx("vitoria"); nav.persistir(); toast(nav.root, `${k.nome} equipado!`); nav.ir("loja"); } } }));
+  });
   return tela(nav, "LOJA", banner("banner_loja"),
-    h("div", { class: "cartao desc neon", text: "Tudo com moedas do jogo. Cristais vêm de missões, conquistas, eventos e recompensas diárias." }), ...itens, pedestal());
+    h("div", { class: "cartao desc neon", text: "Tudo com moedas do jogo. Cristais vêm de missões, conquistas, eventos e recompensas diárias." }), ...itens,
+    skins.length ? h("div", { class: "secao-titulo", text: "Skins" }) : null, ...skins, pedestal());
 }
 
 // ------------------------------------------------------------------ PROGRESSO (perfil e patentes)
@@ -377,4 +386,92 @@ export function telaInventario(nav: Nav): HTMLElement {
     s.chips.length ? h("div", { class: "lista-chips" }, ...chipsLista) : null);
   el.append(barraInferior(nav, "inventario"));
   return el;
+}
+
+// ------------------------------------------------------------------ SKINS (aparência)
+
+export function skinDisponivel(k: SkinDef): boolean {
+  if (k.tipo === "escudo" || k.id === "planeta_terra") return true;
+  return !!urlArte(`planeta_mapa_${k.id.replace("planeta_", "")}`);
+}
+
+export function previaSkin(k: SkinDef): string {
+  if (k.tipo === "escudo") {
+    const u = urlArte("escudo");
+    const cor = k.cor === 0xffffff ? "#6fd6ff" : "#" + (k.cor ?? 0xffffff).toString(16).padStart(6, "0");
+    // a grade hexagonal do escudo vira máscara pintada na cor da skin
+    return `<span class="previa-escudo" style="--cor:${cor}"><i style="${u ? `-webkit-mask-image:url('${u}');mask-image:url('${u}')` : ""}"></i></span>`;
+  }
+  const u = urlArte(k.id === "planeta_terra" ? "planeta_mapa" : `planeta_mapa_${k.id.replace("planeta_", "")}`);
+  return `<span class="previa-planeta" style="${u ? `background-image:url('${u}')` : ""}"></span>`;
+}
+
+/** Seção "Aparência" (usada na tela do Planeta). */
+export function secaoAparencia(nav: Nav): HTMLElement {
+  const s = nav.save;
+  const nivelPasseDe = (id: string) => PASSE_PREMIOS.findIndex((p) => p.skin === id) + 1;
+  const opcao = (k: SkinDef) => {
+    const tem = s.skins.possui.includes(k.id);
+    const emUso = s.skins.escudo === k.id || s.skins.planeta === k.id;
+    const disp = skinDisponivel(k);
+    let rot = "Usar";
+    if (emUso) rot = "Em uso";
+    else if (!disp) rot = "Em breve";
+    else if (!tem) rot = k.preco === null ? `Passe nv ${nivelPasseDe(k.id)}` : "Na loja";
+    return h("button", { class: "skin-op" + (emUso ? " sel" : "") + (tem ? "" : " bloq"), disabled: !disp && !tem,
+      onclick: () => {
+        if (tem) { usarSkin(s, k.id); nav.persistir(); audio.sfx("carta"); nav.ir("planeta"); }
+        else if (disp && k.preco !== null) nav.ir("loja");
+        else if (disp) nav.ir("passe");
+      } },
+      h("span", { html: previaSkin(k) }), h("b", { text: k.nome }), h("small", { text: rot }));
+  };
+  return h("div", { class: "aparencia-bloco" },
+    h("div", { class: "aparencia-vitrine", "data-vitrine": "1" }),
+    h("div", { class: "cartao neon aparencia" },
+    h("div", { class: "nome", text: "Aparência" }),
+    h("small", { class: "secao-titulo", text: "Escudo" }),
+    h("div", { class: "skins" }, ...SKINS.filter((k) => k.tipo === "escudo").map(opcao)),
+    h("small", { class: "secao-titulo", text: "Planeta" }),
+    h("div", { class: "skins" }, ...SKINS.filter((k) => k.tipo === "planeta").map(opcao))));
+}
+
+// ------------------------------------------------------------------ PASSE DE BATALHA
+
+export function telaPasse(nav: Nav): HTMLElement {
+  const s = nav.save;
+  const { nivel, frac } = nivelPasse(s);
+  const fimMes = new Date();
+  fimMes.setMonth(fimMes.getMonth() + 1, 1);
+  fimMes.setHours(0, 0, 0, 0);
+  const dias = Math.max(0, Math.ceil((fimMes.getTime() - Date.now()) / 864e5));
+  const [ano, mes] = temporadaAtual().split("-");
+  const nomeSkin = (id?: string) => SKINS.find((k) => k.id === id)?.nome ?? "";
+  const linhas = PASSE_PREMIOS.map((p, i) => {
+    const n = i + 1;
+    const alcancado = nivel >= n;
+    const pegou = s.passe.resgatados.includes(n);
+    const destaque = !!p.skin || n % 10 === 0;
+    return h("div", { class: "passe-nivel neon" + (destaque ? " ouro" : "") + (alcancado ? "" : " futuro") + (pegou ? " pegou" : "") },
+      h("span", { class: "passe-n", text: String(n) }),
+      h("span", { class: "passe-ic", html: p.skin ? previaSkin(SKINS.find((k) => k.id === p.skin)!) : imgPremio(p) }),
+      h("div", { class: "loja-txt" }, h("b", { html: p.skin ? `Skin: ${nomeSkin(p.skin)}` : textoPremio(p, ICONE_MOEDA) }), p.skin && (p.cristais || p.chip !== undefined) ? h("span", { html: textoPremio(p, ICONE_MOEDA) }) : null),
+      pegou ? h("span", { class: "passe-ok", html: ic("check") })
+        : h("button", { class: "btn ouro pequeno", disabled: !alcancado, html: alcancado ? "Resgatar" : ic("cadeado"),
+          onclick: () => {
+            const r = resgatarPasse(s, n);
+            if (!r) return;
+            audio.sfx(r.skin || r.chip ? "vitoria" : "nivel");
+            nav.persistir();
+            toast(nav.root, r.skin ? `Skin desbloqueada: ${nomeSkin(r.skin)}!` : r.chip ? `Chip ${CHIP_RARIDADES[r.chip.raridade]}!` : "Resgatado!");
+            nav.ir("passe");
+          } }));
+  });
+  return tela(nav, "PASSE DE BATALHA",
+    h("div", { class: "cartao neon roxo passe-topo" },
+      h("div", { class: "nome", text: `Temporada ${mes}/${ano} · Gratuito` }),
+      h("div", { class: "pat-nome", text: `Nível ${nivel} de ${PASSE.niveis}` }),
+      h("div", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(frac * 100)}%` })),
+      h("div", { class: "desc", html: `${ic("relogio")} termina em ${dias} dia${dias === 1 ? "" : "s"} · cada nível = ${fmtInt(PASSE.pontosPorNivel)} pontos de partida` })),
+    ...linhas);
 }

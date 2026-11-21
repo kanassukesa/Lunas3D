@@ -41,6 +41,10 @@ export interface SaveData {
   dia: { data: string; stats: Record<string, number>; resgatadas: string[]; bonus: boolean; lojaGratis: boolean };
   login: { ultimoDia: string; dias: number };
   correio: { lidas: string[]; resgatadas: string[] };
+  skins: { possui: string[]; planeta: string; escudo: string };
+  passe: { temporada: string; pontos: number; resgatados: number[] };
+  /** Passos do tutorial guiado já mostrados. */
+  tutorialPassos: string[];
 }
 
 export function saveNovo(): SaveData {
@@ -70,6 +74,9 @@ export function saveNovo(): SaveData {
     dia: { data: "", stats: {}, resgatadas: [], bonus: false, lojaGratis: false },
     login: { ultimoDia: "", dias: 0 },
     correio: { lidas: [], resgatadas: [] },
+    skins: { possui: ["escudo_azul", "planeta_terra"], planeta: "planeta_terra", escudo: "escudo_azul" },
+    passe: { temporada: "", pontos: 0, resgatados: [] },
+    tutorialPassos: [],
   };
 }
 
