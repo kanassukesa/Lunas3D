@@ -25,8 +25,8 @@ export const AVATARES = [
   { id: 2, cor: "#ff9a3c" },
   { id: 3, cor: "#b36bff" },
   { id: 4, cor: "#49e07a" },
-  { id: 5, cor: "#ff4d6d" },
-  { id: 6, cor: "#ffc23d" },
+  { id: 5, cor: "#5aa8ff" },
+  { id: 6, cor: "#a9dcff" },
 ];
 
 export type Premio = { creditos?: number; nucleos?: number; cristais?: number; chip?: number };
