@@ -107,7 +107,7 @@ def mapa_esfera(arq, nome, tam, nuvens):
         a[:, i] = esq[:, i] * (1 - t) + dir_[:, -1] * t
         a[:, -1 - i] = dir_[:, -1 - i] * (1 - t) + esq[:, 0] * t
     if nuvens:
-        alfa = np.clip((a.max(axis=2) - 20) / 200, 0, 1)
+        alfa = np.clip((a.max(axis=2) - 60) / 195, 0, 1) ** 1.3 * 0.8  # mais leve: não esconde os continentes
         rgba = np.dstack([np.full(alfa.shape + (3,), 255.0), alfa * 255]).astype(np.uint8)
         Image.fromarray(rgba, "RGBA").save(os.path.join(SAIDA, nome + ".png"), optimize=True)
         print(f"{nome}.png  {tam}x{tam // 2}  (nuvens: brilho vira transparência)")
