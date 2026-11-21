@@ -38,6 +38,8 @@ export interface SaveData {
   perfil: { nome: string; avatar: number };
   /** Pontuação acumulada (define a patente). */
   pontos: number;
+  /** Maior patente cuja cerimônia de promoção já foi mostrada. */
+  patenteVista?: number;
   dia: { data: string; stats: Record<string, number>; resgatadas: string[]; bonus: boolean; lojaGratis: boolean };
   login: { ultimoDia: string; dias: number };
   correio: { lidas: string[]; resgatadas: string[] };

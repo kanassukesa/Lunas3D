@@ -177,12 +177,13 @@ function proximoNaoAtingido(b: Battle, x: number, y: number, raio: number, exclu
 function misseis(b: Battle, s: SentinelRun): void {
   const st = s.stats;
   if (s.evoluido) {
-    // Chuva Estelar: mísseis caem do topo da tela em alvos de qualquer lugar
+    // Chuva Estelar: salva de mísseis que sai da sentinela, sobe em leque e cai em alvos de qualquer lugar
     const n = st.projeteis + 4;
+    const saida = Math.atan2(s.y - b.planet.y, s.x - b.planet.x);
     for (let i = 0; i < n; i++) {
       const alvo = b.inimigoAleatorio(b.planet.x, b.planet.y, 5000);
-      const x = alvo ? alvo.x + b.rng.range(-60, 60) : b.rng.range(b.vis.left, b.vis.right);
-      const p = b.spawnProj("missil", x, b.vis.top - 40 - b.rng.range(0, 200), Math.PI / 2, st.velProj * 0.8, st.dano * 1.2, s, s.def.cor);
+      const a = saida + (i / Math.max(1, n - 1) - 0.5) * 1.6;
+      const p = b.spawnProj("missil", s.x, s.y, a, st.velProj * 0.5, st.dano * 1.2, s, s.def.cor);
       p.alvo = alvo;
       p.alvoId = alvo ? alvo.id : 0;
       p.area = st.area * 1.3;

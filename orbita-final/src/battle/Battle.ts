@@ -84,7 +84,7 @@ export class Battle {
   melhorCombo = 0;
   pontosCombo = 0;
   /** Recarga da habilidade ativa (onda de choque), em segundos. */
-  habilidadeCd = 6;
+  habilidadeCd = BALANCE.habilidade.recarga;
   habilidadeUsos = 0;
   /** Tempo total da partida (na Jornada, soma das etapas). */
   tTotal = 0;

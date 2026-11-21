@@ -1,4 +1,5 @@
 import { BALANCE } from "../data/balance";
+const P = BALANCE.planeta;
 import type { SentinelId } from "../data/types";
 import type { Battle } from "./Battle";
 import { novoDrone } from "./Sentinel";
@@ -114,6 +115,19 @@ export class Ultimate {
     return true;
   }
 
+  /** Ponto de lançamento: as sentinelas em rodízio, ou a borda do planeta se não houver nenhuma. */
+  private origem(i: number): { x: number; y: number; ang: number } {
+    const b = this.b;
+    const pl = b.planet;
+    const ss = b.sentinels;
+    if (ss.length && i % 3 !== 2) {
+      const s = ss[i % ss.length];
+      return { x: s.x, y: s.y, ang: Math.atan2(s.y - pl.y, s.x - pl.x) };
+    }
+    const ang = -Math.PI / 2 + b.rng.range(-1.2, 1.2);
+    return { x: pl.x + Math.cos(ang) * P.raio, y: pl.y + Math.sin(ang) * P.raio, ang };
+  }
+
   step(dt: number): void {
     const b = this.b;
     if (this.congelado > 0) this.congelado -= dt;
@@ -133,7 +147,9 @@ export class Ultimate {
           const e = b.inimigoAleatorio(pl.x, pl.y, 5000);
           const x = e ? e.x : b.rng.range(v.left, v.right);
           const y = e ? e.y : b.rng.range(v.top, pl.y - 300);
-          b.beam("linha", x, v.top - 50, x, y, 0xffd9a0, 0.1, 6);
+          // os disparos saem das sentinelas / do planeta, não do céu
+          const o = this.origem(this.conta++);
+          b.beam("linha", o.x, o.y, x, y, 0xffd9a0, 0.1, 6);
           b.explodir(x, y, 130, 60 * pw, null, 0xff9a3c, true, true);
           b.fx.push({ t: "tremor", força: 4 });
         }
@@ -177,7 +193,8 @@ export class Ultimate {
           this.timer += 0.05;
           this.conta++;
           const alvo = b.inimigoAleatorio(pl.x, pl.y, 5000);
-          const p = b.spawnProj("missil", pl.x, pl.y, -Math.PI / 2 + b.rng.range(-1.4, 1.4), 400, 45 * pw, null, 0xffd25e);
+          const o = this.origem(this.conta);
+          const p = b.spawnProj("missil", o.x, o.y, o.ang + b.rng.range(-0.5, 0.5), 400, 45 * pw, null, 0xffd25e);
           p.alvo = alvo;
           p.alvoId = alvo ? alvo.id : 0;
           p.area = 100;

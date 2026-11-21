@@ -107,6 +107,20 @@ export class Game implements Nav {
     this.ir(this.save.perfil.nome ? "hub" : "login");
     this.resize();
     void this.conectarNuvem();
+    this.cerimoniaPendente();
+  }
+
+  /** Ao abrir uma versão nova (ou depois de sincronizar), celebra a patente atual se ainda não foi celebrada (nunca a primeira). */
+  private cerimoniaPendente(): void {
+    if (!this.save.perfil.nome) return;
+    const atual = patenteDe(this.save).indice;
+    const vista = this.save.patenteVista ?? 0;
+    if (atual <= 0 || atual <= vista) return;
+    this.save.patenteVista = atual;
+    this.persistir();
+    const el = telaPromocao(atual - 1, atual, this.save.perfil.nome, () => el.remove());
+    el.style.zIndex = "60";
+    this.root.append(el);
   }
 
   // ------------------------------------------------------------------ Nav (menus)
@@ -417,6 +431,8 @@ export class Game implements Nav {
     // cerimônia de promoção (depois do baú, uma vez)
     if (run.promocao && !run.promocaoVista) {
       run.promocaoVista = true;
+      this.save.patenteVista = Math.max(this.save.patenteVista ?? 0, run.promocao.para);
+      this.persistir();
       const p = run.promocao;
       this.abrir(telaPromocao(p.de, p.para, this.save.perfil.nome, () => this.mostrarFim()), "resultado");
       return;

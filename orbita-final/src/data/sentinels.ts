@@ -145,7 +145,7 @@ export const SENTINELS: Record<SentinelId, SentinelDef> = {
     ],
     desbloqueio: 0,
     ultimate: { nome: "Saturação", desc: "40 mísseis em todos os alvos." },
-    evolucao: { passiva: "ogiva_pesada", nome: "Chuva Estelar", desc: "Mísseis caem do topo em toda a tela." },
+    evolucao: { passiva: "ogiva_pesada", nome: "Chuva Estelar", desc: "Salvas de mísseis saem da torre e caçam alvos em toda a tela." },
   },
   gravidade: {
     id: "gravidade",
