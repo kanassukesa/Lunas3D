@@ -22,12 +22,13 @@ import { toast } from "../ui/dom";
 import { h, ICONE_MOEDA } from "../ui/dom";
 import { ic } from "../ui/Icones";
 import {
-  painelConfig, telaChips, telaConfig, telaHangar, telaMapa, telaMissoes, telaModos, telaPlaneta, type Nav,
+  painelConfig, telaConfig, telaMissoes, type Nav,
 } from "../ui/meta/Screens";
 import {
   telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaPasse, telaProgresso, telaRecompensas,
 } from "../ui/meta/Hub";
 import { patenteDe, registrarPartida } from "../meta/Comandante";
+import { telaChipsV2, telaFases, telaHangarV2, telaModosV2, telaPlanetaV2 } from "../ui/meta/Paineis";
 import { audio } from "./Audio";
 import { FixedLoop } from "./Loop";
 import { carregar, carregarDe, salvar, type SaveData } from "./Save";
@@ -157,11 +158,11 @@ export class Game implements Nav {
     this.telaEl?.remove();
     const mapa: Record<string, () => HTMLElement> = {
       hub: () => telaHub(this),
-      mapa: () => telaMapa(this, false),
-      mapaDificil: () => telaMapa(this, true),
-      hangar: () => telaHangar(this),
-      chips: () => telaChips(this),
-      planeta: () => telaPlaneta(this),
+      mapa: () => telaFases(this, false),
+      mapaDificil: () => telaFases(this, true),
+      hangar: () => telaHangarV2(this),
+      chips: () => telaChipsV2(this),
+      planeta: () => telaPlanetaV2(this),
       missoes: () => telaDiarias(this),
       conquistas: () => telaMissoes(this),
       login: () => telaLogin(this),
@@ -172,7 +173,7 @@ export class Game implements Nav {
       progresso: () => telaProgresso(this),
       inventario: () => telaInventario(this),
       passe: () => telaPasse(this),
-      modos: () => telaModos(this),
+      modos: () => telaModosV2(this),
       config: () => telaConfig(this),
     };
     const el = (mapa[tela] ?? mapa.hub)();

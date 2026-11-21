@@ -48,6 +48,9 @@ const P: Record<string, string> = {
   bandeira: '<path d="M5 21V4M5 4h12l-2.5 4L17 12H5"/>',
   evoluir: '<path d="M6 13l6-6 6 6M6 19l6-6 6 6"/>',
   coroa2: '<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/>',
+  escudo: '<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6z"/>',
+  folha: '<path d="M5 19C5 10 10 5 20 4c0 10-5 15-14 15z"/><path d="M5 19 13 11"/>',
+  banco: '<ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/>',
   // efeitos de campo da Jornada
   radiacao: '<circle cx="12" cy="12" r="1.8" fill="currentColor"/><path fill="currentColor" stroke="none" d="M12 9.5 8.6 3.6A9.5 9.5 0 0 0 2.6 12H9.5a2.5 2.5 0 0 1 2.5-2.5zM12 9.5l3.4-5.9A9.5 9.5 0 0 1 21.4 12h-6.9a2.5 2.5 0 0 0-2.5-2.5zM10.8 14.2l-3.4 6a9.5 9.5 0 0 0 9.2 0l-3.4-6a2.5 2.5 0 0 1-2.4 0z"/>',
   espiral: '<path d="M12 12a2 2 0 1 1 2 2 4 4 0 1 1-4-4 6 6 0 1 1 6 6 8 8 0 1 1-8-8"/>',
