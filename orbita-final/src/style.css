@@ -158,11 +158,7 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
   background: linear-gradient(180deg, #fff, #7fdfff 60%, #3a8bff); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 16px rgba(79, 214, 255, 0.5)); }
 .logo small { display: block; font-size: 11px; letter-spacing: 0.4em; color: var(--texto2); -webkit-text-fill-color: var(--texto2); margin-top: 6px; }
 .hub-base { margin-top: auto; display: flex; flex-direction: column; gap: 10px; align-items: stretch; width: min(100%, 460px); align-self: center; }
-.btn-batalha { min-height: 68px; font-size: 22px; letter-spacing: 0.14em; border-radius: 20px; flex-direction: column; gap: 0; }
-.btn-batalha small { font-size: 12px; letter-spacing: 0.04em; font-weight: 700; opacity: 0.75; }
 .grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.grade .btn { flex-direction: column; gap: 2px; min-height: 64px; font-size: 12px; position: relative; }
-.grade .btn span { font-size: 22px; }
 .badge { position: absolute; top: 6px; right: 8px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--vermelho); font-size: 11px; display: grid; place-items: center; }
 .tela-conteudo { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; margin-top: 10px; padding-bottom: 20px; display: flex; flex-direction: column; gap: 10px; width: min(100%, 520px); align-self: center; }
 .cartao { padding: 12px 14px; border-radius: 16px; background: var(--painel); border: 1px solid var(--borda); }
@@ -253,3 +249,57 @@ input[type="range"] { width: 140px; accent-color: var(--ciano); }
 .logo-img { display: flex; flex-direction: column; align-items: center; margin-top: 4px; }
 .logo-img img { width: min(62vw, 290px); height: auto; filter: drop-shadow(0 0 18px rgba(79, 214, 255, 0.45)); }
 .logo-img small { font-size: 11px; letter-spacing: 0.4em; color: var(--texto2); margin-top: 2px; font-weight: 800; }
+
+/* ---------- ícones vetoriais ---------- */
+.ic { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; }
+.btn .ic { width: 18px; height: 18px; }
+.btn.icone .ic { width: 20px; height: 20px; }
+.ic-ouro { color: var(--ouro); }
+.ic-estrela { width: 1em; height: 1em; color: var(--ouro); filter: drop-shadow(0 0 4px rgba(255, 194, 61, 0.6)); }
+.ic-estrela.off { color: rgba(255, 255, 255, 0.18); filter: none; }
+.estrelas .ic-estrela { width: 52px; height: 52px; margin: 0 4px; }
+.estrelas .off { opacity: 1; filter: none; }
+.fase-item .est { display: flex; gap: 2px; }
+.fase-item .est .ic-estrela { width: 20px; height: 20px; }
+.fase-item .num .ic { width: 20px; height: 20px; color: var(--texto2); }
+.aviso .ic { width: 0.9em; height: 0.9em; vertical-align: -0.1em; }
+.aviso.ok .ic { color: var(--verde); }
+.hud-campos { display: flex; gap: 6px; }
+.hud-campos .ic { width: 22px; height: 22px; color: #e6f3ff; filter: drop-shadow(0 0 4px rgba(79, 214, 255, 0.7)); }
+.hud-foco { display: inline-flex; gap: 6px; align-items: center; }
+.cartao .nome .ic, .cartao .desc .ic { color: var(--ciano); }
+
+/* ---------- menu principal ---------- */
+.btn-batalha {
+  min-height: 74px; border-radius: 20px; padding: 10px 18px; justify-content: flex-start; gap: 14px; text-align: left;
+  background: linear-gradient(180deg, #ffb45e, #ff7418 60%, #e85c0c); box-shadow: 0 6px 30px rgba(255, 130, 30, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  animation: respira 2.4s ease-in-out infinite;
+}
+@keyframes respira { 50% { box-shadow: 0 6px 40px rgba(255, 150, 40, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.5); } }
+.bb-ic { width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center; background: rgba(60, 20, 0, 0.25); flex: none; }
+.bb-ic .ic { width: 24px; height: 24px; margin-left: 3px; color: #fff; }
+.bb-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.bb-txt b { font-size: 24px; letter-spacing: 0.16em; line-height: 1.1; }
+.bb-txt small { font-size: 12.5px; font-weight: 700; opacity: 0.8; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hub-estrelas { display: flex; gap: 2px; flex: none; }
+.hub-estrelas .ic-estrela { width: 18px; height: 18px; color: #fff6c8; }
+.hub-estrelas .ic-estrela.off { color: rgba(60, 20, 0, 0.35); }
+.tile {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 84px; padding: 10px 11px;
+  border-radius: 16px; text-align: left; overflow: hidden;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--acc) 22%, #0d1830) 0%, rgba(12, 22, 44, 0.92) 60%);
+  border: 1px solid color-mix(in srgb, var(--acc) 45%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.08s;
+}
+.tile:active { transform: scale(0.96); }
+.tile::after { content: ""; position: absolute; right: -18px; bottom: -18px; width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--acc) 35%, transparent), transparent 70%); pointer-events: none; }
+.tile-ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--acc); background: color-mix(in srgb, var(--acc) 16%, transparent); margin-bottom: 4px; }
+.tile-ic .ic { width: 20px; height: 20px; filter: drop-shadow(0 0 5px var(--acc)); }
+.tile-nome { font-weight: 800; font-size: 14px; }
+.tile-info { font-size: 10.5px; color: var(--texto2); line-height: 1.25; }
+.tile .badge { top: 8px; right: 8px; }
+
+.cartao .nome:has(.ic) { display: flex; align-items: center; gap: 8px; }
+.cartao .nome .ic { width: 20px; height: 20px; }
+.aviso { display: flex; justify-content: center; align-items: center; gap: 10px; white-space: nowrap; font-size: clamp(15px, 5vw, 30px); }

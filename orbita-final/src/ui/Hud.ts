@@ -1,6 +1,7 @@
 import type { Battle } from "../battle/Battle";
 import { CAMPOS } from "../data/journey";
 import { fmtInt, fmtTempo, h, iconeImg } from "./dom";
+import { ic } from "./Icones";
 
 export interface HudAcoes {
   pausar(): void;
@@ -50,11 +51,11 @@ export class Hud {
     this.nivel = h("span", { text: "Lv.1" });
     this.xp = h("b");
     this.vel = h("button", { class: "btn icone", text: "x1", onclick: () => acoes.velocidade() });
-    this.ult = h("button", { class: "hud-ult", onclick: () => acoes.ultimate() }, h("span", { html: iconeImg("icone_ultimate", "⚡", "ic-ult") }), h("small", { text: "ULTIMATE" }));
+    this.ult = h("button", { class: "hud-ult", onclick: () => acoes.ultimate() }, h("span", { html: iconeImg("icone_ultimate", ic("raio", "ic-ult"), "ic-ult") }), h("small", { text: "ULTIMATE" }));
     this.chefeNome = h("div");
     this.chefeBarra = h("b");
     this.chefe = h("div", { class: "hud-chefe oculto" }, this.chefeNome, h("div", { class: "barra" }, this.chefeBarra));
-    this.aviso = h("div", { class: "aviso oculto", text: "⚠ CHEFE SE APROXIMANDO ⚠" });
+    this.aviso = h("div", { class: "aviso oculto" });
     this.foco = h("button", { class: "btn pequeno hud-foco oculto", onclick: () => acoes.foco() });
     this.fps = h("div", { class: "fps" });
     this.dica = h("div", { class: "dica oculto" });
@@ -77,9 +78,9 @@ export class Hud {
           h(
             "div",
             { class: "hud-botoes" },
-            h("button", { class: "btn icone", text: "⏸", "aria-label": "Pausar", onclick: () => acoes.pausar() }),
+            h("button", { class: "btn icone", html: ic("pausar"), "aria-label": "Pausar", onclick: () => acoes.pausar() }),
             this.vel,
-            h("button", { class: "btn icone", text: "🃏", "aria-label": "Cartas", onclick: () => acoes.cartas() }),
+            h("button", { class: "btn icone", html: ic("cartas"), "aria-label": "Cartas", onclick: () => acoes.cartas() }),
           ),
         ),
         h("div", { class: "hud-dir" }, this.tempo, h("div", { class: "hud-nivel" }, this.nivel, h("div", { class: "barra-xp" }, this.xp))),
@@ -126,7 +127,7 @@ export class Hud {
     const tShow = modoInf ? b.t : b.boss ? b.t : Math.max(0, b.entradaChefe() - b.t);
     if (b.cfg.modo === "jornada" && this.set("fase", b.etapa)) {
       this.fase.textContent = `Jornada ${b.etapa + 1}/${b.cfg.etapas?.length ?? 1}`;
-      this.campos.textContent = [...b.campo.ativos].map((id) => CAMPO_ICONE[id] ?? "").join(" ");
+      this.campos.innerHTML = [...b.campo.ativos].map((id) => ic(CAMPO_ICONE[id] ?? "alerta")).join("");
     }
     if (this.set("t", Math.floor(tShow))) this.tempo.textContent = fmtTempo(tShow);
     if (this.set("lv", b.nivel)) this.nivel.textContent = `Lv.${b.nivel}`;
@@ -151,13 +152,13 @@ export class Hud {
       const bf = Math.round((boss.hp / boss.hpMax) * 1000) / 10;
       if (this.set("bossHp", bf)) this.chefeBarra.style.width = Math.max(0, bf) + "%";
     }
-    if (this.set("foco", b.focoChefe)) this.foco.textContent = b.focoChefe ? "🎯 Mira no chefe: ON" : "🎯 Mira no chefe: OFF";
+    if (this.set("foco", b.focoChefe)) this.foco.innerHTML = `${ic("mira")}<span>Mira no chefe: ${b.focoChefe ? "ON" : "OFF"}</span>`;
     const transicao = b.transicao > 0;
     const aviso = (b.avisoChefe && !boss) || transicao;
     if (this.set("aviso", aviso) || this.set("trans", transicao)) {
       this.aviso.classList.toggle("oculto", !aviso);
       this.aviso.classList.toggle("ok", transicao);
-      this.aviso.textContent = transicao ? `✔ ETAPA ${b.etapa + 1} CONCLUÍDA` : "⚠ CHEFE SE APROXIMANDO ⚠";
+      this.aviso.innerHTML = transicao ? `${ic("check")} ETAPA ${b.etapa + 1} CONCLUÍDA` : `${ic("alerta")} CHEFE SE APROXIMANDO ${ic("alerta")}`;
     }
 
     if (this.set("fps", fps === null ? -1 : Math.round(fps))) this.fps.textContent = fps === null ? "" : `${Math.round(fps)} FPS · ${b.inimigosVivos()} inim · ${b.projs.length} proj`;

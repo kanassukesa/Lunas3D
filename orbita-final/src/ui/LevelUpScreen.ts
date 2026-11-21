@@ -4,6 +4,7 @@ import { RARIDADE_COR, RARIDADE_NOME } from "../data/balance";
 import { arteCarta, arteSentinela } from "./CardArt";
 import { urlArte } from "../render/Sprites";
 import { h, ICONE_MOEDA } from "./dom";
+import { ic } from "./Icones";
 
 /** Linha de slots das sentinelas (6), com a arte e as estrelas de nível. */
 export function slotsSentinelas(b: Battle, destaque?: string): HTMLElement {
@@ -55,7 +56,7 @@ export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrol
     );
   });
   const gratis = b.cards.rerrolagensGratis;
-  const txtRer = gratis > 0 ? `🔄 Rerrolar (${gratis} grátis)` : `🔄 Rerrolar · ${ICONE_MOEDA.sucata} ${b.cards.custoRerrolagem}`;
+  const txtRer = gratis > 0 ? `${ic("repetir")}<span>Rerrolar (${gratis} grátis)</span>` : `${ic("repetir")}<span>Rerrolar · ${ICONE_MOEDA.sucata} ${b.cards.custoRerrolagem}</span>`;
   return h(
     "div",
     { class: "overlay levelup" },

@@ -5,6 +5,7 @@ import { CARD_MAP } from "../data/cards";
 import { CHIP_RARIDADE_COR, CHIP_SET_MAP, CHIP_SLOT_NOME } from "../data/chips";
 import { formatStat } from "../meta/Meta";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg } from "./dom";
+import { ic, icT } from "./Icones";
 
 function painelBuild(b: Battle): HTMLElement {
   const p = h("div", { class: "painel" });
@@ -17,7 +18,7 @@ function painelBuild(b: Battle): HTMLElement {
       h("div", { class: "sent-linha" },
         h("i", { class: "dot", style: `background:${hex(s.def.cor)}` }),
         h("div", { style: "flex:1" },
-          h("div", { style: "font-weight:800" }, s.evoluido ? `👑 ${s.def.evolucao.nome}` : s.def.nome, pips),
+          h("div", { style: "font-weight:800", html: s.evoluido ? `${ic("coroa", "ic ic-ouro")} ${s.def.evolucao.nome}` : s.def.nome }, pips),
           h("div", { style: "font-size:12px;color:var(--texto2)", text: `Dano ${fmtInt(s.stats.dano)} · ${s.stats.cadencia.toFixed(2)}/s · crít ${(s.stats.critChance * 100).toFixed(0)}%` })),
         h("div", { style: "font-size:12px;text-align:right;color:var(--texto2)", text: `${Math.round((s.danoCausado / total) * 100)}%` })),
     );
@@ -45,9 +46,9 @@ export function telaPausa(acoes: { continuar(): void; config(): void; desistir()
     "div",
     { class: "overlay" },
     h("div", { class: "titulo", text: "PAUSADO" }),
-    h("button", { class: "btn primario", style: "min-width:220px", text: "▶ Continuar", onclick: acoes.continuar }),
-    h("button", { class: "btn", style: "min-width:220px", text: "⚙ Configurações", onclick: acoes.config }),
-    h("button", { class: "btn", style: "min-width:220px;color:var(--vermelho)", text: "✖ Desistir", onclick: acoes.desistir }),
+    h("button", { class: "btn primario", style: "min-width:220px", html: icT("play", "Continuar"), onclick: acoes.continuar }),
+    h("button", { class: "btn", style: "min-width:220px", html: icT("config", "Configurações"), onclick: acoes.config }),
+    h("button", { class: "btn", style: "min-width:220px;color:var(--vermelho)", html: icT("fechar", "Desistir"), onclick: acoes.desistir }),
   );
 }
 
@@ -59,7 +60,7 @@ export function telaResultado(
   const f = b.fim!;
   const inf = b.cfg.modo === "sobrevivencia";
   const est = h("div", { class: "estrelas" });
-  for (let i = 1; i <= 3; i++) est.append(h("span", { class: i <= f.estrelas ? "" : "off", text: "⭐" }));
+  for (let i = 1; i <= 3; i++) est.append(h("span", { class: i <= f.estrelas ? "" : "off", html: ic("estrela", "ic-estrela") }));
   const jornada = b.cfg.modo === "jornada";
   const titulo = inf ? "FIM DA LINHA" : jornada ? (f.vitoria ? "JORNADA COMPLETA" : `JORNADA: ${f.etapas}/${b.cfg.etapas?.length ?? 5} ETAPAS`) : f.vitoria ? "VITÓRIA" : "PLANETA PERDIDO";
   const linhas: HTMLElement[] = [
@@ -89,11 +90,11 @@ export function telaResultado(
   linhas.push(painel);
   const bts = h("div", { class: "linha" });
   if (acoes.reviver) {
-    bts.append(h("button", { class: "btn ouro", disabled: acoes.cristais < acoes.custoReviver, text: `💎 ${acoes.custoReviver} Reviver`, onclick: acoes.reviver }));
+    bts.append(h("button", { class: "btn ouro", disabled: acoes.cristais < acoes.custoReviver, html: `${ICONE_MOEDA.cristais} ${acoes.custoReviver} Reviver`, onclick: acoes.reviver }));
   }
-  if (acoes.proxima) bts.append(h("button", { class: "btn primario", text: "Próxima fase ▶", onclick: acoes.proxima }));
-  bts.append(h("button", { class: "btn", text: "🔁 Repetir", onclick: acoes.repetir }));
-  bts.append(h("button", { class: "btn ciano", text: "🏠 Base", onclick: acoes.hub }));
+  if (acoes.proxima) bts.append(h("button", { class: "btn primario", html: `<span>Próxima fase</span>${ic("play")}`, onclick: acoes.proxima }));
+  bts.append(h("button", { class: "btn", html: icT("repetir", "Repetir"), onclick: acoes.repetir }));
+  bts.append(h("button", { class: "btn ciano", html: icT("casa", "Base"), onclick: acoes.hub }));
   linhas.push(bts);
   return h("div", { class: "overlay", style: "justify-content:flex-start;overflow-y:auto" }, ...linhas);
 }

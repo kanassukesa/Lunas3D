@@ -33,9 +33,10 @@ export class HubScene {
   }
 
   resize(w: number, h: number): void {
-    const k = Math.min(w, h * 0.8) / 720;
-    this.layer.scale.set(Math.max(0.35, k));
-    this.layer.position.set(w / 2, h * 0.43);
+    // cabe entre o logo e o botão de batalha (órbita externa + torres ≈ 340 de raio)
+    const k = Math.min((w * 0.92) / 720, (h * 0.2) / 340);
+    this.layer.scale.set(Math.max(0.28, k));
+    this.layer.position.set(w / 2, h * 0.445);
   }
 
   update(dt: number): void {

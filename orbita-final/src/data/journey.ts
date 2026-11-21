@@ -8,6 +8,7 @@ export interface CampoDef {
   id: string;
   nome: string;
   desc: string;
+  /** Nome do ícone vetorial (ui/Icones.ts). */
   icone: string;
   /** Modificadores aplicados à partida inteira. */
   efeito?: Efeito;
@@ -17,31 +18,31 @@ export interface CampoDef {
 
 export const CAMPOS: CampoDef[] = [
   {
-    id: "radiacao", nome: "Zona de Radiação", icone: "☢️",
+    id: "radiacao", nome: "Zona de Radiação", icone: "radiacao",
     desc: "Faixas radioativas cortam a tela: inimigos que passam por elas perdem 6% do HP por segundo. O escudo regenera 30% mais devagar.",
     efeito: { escudoRegenPct: -0.3 },
   },
   {
-    id: "gravidade_invertida", nome: "Gravidade Invertida", icone: "🌀",
+    id: "gravidade_invertida", nome: "Gravidade Invertida", icone: "espiral",
     desc: "Inimigos descem em espiral, 15% mais rápidos. Projéteis ganham +20% de velocidade.",
     velInimigoMult: 1.15, efeito: { velProjPct: 0.2 },
   },
   {
-    id: "aceleracao", nome: "Corrente Rápida", icone: "⏩",
+    id: "aceleracao", nome: "Corrente Rápida", icone: "avancar",
     desc: "Inimigos 35% mais rápidos, mas dão 30% mais XP.",
     velInimigoMult: 1.35, xpMult: 1.3,
   },
   {
-    id: "tempestade_solar", nome: "Tempestade Solar", icone: "☀️",
+    id: "tempestade_solar", nome: "Tempestade Solar", icone: "sol",
     desc: "A cada 20 s uma erupção solar fere todos os inimigos (12% do HP) mas desliga a regeneração do escudo por 5 s.",
   },
   {
-    id: "nevoa", nome: "Nebulosa Densa", icone: "🌫️",
+    id: "nevoa", nome: "Nebulosa Densa", icone: "nevoa",
     desc: "Alcance das sentinelas −20%, mas +12% de chance de crítico.",
     efeito: { alcancePct: -0.2, critChance: 0.12 },
   },
   {
-    id: "campo_minado", nome: "Campo Minado", icone: "💣",
+    id: "campo_minado", nome: "Campo Minado", icone: "bomba",
     desc: "Minas flutuam no campo e explodem quando inimigos passam (dano alto em área). Inimigos com +20% de HP.",
   },
 ];

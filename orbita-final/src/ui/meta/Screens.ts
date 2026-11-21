@@ -13,6 +13,8 @@ import {
 } from "../../meta/Meta";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg, toast } from "../dom";
 import { urlArte } from "../../render/Sprites";
+import { ic, icT } from "../Icones";
+import { CHIP_SLOTS as _SLOTS } from "../../data/chips";
 
 export interface Nav {
   save: SaveData;
@@ -35,7 +37,8 @@ function moedas(s: SaveData): HTMLElement {
 
 function topo(nav: Nav, titulo: string | null): HTMLElement {
   return h("div", { class: "topo" },
-    titulo ? h("button", { class: "btn icone", text: "‹", "aria-label": "Voltar", onclick: () => nav.ir("hub") }) : null,
+    titulo ? h("button", { class: "btn icone", html: ic("voltar"), "aria-label": "Voltar", onclick: () => nav.ir("hub") })
+      : h("button", { class: "btn icone", html: ic("config"), "aria-label": "Configurações", onclick: () => nav.ir("config") }),
     titulo ? h("div", { style: "font-weight:900;letter-spacing:.08em;font-size:18px", text: titulo }) : null,
     moedas(nav.save));
 }
@@ -56,8 +59,21 @@ export function telaHub(nav: Nav): HTMLElement {
   const idx = proximaFase(s);
   const st = STAGES[idx];
   const m = missoesProntas(s);
-  const item = (ic: string, nome: string, alvo: string, badge = 0) =>
-    h("button", { class: "btn", onclick: () => nav.ir(alvo) }, h("span", { text: ic }), nome, badge ? h("i", { class: "badge", text: String(badge) }) : null);
+  const estrelasFase = s.campanha.normal[idx];
+  const totalEstrelas = s.campanha.normal.reduce((x, y) => x + y, 0);
+  const vencidas = s.campanha.normal.filter((x) => x > 0).length;
+  const desbloq = SENTINEL_IDS.filter((id) => s.sentinelas[id].desbloqueada).length;
+  const talentos = Object.values(s.talentos).reduce((x, y) => x + y, 0);
+  const equip = Object.keys(s.equipados).length;
+  const estrelas = h("span", { class: "hub-estrelas", html: [1, 2, 3].map((i) => ic("estrela", "ic-estrela" + (i <= estrelasFase ? "" : " off"))).join("") });
+
+  const tile = (icone: string, nome: string, info: string, alvo: string, cor: string, badge = 0) =>
+    h("button", { class: "tile", style: `--acc:${cor}`, onclick: () => nav.ir(alvo) },
+      h("span", { class: "tile-ic", html: ic(icone) }),
+      h("span", { class: "tile-nome", text: nome }),
+      h("span", { class: "tile-info", text: info }),
+      badge ? h("i", { class: "badge", text: String(badge) }) : null);
+
   return h("div", { class: "tela" },
     topo(nav, null),
     urlArte("logo")
@@ -65,16 +81,17 @@ export function telaHub(nav: Nav): HTMLElement {
       : h("div", { class: "logo", html: "ÓRBITA FINAL<small>DEFESA PLANETÁRIA</small>" }),
     h("div", { class: "hub-base" },
       h("button", { class: "btn primario btn-batalha", onclick: () => nav.jogarCampanha(idx, false) },
-        "BATALHA", h("small", { text: `Fase ${st.id} · ${st.nome}` })),
+        h("span", { class: "bb-ic", html: ic("play") }),
+        h("span", { class: "bb-txt" }, h("b", { text: "BATALHA" }), h("small", { text: `Fase ${st.id} · ${st.nome}` })),
+        estrelas),
       h("div", { class: "grade" },
-        item("🗺️", "Fases", "mapa"),
-        item("🛰️", "Hangar", "hangar"),
-        item("💠", "Chips", "chips"),
-        item("🌍", "Planeta", "planeta"),
-        item("🎯", "Missões", "missoes", m),
-        item("🌀", "Modos", "modos"),
-      ),
-      h("button", { class: "btn pequeno", style: "align-self:center", text: "⚙ Configurações", onclick: () => nav.ir("config") })));
+        tile("mapa", "Fases", `${vencidas}/${STAGES.length} · ${totalEstrelas} estrelas`, "mapa", "#4fd6ff"),
+        tile("hangar", "Hangar", `${desbloq}/${SENTINEL_IDS.length} sentinelas`, "hangar", "#ff9a3c"),
+        tile("chip", "Chips", `${equip}/${_SLOTS.length} equipados`, "chips", "#b36bff"),
+        tile("planeta", "Planeta", `${talentos} melhorias`, "planeta", "#49e07a"),
+        tile("missoes", "Missões", m ? `${m} para resgatar` : "em andamento", "missoes", "#ffc23d", m),
+        tile("modos", "Modos", "Diário · Jornada", "modos", "#ff5aa5"),
+      )));
 }
 
 // ------------------------------------------------------------------ MAPA
@@ -84,14 +101,14 @@ export function telaMapa(nav: Nav, dificil: boolean): HTMLElement {
   const difLib = s.campanha.normal[STAGES.length - 1] > 0;
   const abas = h("div", { class: "abas" },
     h("button", { class: "btn pequeno" + (!dificil ? " ativo" : ""), text: "Normal", onclick: () => nav.ir("mapa") }),
-    h("button", { class: "btn pequeno" + (dificil ? " ativo" : ""), text: difLib ? "Difícil" : "🔒 Difícil", disabled: !difLib, onclick: () => nav.ir("mapaDificil") }));
+    h("button", { class: "btn pequeno" + (dificil ? " ativo" : ""), html: difLib ? "Difícil" : icT("cadeado", "Difícil"), disabled: !difLib, onclick: () => nav.ir("mapaDificil") }));
   const lista = STAGES.map((st, i) => {
     const lib = faseLiberada(s, i, dificil);
     const est = (dificil ? s.campanha.dificil : s.campanha.normal)[i];
     return h("button", { class: "fase-item" + (lib ? "" : " bloq"), disabled: !lib, onclick: () => nav.jogarCampanha(i, dificil) },
-      h("div", { class: "num", text: lib ? String(st.id) : "🔒" }),
+      h("div", { class: "num", html: lib ? String(st.id) : ic("cadeado") }),
       h("div", null, h("div", { style: "font-weight:800", text: st.nome }), h("div", { class: "desc", style: "font-size:12px;color:var(--texto2)", text: `Chefe: ${BOSSES[st.chefe].nome}` })),
-      h("div", { class: "est", text: "★".repeat(est) + "☆".repeat(3 - est) }));
+      h("div", { class: "est", html: [1, 2, 3].map((i) => ic("estrela", "ic-estrela" + (i <= est ? "" : " off"))).join("") }));
   });
   return tela(nav, "FASES", abas, ...lista);
 }
@@ -116,7 +133,7 @@ export function telaHangar(nav: Nav): HTMLElement {
       const max = st.nivel >= BALANCE.hangar.nivelMax;
       acoes.append(h("button", { class: "btn primario pequeno", disabled: !ok, html: max ? "Nível máximo" : `Melhorar ${ICONE_MOEDA.creditos} ${fmtInt(custo)}`,
         onclick: () => { if (melhorar(s, id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("hangar"); } } }));
-      acoes.append(h("button", { class: "btn pequeno" + (ehBase ? " ativo" : ""), text: ehBase ? "★ Base" : "Definir base",
+      acoes.append(h("button", { class: "btn pequeno" + (ehBase ? " ativo" : ""), html: ehBase ? icT("estrela", "Base") : "Definir base",
         onclick: () => {
           const antiga = s.deck.base;
           s.deck.base = id;
@@ -126,7 +143,7 @@ export function telaHangar(nav: Nav): HTMLElement {
           nav.ir("hangar");
         } }));
       if (!ehBase) {
-        acoes.append(h("button", { class: "btn pequeno" + (noPool ? " ativo" : ""), text: noPool ? "✓ No deck" : "+ Deck",
+        acoes.append(h("button", { class: "btn pequeno" + (noPool ? " ativo" : ""), html: noPool ? icT("check", "No deck") : icT("mais", "Deck"),
           onclick: () => {
             if (noPool) s.deck.pool = s.deck.pool.filter((x) => x !== id);
             else if (s.deck.pool.length < BALANCE.maxSlots - 1) s.deck.pool.push(id);
@@ -194,10 +211,10 @@ export function telaChips(nav: Nav): HTMLElement {
           nav.persistir();
         }
         nav.ir("chips");
-      } }, ...descChip(c), equip ? h("div", { style: "color:var(--verde);font-weight:800", text: "✓ Equipado" }) : null);
+      } }, ...descChip(c), equip ? h("div", { style: "color:var(--verde);font-weight:800", html: icT("check", "Equipado") }) : null);
   }));
   const fundirBar = h("div", { class: "acoes" },
-    h("button", { class: "btn pequeno" + (modoFundir ? " ativo" : ""), text: modoFundir ? "Cancelar fusão" : "⚗ Fundir 3 → 1",
+    h("button", { class: "btn pequeno" + (modoFundir ? " ativo" : ""), html: modoFundir ? "Cancelar fusão" : icT("fundir", "Fundir 3 em 1"),
       onclick: () => { modoFundir = !modoFundir; selecionados = []; nav.ir("chips"); } }),
     modoFundir ? h("button", { class: "btn ouro pequeno", disabled: selecionados.length !== 3, text: `Fundir (${selecionados.length}/3)`,
       onclick: () => {
@@ -241,7 +258,7 @@ export function telaMissoes(nav: Nav): HTMLElement {
     return { feita, pronta, el: h("div", { class: "cartao" + (feita ? " bloq" : "") },
       h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", style: "font-size:14px", text: m.texto }), h("div", { class: "desc", html: rec })),
         pronta ? h("button", { class: "btn ouro pequeno", text: "Resgatar", onclick: () => { if (resgatarMissao(s, m.id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("missoes"); } } })
-          : h("span", { style: "font-size:12px;color:var(--texto2)", text: feita ? "✓" : `${fmtInt(Math.min(v, m.meta))}/${fmtInt(m.meta)}` })),
+          : h("span", { style: "font-size:12px;color:var(--texto2)", html: feita ? ic("check") : `${fmtInt(Math.min(v, m.meta))}/${fmtInt(m.meta)}` })),
       h("div", { class: "prog" }, h("b", { style: `width:${Math.min(100, (v / m.meta) * 100)}%` }))) };
   });
   itens.sort((a, b) => Number(b.pronta) - Number(a.pronta) || Number(a.feita) - Number(b.feita));
@@ -259,12 +276,12 @@ export function telaModos(nav: Nav): HTMLElement {
   }
   return tela(nav, "MODOS",
     h("div", { class: "cartao" },
-      h("div", { class: "nome", style: "font-weight:900;font-size:17px", text: "📅 Desafio Diário" }),
+      h("div", { class: "nome", style: "font-weight:900;font-size:17px", html: icT("calendario", "Desafio Diário") }),
       h("div", { class: "desc", html: `<b>${d.mod.nome}:</b> ${d.mod.desc}<br>Base: fase ${d.stage.id} · chefe ${BOSSES[d.stage.chefe].nome}. A mesma seed para todos hoje.` }),
-      h("div", { class: "desc", text: s.diario.concluido ? "✓ Concluído hoje" : s.diario.melhor ? `Melhor tempo hoje: ${fmtTempo(s.diario.melhor)}` : "Ainda não jogado hoje" }),
+      h("div", { class: "desc", text: s.diario.concluido ? "Concluído hoje" : s.diario.melhor ? `Melhor tempo hoje: ${fmtTempo(s.diario.melhor)}` : "Ainda não jogado hoje" }),
       h("div", { class: "acoes" }, h("button", { class: "btn primario", text: "Jogar desafio", onclick: () => nav.jogarDiario() }))),
     h("div", { class: "cartao" },
-      h("div", { class: "nome", style: "font-weight:900;font-size:17px", text: "♾️ Sobrevivência Infinita" }),
+      h("div", { class: "nome", style: "font-weight:900;font-size:17px", html: icT("infinito", "Sobrevivência Infinita") }),
       h("div", { class: "desc", text: "Ondas sem fim que ficam mais fortes. Um chefe a cada 3 minutos. Até onde você aguenta?" }),
       h("div", { class: "desc", text: `Recorde: ${fmtTempo(s.sobrevivenciaMelhor)}` }),
       h("div", { class: "acoes" }, h("button", { class: "btn primario", text: "Sobreviver", onclick: () => nav.jogarSobrevivencia() }))),
@@ -279,10 +296,10 @@ function cartaoJornada(nav: Nav): HTMLElement {
     nav.persistir();
   }
   return h("div", { class: "cartao" },
-    h("div", { class: "nome", style: "font-weight:900;font-size:17px", text: "🧭 Jornada da Semana" }),
+    h("div", { class: "nome", style: "font-weight:900;font-size:17px", html: icT("bussola", "Jornada da Semana") }),
     h("div", { class: "desc", text: `${j.etapas.length} etapas seguidas, sem cura entre elas. A build, o nível e o HP continuam de uma etapa para a outra.` }),
-    ...j.campos.map((c) => h("div", { class: "desc", html: `${c.icone} <b>${c.nome}:</b> ${c.desc}` })),
-    h("div", { class: "desc", text: s.jornada.concluida ? "✓ Concluída nesta semana" : `Melhor nesta semana: ${s.jornada.melhor}/${j.etapas.length} etapas` }),
+    ...j.campos.map((c) => h("div", { class: "desc", html: `${ic(c.icone)} <b>${c.nome}:</b> ${c.desc}` })),
+    h("div", { class: "desc", text: s.jornada.concluida ? "Concluída nesta semana" : `Melhor nesta semana: ${s.jornada.melhor}/${j.etapas.length} etapas` }),
     h("div", { class: "acoes" }, h("button", { class: "btn primario", text: "Partir em jornada", onclick: () => nav.jogarJornada() })));
 }
 

@@ -13,7 +13,7 @@ import { initTextures } from "../render/Textures";
 import { Hud } from "../ui/Hud";
 import { telaLevelUp } from "../ui/LevelUpScreen";
 import { telaBuild, telaPausa, telaResultado } from "../ui/Panels";
-import { h } from "../ui/dom";
+import { h, ICONE_MOEDA } from "../ui/dom";
 import {
   painelConfig, telaChips, telaConfig, telaHangar, telaHub, telaMapa, telaMissoes, telaModos, telaPlaneta, type Nav,
 } from "../ui/meta/Screens";
@@ -25,10 +25,10 @@ const W = BALANCE.mundo.largura;
 const H = BALANCE.mundo.altura;
 
 const DICAS: [number, number, string][] = [
-  [0.5, 6, "As sentinelas atiram sozinhas. Proteja o planeta! 🌍"],
+  [0.5, 6, "As sentinelas atiram sozinhas. Proteja o planeta!"],
   [6.5, 12.5, "Inimigos destruídos dão XP. A cada nível, escolha uma carta de melhoria."],
   [13, 19, "Quando o botão do raio encher, toque nele para soltar o ultimate."],
-  [19.5, 25.5, "Use x2 para acelerar e 🃏 para ver sua build."],
+  [19.5, 25.5, "Use x2 para acelerar e o botão de cartas para ver sua build."],
 ];
 
 interface Run {
@@ -283,8 +283,8 @@ export class Game implements Nav {
     if (!f.vitoria && !b.reviveu && run.modo !== "sobrevivencia" && run.modo !== "jornada") {
       const el = h("div", { class: "overlay" },
         h("div", { class: "titulo", style: "color:var(--vermelho)", text: "ESCUDOS CAÍRAM" }),
-        h("div", { class: "subtitulo", text: `Reviver com 50% de HP? (1x por partida) · Você tem 💎 ${this.save.cristais}` }),
-        h("button", { class: "btn ouro", disabled: this.save.cristais < CUSTO_REVIVER, text: `💎 ${CUSTO_REVIVER} Reviver`, onclick: () => {
+        h("div", { class: "subtitulo", html: `Reviver com 50% de HP? (1x por partida) · Você tem ${ICONE_MOEDA.cristais} ${this.save.cristais}` }),
+        h("button", { class: "btn ouro", disabled: this.save.cristais < CUSTO_REVIVER, html: `${ICONE_MOEDA.cristais} ${CUSTO_REVIVER} Reviver`, onclick: () => {
           this.save.cristais -= CUSTO_REVIVER;
           this.persistir();
           b.reviver();
