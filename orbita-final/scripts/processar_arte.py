@@ -34,7 +34,7 @@ CONFIG = {
     "pedestal": ("recorte", 840),
     "premio_": ("recorte", 160),
     "loja_": ("recorte", 160),
-    "patente_": ("recorte", 96),
+    "patente_": ("recorte", 160),
     "fundo_": ("fundo_tela", 720),
     "icone_app": ("icone_app", 512),
     "logo": ("recorte", 900),

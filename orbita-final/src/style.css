@@ -496,3 +496,16 @@ input[type="range"] { width: 140px; accent-color: var(--ciano); }
 .btn-batalha.com-arte .bb-txt b { font-size: clamp(24px, 7.6vw, 34px); }
 .btn-batalha.com-arte .bb-txt small { font-size: clamp(10.5px, 3.1vw, 13px); color: #3a1600; }
 @media (max-height: 720px) { .btn-batalha.com-arte { max-height: 108px; } }
+
+/* insígnias de patente */
+.perfil-av { position: relative; flex: none; display: inline-grid; }
+.insignia { object-fit: contain; filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8)); pointer-events: none; }
+.insignia.mini { position: absolute; right: -8px; bottom: -6px; width: 24px; height: 24px; }
+.insignia.media { position: absolute; right: -10px; bottom: -8px; width: 38px; height: 38px; }
+.insignia.micro { width: 18px; height: 18px; vertical-align: -4px; }
+.pat-prox { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--texto2); margin-top: 2px; }
+.pat-prox b { color: var(--texto); }
+.pat-ic { width: 34px; }
+.pat-ic img { width: 32px; height: 32px; }
+.pat-linha:not(.ok) .pat-ic img { filter: grayscale(1) brightness(0.55); opacity: 0.7; }
+.pat-linha.atual .pat-ic img { width: 38px; height: 38px; filter: drop-shadow(0 0 6px rgba(255, 194, 61, 0.8)); }

@@ -39,11 +39,17 @@ export function avatar(n: number, classe = "avatar"): HTMLElement {
   return h("span", { class: classe, style: `--cor:${cor}`, html: url ? `<img src="${url}" alt="">` : ic("usuario") });
 }
 
+/** Insígnia da patente (arte final `patente_N`), ou null. */
+function insignia(indice: number, classe = "insignia"): HTMLElement | null {
+  const u = urlArte(`patente_${indice + 1}`);
+  return u ? h("img", { class: classe, src: u, alt: "" }) : null;
+}
+
 function perfilCard(nav: Nav): HTMLElement {
   const s = nav.save;
   const pt = patenteDe(s.pontos);
   return h("button", { class: "perfil", onclick: () => nav.ir("progresso") },
-    avatar(s.perfil.avatar),
+    h("span", { class: "perfil-av" }, avatar(s.perfil.avatar), insignia(pt.indice, "insignia mini")),
     h("span", { class: "perfil-txt" },
       h("b", { text: `Cmd. ${s.perfil.nome || "Comandante"}` }),
       h("span", { class: "perfil-pat", html: `<em>${pt.atual.nome}</em> · ${fmtInt(s.pontos)} pts` }),
@@ -327,10 +333,11 @@ export function telaProgresso(nav: Nav): HTMLElement {
   const est = (icone: string, k: string, v: string) => h("div", { class: "est-item neon" }, h("span", { class: "est-ic", html: ic(icone) }), h("b", { text: v }), h("small", { text: k }));
   const el = tela(nav, "PROGRESSO",
     h("div", { class: "cartao perfil-grande neon" },
-      avatar(s.perfil.avatar, "avatar grande"),
+      h("span", { class: "perfil-av" }, avatar(s.perfil.avatar, "avatar grande"), insignia(pt.indice, "insignia media")),
       h("div", { style: "flex:1;min-width:0" },
         h("div", { class: "nome", text: `Cmd. ${s.perfil.nome || "Comandante"}` }),
         h("div", { class: "pat-nome", text: pt.atual.nome }),
+        pt.prox ? h("div", { class: "pat-prox" }, h("span", { text: "Próxima:" }), insignia(pt.indice + 1, "insignia micro"), h("b", { text: pt.prox.nome })) : null,
         h("div", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(pt.frac * 100)}%` })),
         h("div", { class: "desc", text: pt.prox ? `${fmtInt(s.pontos)} / ${fmtInt(pt.prox.pontos)} pontos para ${pt.prox.nome}` : `${fmtInt(s.pontos)} pontos · patente máxima` })),
       h("button", { class: "btn icone", html: ic("usuario"), "aria-label": "Editar perfil", onclick: () => nav.ir("login") })),
