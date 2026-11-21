@@ -97,6 +97,10 @@ export class Game implements Nav {
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && this.run && !this.run.overlay && !this.run.b.fim) this.pausar();
     });
+    // APK: o Android avisa quando o app é minimizado
+    document.addEventListener("pause", () => {
+      if (this.run && !this.run.overlay && !this.run.b.fim) this.pausar();
+    });
     // áudio só libera após gesto do usuário (iOS)
     const unlock = () => audio.desbloquear();
     window.addEventListener("pointerdown", unlock);

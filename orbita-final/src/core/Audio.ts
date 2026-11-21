@@ -41,8 +41,20 @@ export class AudioSys {
   volSom = 0.7;
   volMusica = 0.5;
 
+  /** App minimizado / aba escondida: congela todo o áudio (música e efeitos). */
+  private emSegundoPlano = false;
+
+  segundoPlano(sim: boolean): void {
+    this.emSegundoPlano = sim;
+    const ctx = this.ctx;
+    if (!ctx) return;
+    if (sim) void ctx.suspend().catch(() => {});
+    else if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+  }
+
   /** Precisa ser chamado num gesto do usuário (iOS). */
   desbloquear(): void {
+    if (this.emSegundoPlano) return;
     if (this.ctx) {
       if (this.ctx.state === "suspended") void this.ctx.resume();
       return;
@@ -282,3 +294,14 @@ export class AudioSys {
 }
 
 export const audio = new AudioSys();
+
+// pausa o som quando o app vai para segundo plano: navegador (visibilitychange/pagehide)
+// e APK do Capacitor (eventos nativos "pause"/"resume" disparados no document)
+if (typeof document !== "undefined") {
+  const conferir = () => audio.segundoPlano(document.hidden);
+  document.addEventListener("visibilitychange", conferir);
+  document.addEventListener("pause", () => audio.segundoPlano(true));
+  document.addEventListener("resume", () => audio.segundoPlano(false));
+  window.addEventListener("pagehide", () => audio.segundoPlano(true));
+  window.addEventListener("pageshow", conferir);
+}
