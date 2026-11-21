@@ -18,6 +18,15 @@ SAIDA = os.path.join(RAIZ, "src", "assets", "sprites")
 
 # nome -> (modo, tamanho final)
 CONFIG = {
+    # efeitos luminosos: o brilho vira transparência (ficam bonitos com blend aditivo)
+    "missil_chama": ("aditivo", 256),
+    "bala_pulso": ("aditivo", 256),
+    "trilho": ("aditivo", 512),
+    "gelo_tiro": ("aditivo", 256),
+    "tiro_inimigo": ("aditivo", 128),
+    "vortice": ("aditivo", 512),
+    "explosao_sheet": ("sheet", 1024),
+    "carta_": ("carta", 600),
     "planeta_mapa": ("mapa", 1024),
     "planeta_nuvens": ("nuvens", 1024),
     "planeta": ("fundo", 512),
@@ -157,6 +166,16 @@ def processar(arq):
         return mapa_esfera(arq, nome, tam, modo == "nuvens")
     if modo == "cabeca":
         return cabeca(arq, nome, tam)
+    if modo == "carta":
+        im = Image.open(os.path.join(ORIG, arq)).convert("RGB")
+        im = im.resize((tam, round(tam * im.height / im.width)), Image.LANCZOS)
+        im.save(os.path.join(SAIDA, nome + ".jpg"), quality=86)
+        return print(f"{nome}.jpg  {im.width}x{im.height}  (carta)")
+    if modo == "sheet":
+        rgb = np.asarray(Image.open(os.path.join(ORIG, arq)).convert("RGB")).astype(np.float32)
+        img = Image.fromarray(aditivo(rgb), "RGBA").resize((tam, tam // 2), Image.LANCZOS)
+        img.save(os.path.join(SAIDA, nome + ".png"), optimize=True)
+        return print(f"{nome}.png  {tam}x{tam // 2}  (folha de animação 4x2)")
     src = Image.open(os.path.join(ORIG, arq)).convert("RGB")
     rgb = np.asarray(src).astype(np.float32)
     rgba = aditivo(rgb) if modo == "aditivo" else remover_fundo(rgb)

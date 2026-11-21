@@ -13,6 +13,7 @@ export async function carregarSprites(): Promise<void> {
   await Promise.all(
     Object.entries(URLS).map(async ([caminho, url]) => {
       const id = caminho.split("/").pop()!.replace(/\.(png|jpg)$/, "");
+      if (id.startsWith("carta_")) return; // cartas são usadas só como <img> na interface
       try {
         const t = (await Assets.load(url)) as Texture;
         t.source.scaleMode = "linear";

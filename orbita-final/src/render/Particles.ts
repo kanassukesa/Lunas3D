@@ -1,4 +1,5 @@
-import { Container, Sprite } from "pixi.js";
+import { Container, Rectangle, Sprite, Texture } from "pixi.js";
+import { temArte } from "./Sprites";
 import { tex } from "./Textures";
 
 interface Part {
@@ -20,6 +21,45 @@ export class Particles {
   private vivas: Part[] = [];
   private livres: Part[] = [];
   max = 900;
+  /** Explosões animadas (folha 4×2 da arte final). */
+  private quadros: Texture[] | null = null;
+  private anims: { sp: Sprite; t: number; dur: number }[] = [];
+  private animLivres: Sprite[] = [];
+
+  private obterQuadros(): Texture[] | null {
+    if (this.quadros === null && temArte("explosao_sheet")) {
+      const base = tex("explosao_sheet");
+      const fw = base.width / 4;
+      const fh = base.height / 2;
+      this.quadros = [];
+      for (let i = 0; i < 8; i++) {
+        this.quadros.push(new Texture({ source: base.source, frame: new Rectangle((i % 4) * fw, Math.floor(i / 4) * fh, fw, fh) }));
+      }
+    }
+    return this.quadros;
+  }
+
+  /** Explosão animada (arte final); retorna false se não houver folha. */
+  animar(x: number, y: number, diametro: number, dur = 0.45): boolean {
+    const q = this.obterQuadros();
+    if (!q || this.anims.length > 60) return false;
+    let sp = this.animLivres.pop();
+    if (!sp) {
+      sp = new Sprite(q[0]);
+      sp.anchor.set(0.5);
+      sp.blendMode = "add";
+      this.layer.addChild(sp);
+    }
+    sp.visible = true;
+    sp.texture = q[0];
+    sp.x = x;
+    sp.y = y;
+    sp.rotation = Math.random() * Math.PI * 2;
+    sp.alpha = 1;
+    sp.scale.set(diametro / q[0].width);
+    this.anims.push({ sp, t: 0, dur });
+    return true;
+  }
 
   private obter(texId: string): Part | null {
     if (this.vivas.length >= this.max) return null;
@@ -62,6 +102,11 @@ export class Particles {
   }
 
   explosao(x: number, y: number, r: number, cor: number, leve: boolean): void {
+    if (this.animar(x, y, r * 2.6)) {
+      const n = leve ? 2 : Math.min(10, 3 + Math.round(r / 20));
+      for (let i = 0; i < n; i++) this.emitir(x, y, { tex: "spark", cor, vel: r * 5, vida: 0.4, s0: 1.1, s1: 0.2, stretch: true, drag: 4 });
+      return;
+    }
     this.emitir(x, y, { tex: "glowSoft", cor, vel: 0, vida: 0.35, s0: r / 40, s1: r / 30, alpha: 0.8 });
     this.emitir(x, y, { tex: "anel", cor: 0xffffff, vel: 0, vida: 0.3, s0: r / 200, s1: r / 55, alpha: 0.7 });
     const n = leve ? 4 : Math.min(18, 6 + Math.round(r / 12));
@@ -69,12 +114,30 @@ export class Particles {
   }
 
   morte(x: number, y: number, cor: number, r: number, leve: boolean): void {
+    if (!leve) this.animar(x, y, r * 3.2, 0.38);
     this.emitir(x, y, { tex: "glowSoft", cor, vel: 0, vida: 0.25, s0: r / 30, s1: r / 18, alpha: 0.9 });
     const n = leve ? 3 : Math.min(14, 5 + Math.round(r / 4));
     for (let i = 0; i < n; i++) this.emitir(x, y, { tex: "spark", cor, vel: 260 + r * 6, vida: 0.4, s0: 1, s1: 0.1, stretch: true, drag: 5 });
   }
 
   update(dt: number): void {
+    if (this.anims.length) {
+      const q = this.quadros!;
+      let k = 0;
+      for (const a of this.anims) {
+        a.t += dt;
+        const f = a.t / a.dur;
+        if (f >= 1) {
+          a.sp.visible = false;
+          this.animLivres.push(a.sp);
+          continue;
+        }
+        a.sp.texture = q[Math.min(7, Math.floor(f * 8))];
+        a.sp.alpha = f > 0.7 ? 1 - (f - 0.7) / 0.3 : 1;
+        this.anims[k++] = a;
+      }
+      this.anims.length = k;
+    }
     let j = 0;
     for (const p of this.vivas) {
       p.life -= dt;

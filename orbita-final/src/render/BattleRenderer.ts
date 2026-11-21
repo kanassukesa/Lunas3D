@@ -59,6 +59,7 @@ class SpriteView implements Freeable {
   /** Rastro (só mísseis): pares x,y do mais novo para o mais antigo. */
   trail: number[] = [];
   trailTick = 0;
+  haloBase = 1;
   constructor(private pool: ViewPool<SpriteView>, texId: string, halo: boolean) {
     this.root = new Container();
     if (halo) {
@@ -170,10 +171,12 @@ export class BattleRenderer {
     this.missilPool = new ViewPool(this.projL, (p) => {
       const v = new SpriteView(p, "missil", true);
       v.s.blendMode = "normal";
-      v.s.scale.set(0.8);
-      v.halo!.texture = tex("chama");
-      v.halo!.anchor.set(1, 0.5);
-      v.halo!.x = -22;
+      const real = temArte("missil");
+      v.s.scale.set(real ? 64 / (v.s.texture.width * 0.92) : 0.8);
+      v.halo!.texture = tex(temArte("missil_chama") ? "missil_chama" : "chama");
+      v.halo!.anchor.set(temArte("missil_chama") ? 0.95 : 1, 0.5);
+      v.halo!.x = real ? -27 : -22;
+      v.haloBase = temArte("missil_chama") ? 40 / (v.halo!.texture.width * 0.9) : 1;
       return v;
     });
     this.shotPool = new ViewPool(this.shotL, (p) => new SpriteView(p, "glow", false));
@@ -348,7 +351,7 @@ export class BattleRenderer {
     v.root.y = z.y;
     v.s.blendMode = z.src === null || z.buracoNegro ? "normal" : "add";
     v.s.tint = z.buracoNegro ? 0xffffff : 0xc0a8ff;
-    v.s.scale.set((z.r / 128) * 1.05);
+    v.s.scale.set((z.r * 2.1) / v.s.texture.width);
     v.s.rotation -= 0.06 * (z.buracoNegro ? 2 : 1);
     v.s.alpha = Math.min(1, z.life * 2, (z.maxLife - z.life) * 4) * 0.9;
   }
@@ -462,15 +465,35 @@ export class BattleRenderer {
         v.trailTick = 0;
       } else {
         const cor = CORES_PROJ[p.kind] ?? p.cor;
-        v.s.tint = cor;
-        if (v.halo) {
-          v.halo.tint = cor;
-          v.halo.alpha = 0.55;
-          v.halo.visible = this.brilho && !this.leve;
+        // arte final por tipo de tiro (comprimento no mundo); o resto usa o "bolt" colorido
+        const arte = p.ult ? null
+          : p.kind === "trilho" && temArte("trilho") ? { id: "trilho", L: p.r > 30 ? 300 : 190, larg: p.r > 30 ? 1.6 : 1 }
+          : p.kind === "gelo" && temArte("gelo_tiro") ? { id: "gelo_tiro", L: 62, larg: 1 }
+          : p.kind === "bala" && p.src?.def.id === "canhao" && temArte("bala_pulso") ? { id: "bala_pulso", L: 60, larg: 1 }
+          : null;
+        if (arte) {
+          v.s.texture = tex(arte.id);
+          v.s.tint = 0xffffff;
+          const k = arte.L / (v.s.texture.width * 0.92);
+          v.s.scale.set(k, k * arte.larg);
+          if (v.halo) {
+            v.halo.tint = cor;
+            v.halo.alpha = 0.35;
+            v.halo.scale.set(p.kind === "trilho" ? 1.6 : 0.8);
+            v.halo.visible = this.brilho && !this.leve;
+          }
+        } else {
+          v.s.texture = tex("bolt");
+          v.s.tint = cor;
+          if (v.halo) {
+            v.halo.tint = cor;
+            v.halo.alpha = 0.55;
+            v.halo.visible = this.brilho && !this.leve;
+          }
+          const sc = p.kind === "trilho" ? (p.r > 30 ? 2.6 : 1.7) : p.kind === "estilhaco" ? 0.4 : p.kind === "drone" ? 0.5 : 0.8;
+          v.s.scale.set(sc, p.kind === "trilho" ? sc * 1.1 : sc);
+          if (v.halo) v.halo.scale.set(p.kind === "trilho" ? 2.2 : 1);
         }
-        const sc = p.kind === "trilho" ? (p.r > 30 ? 2.6 : 1.7) : p.kind === "estilhaco" ? 0.4 : p.kind === "drone" ? 0.5 : 0.8;
-        v.s.scale.set(sc, p.kind === "trilho" ? sc * 1.1 : sc);
-        if (v.halo) v.halo.scale.set(p.kind === "trilho" ? 2.2 : 1);
       }
     }
     v.root.x = p.x;
@@ -478,7 +501,7 @@ export class BattleRenderer {
     v.root.rotation = Math.atan2(p.vy, p.vx);
     if (missil) {
       // chama tremulando + ponto do rastro a cada 2 frames (≈ 0,6 s de rastro)
-      v.halo!.scale.set(0.9 + Math.random() * 0.5, 0.8 + Math.random() * 0.3);
+      v.halo!.scale.set(v.haloBase * (0.9 + Math.random() * 0.5), v.haloBase * (0.8 + Math.random() * 0.3));
       if (this.dtFrame > 0 && ++v.trailTick % 2 === 0) {
         const a = v.root.rotation;
         v.trail.unshift(p.x - Math.cos(a) * 26, p.y - Math.sin(a) * 26);
@@ -519,11 +542,21 @@ export class BattleRenderer {
     if (!v) {
       v = this.shotPool.get();
       s.view = v;
-      v.s.tint = s.cor;
-      v.s.scale.set(s.r / 14);
+      const r = (s.cor >> 16) & 255, g = (s.cor >> 8) & 255;
+      // bola de plasma da arte final para tiros vermelho/laranja; outras cores seguem o brilho colorido
+      if (temArte("tiro_inimigo") && r > 200 && g < 190) {
+        v.s.texture = tex("tiro_inimigo");
+        v.s.tint = 0xffffff;
+        v.s.scale.set((s.r * 4.2) / (v.s.texture.width * 0.92));
+      } else {
+        v.s.texture = tex("glow");
+        v.s.tint = s.cor;
+        v.s.scale.set(s.r / 14);
+      }
     }
     v.root.x = s.x;
     v.root.y = s.y;
+    v.root.rotation = Math.atan2(s.vy, s.vx);
   }
 
   private syncDrone(d: Drone): void {
@@ -531,8 +564,14 @@ export class BattleRenderer {
     if (!v) {
       v = this.dronePool.get();
       d.view = v;
-      v.s.tint = d.temp > 0 ? 0xffe86b : 0x9dff5e;
-      v.s.scale.set(0.8);
+      if (temArte("drone")) {
+        v.s.blendMode = "normal";
+        v.s.tint = d.temp > 0 ? 0xffe070 : 0xffffff;
+        v.s.scale.set(38 / (v.s.texture.width * 0.92));
+      } else {
+        v.s.tint = d.temp > 0 ? 0xffe86b : 0x9dff5e;
+        v.s.scale.set(0.8);
+      }
     }
     v.root.x = d.x;
     v.root.y = d.y;

@@ -1,5 +1,6 @@
 import { SENTINELS } from "../data/sentinels";
 import type { CardDef, SentinelId } from "../data/types";
+import { urlArte } from "../render/Sprites";
 
 /**
  * Ilustrações das cartas, desenhadas em Canvas2D (originais, sem assets externos).
@@ -620,7 +621,10 @@ export function arteSentinela(id: SentinelId, evoluida = false): string {
 }
 
 export function arteCarta(card: CardDef): string {
-  if (card.alvo) return arteSentinela(card.alvo, card.tipo === "evolucao");
+  if (card.alvo) {
+    const real = urlArte(card.tipo === "evolucao" ? `carta_evo_${card.alvo}` : `carta_${card.alvo}`);
+    return real ?? arteSentinela(card.alvo, card.tipo === "evolucao");
+  }
   if (card.tipo === "passiva") {
     const sid = card.requisitos?.sentinela;
     const cor = sid ? SENTINELS[sid].cor : 0xb36bff;
