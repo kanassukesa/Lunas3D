@@ -11,7 +11,8 @@ import { apagar, salvar, saveNovo, type SaveData } from "../../core/Save";
 import {
   comprarTalento, desafioDoDia, jornadaDaSemana, semanaStr, desbloquear, faseLiberada, formatStat, fundir, hojeStr, melhorar, missoesProntas, podeMelhorar, resgatarMissao,
 } from "../../meta/Meta";
-import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, toast } from "../dom";
+import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg, toast } from "../dom";
+import { urlArte } from "../../render/Sprites";
 
 export interface Nav {
   save: SaveData;
@@ -27,9 +28,9 @@ export interface Nav {
 
 function moedas(s: SaveData): HTMLElement {
   return h("div", { class: "moedas" },
-    h("span", { class: "moeda", text: `${ICONE_MOEDA.creditos} ${fmtInt(s.creditos)}` }),
-    h("span", { class: "moeda", text: `${ICONE_MOEDA.nucleos} ${fmtInt(s.nucleos)}` }),
-    h("span", { class: "moeda", text: `${ICONE_MOEDA.cristais} ${fmtInt(s.cristais)}` }));
+    h("span", { class: "moeda", html: `${ICONE_MOEDA.creditos} ${fmtInt(s.creditos)}` }),
+    h("span", { class: "moeda", html: `${ICONE_MOEDA.nucleos} ${fmtInt(s.nucleos)}` }),
+    h("span", { class: "moeda", html: `${ICONE_MOEDA.cristais} ${fmtInt(s.cristais)}` }));
 }
 
 function topo(nav: Nav, titulo: string | null): HTMLElement {
@@ -59,7 +60,9 @@ export function telaHub(nav: Nav): HTMLElement {
     h("button", { class: "btn", onclick: () => nav.ir(alvo) }, h("span", { text: ic }), nome, badge ? h("i", { class: "badge", text: String(badge) }) : null);
   return h("div", { class: "tela" },
     topo(nav, null),
-    h("div", { class: "logo", html: "ÓRBITA FINAL<small>DEFESA PLANETÁRIA</small>" }),
+    urlArte("logo")
+      ? h("div", { class: "logo-img" }, h("img", { src: urlArte("logo")!, alt: "Órbita Final" }), h("small", { text: "DEFESA PLANETÁRIA" }))
+      : h("div", { class: "logo", html: "ÓRBITA FINAL<small>DEFESA PLANETÁRIA</small>" }),
     h("div", { class: "hub-base" },
       h("button", { class: "btn primario btn-batalha", onclick: () => nav.jogarCampanha(idx, false) },
         "BATALHA", h("small", { text: `Fase ${st.id} · ${st.nome}` })),
@@ -106,12 +109,12 @@ export function telaHangar(nav: Nav): HTMLElement {
     const noPool = s.deck.pool.includes(id);
     const acoes = h("div", { class: "acoes" });
     if (!st.desbloqueada) {
-      acoes.append(h("button", { class: "btn ciano pequeno", disabled: s.nucleos < def.desbloqueio, text: `Desbloquear ${ICONE_MOEDA.nucleos} ${def.desbloqueio}`,
+      acoes.append(h("button", { class: "btn ciano pequeno", disabled: s.nucleos < def.desbloqueio, html: `Desbloquear ${ICONE_MOEDA.nucleos} ${def.desbloqueio}`,
         onclick: () => { if (desbloquear(s, id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("hangar"); } } }));
     } else {
       const { ok, custo } = podeMelhorar(s, id);
       const max = st.nivel >= BALANCE.hangar.nivelMax;
-      acoes.append(h("button", { class: "btn primario pequeno", disabled: !ok, text: max ? "Nível máximo" : `Melhorar ${ICONE_MOEDA.creditos} ${fmtInt(custo)}`,
+      acoes.append(h("button", { class: "btn primario pequeno", disabled: !ok, html: max ? "Nível máximo" : `Melhorar ${ICONE_MOEDA.creditos} ${fmtInt(custo)}`,
         onclick: () => { if (melhorar(s, id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("hangar"); } } }));
       acoes.append(h("button", { class: "btn pequeno" + (ehBase ? " ativo" : ""), text: ehBase ? "★ Base" : "Definir base",
         onclick: () => {
@@ -150,6 +153,7 @@ let modoFundir = false;
 
 function descChip(c: Chip): HTMLElement[] {
   return [
+    h("span", { class: "chip-ic", html: iconeImg(`chip_${c.set}`, "") }),
     h("b", { text: `${CHIP_SET_MAP[c.set]?.nome ?? c.set} · ${CHIP_SLOT_NOME[c.slot]}` }),
     h("div", { style: `color:${CHIP_RARIDADE_COR[c.raridade]};font-size:11px;font-weight:800`, text: CHIP_RARIDADES[c.raridade] }),
     h("div", { text: formatStat(c.principal.stat, c.principal.valor) }),
@@ -163,7 +167,7 @@ export function telaChips(nav: Nav): HTMLElement {
     const c = s.chips.find((x) => x.uid === s.equipados[slot]);
     if (!c) return h("div", { class: "slot" }, h("b", { text: CHIP_SLOT_NOME[slot] }), h("span", { style: "color:var(--texto2)", text: "vazio" }));
     return h("button", { class: "slot cheio", style: `--cor:${CHIP_RARIDADE_COR[c.raridade]}`, onclick: () => { delete s.equipados[slot]; nav.persistir(); nav.ir("chips"); } },
-      h("b", { text: CHIP_SLOT_NOME[slot] }), h("span", { text: CHIP_SET_MAP[c.set]?.nome }), h("span", { text: formatStat(c.principal.stat, c.principal.valor) }));
+      h("span", { class: "chip-ic", html: iconeImg(`chip_${c.set}`, "") }), h("b", { text: CHIP_SLOT_NOME[slot] }), h("span", { text: formatStat(c.principal.stat, c.principal.valor) }));
   }));
   // bônus de conjunto ativos
   const porSet: Record<string, number> = {};
@@ -174,7 +178,7 @@ export function telaChips(nav: Nav): HTMLElement {
   const sets = h("div", { class: "cartao" }, h("div", { style: "font-weight:800;margin-bottom:6px", text: "Bônus de conjunto" }),
     ...CHIP_SETS.map((st) => {
       const n = porSet[st.id] ?? 0;
-      return h("div", { class: "desc", html: `<b style="color:${hex(st.cor)}">${st.nome}</b> (${n}/4) — <span style="opacity:${n >= 2 ? 1 : 0.45}">2: ${st.bonus2.texto}</span> · <span style="opacity:${n >= 4 ? 1 : 0.45}">4: ${st.bonus4.texto}</span>` });
+      return h("div", { class: "desc", html: `${iconeImg(`chip_${st.id}`, "", "ic-moeda")} <b style="color:${hex(st.cor)}">${st.nome}</b> (${n}/4) — <span style="opacity:${n >= 2 ? 1 : 0.45}">2: ${st.bonus2.texto}</span> · <span style="opacity:${n >= 4 ? 1 : 0.45}">4: ${st.bonus4.texto}</span>` });
     }));
   const ordenados = [...s.chips].sort((a, b) => b.raridade - a.raridade || a.slot.localeCompare(b.slot));
   const lista = h("div", { class: "lista-chips" }, ...ordenados.map((c) => {
@@ -220,7 +224,7 @@ export function telaPlaneta(nav: Nav): HTMLElement {
       h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", text: t.nome }), h("div", { class: "desc", text: t.desc })),
         h("div", { style: "font-weight:800", text: `${n}/${t.max}` })),
       h("div", { class: "prog" }, h("b", { style: `width:${(n / t.max) * 100}%` })),
-      h("div", { class: "acoes" }, h("button", { class: "btn primario pequeno", disabled: !pode, text: max ? "Máximo" : `Melhorar ${ICONE_MOEDA[t.moeda]} ${fmtInt(custo)}`,
+      h("div", { class: "acoes" }, h("button", { class: "btn primario pequeno", disabled: !pode, html: max ? "Máximo" : `Melhorar ${ICONE_MOEDA[t.moeda]} ${fmtInt(custo)}`,
         onclick: () => { if (comprarTalento(s, t.id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("planeta"); } } })));
   }));
 }
@@ -235,7 +239,7 @@ export function telaMissoes(nav: Nav): HTMLElement {
     const pronta = !feita && v >= m.meta;
     const rec = [m.recompensa.creditos ? `${ICONE_MOEDA.creditos} ${m.recompensa.creditos}` : "", m.recompensa.nucleos ? `${ICONE_MOEDA.nucleos} ${m.recompensa.nucleos}` : "", m.recompensa.cristais ? `${ICONE_MOEDA.cristais} ${m.recompensa.cristais}` : ""].filter(Boolean).join("  ");
     return { feita, pronta, el: h("div", { class: "cartao" + (feita ? " bloq" : "") },
-      h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", style: "font-size:14px", text: m.texto }), h("div", { class: "desc", text: rec })),
+      h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", style: "font-size:14px", text: m.texto }), h("div", { class: "desc", html: rec })),
         pronta ? h("button", { class: "btn ouro pequeno", text: "Resgatar", onclick: () => { if (resgatarMissao(s, m.id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("missoes"); } } })
           : h("span", { style: "font-size:12px;color:var(--texto2)", text: feita ? "✓" : `${fmtInt(Math.min(v, m.meta))}/${fmtInt(m.meta)}` })),
       h("div", { class: "prog" }, h("b", { style: `width:${Math.min(100, (v / m.meta) * 100)}%` }))) };

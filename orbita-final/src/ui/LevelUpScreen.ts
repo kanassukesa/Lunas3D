@@ -3,7 +3,7 @@ import type { Oferta } from "../battle/CardSystem";
 import { RARIDADE_COR, RARIDADE_NOME } from "../data/balance";
 import { arteCarta, arteSentinela } from "./CardArt";
 import { urlArte } from "../render/Sprites";
-import { h } from "./dom";
+import { h, ICONE_MOEDA } from "./dom";
 
 /** Linha de slots das sentinelas (6), com a arte e as estrelas de nível. */
 export function slotsSentinelas(b: Battle, destaque?: string): HTMLElement {
@@ -55,7 +55,7 @@ export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrol
     );
   });
   const gratis = b.cards.rerrolagensGratis;
-  const txtRer = gratis > 0 ? `🔄 Rerrolar (${gratis} grátis)` : `🔄 Rerrolar · ⚙ ${b.cards.custoRerrolagem}`;
+  const txtRer = gratis > 0 ? `🔄 Rerrolar (${gratis} grátis)` : `🔄 Rerrolar · ${ICONE_MOEDA.sucata} ${b.cards.custoRerrolagem}`;
   return h(
     "div",
     { class: "overlay levelup" },
@@ -63,7 +63,7 @@ export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrol
     h("div", { class: "lv-painel" }, slotsSentinelas(b), h("div", { class: "lv-legenda", text: `Sentinelas ${b.sentinels.length}/${b.slots()}` })),
     lista,
     h("div", { class: "linha" },
-      h("button", { class: "btn", text: txtRer, disabled: !b.cards.podeRerrolar(), onclick: aoRerrolar }),
-      h("span", { class: "moeda", style: "color:var(--texto2)", text: `⚙ ${Math.floor(b.sucata)} sucata` })),
+      h("button", { class: "btn", html: txtRer, disabled: !b.cards.podeRerrolar(), onclick: aoRerrolar }),
+      h("span", { class: "moeda", style: "color:var(--texto2)", html: `${ICONE_MOEDA.sucata} ${Math.floor(b.sucata)} sucata` })),
   );
 }

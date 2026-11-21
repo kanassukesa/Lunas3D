@@ -27,6 +27,12 @@ CONFIG = {
     "vortice": ("aditivo", 512),
     "explosao_sheet": ("sheet", 1024),
     "carta_": ("carta", 600),
+    "fundo_": ("fundo_tela", 720),
+    "icone_app": ("icone_app", 512),
+    "logo": ("recorte", 900),
+    "moeda_": ("recorte", 128),
+    "chip_": ("recorte", 192),
+    "icone_ultimate": ("recorte", 192),
     "planeta_mapa": ("mapa", 1024),
     "planeta_nuvens": ("nuvens", 1024),
     "planeta": ("fundo", 512),
@@ -166,6 +172,29 @@ def processar(arq):
         return mapa_esfera(arq, nome, tam, modo == "nuvens")
     if modo == "cabeca":
         return cabeca(arq, nome, tam)
+    if modo == "fundo_tela":
+        im = Image.open(os.path.join(ORIG, arq)).convert("RGB")
+        im = im.resize((tam, round(tam * im.height / im.width)), Image.LANCZOS)
+        im.save(os.path.join(SAIDA, nome + ".jpg"), quality=84)
+        return print(f"{nome}.jpg  {im.width}x{im.height}  (fundo de tela)")
+    if modo == "icone_app":
+        # ícones do PWA (tela inicial do iPhone/Android) — imagem cheia, sem recorte
+        im = Image.open(os.path.join(ORIG, arq)).convert("RGB")
+        pub = os.path.join(RAIZ, "public", "icons")
+        for t in (180, 192, 512):
+            im.resize((t, t), Image.LANCZOS).save(os.path.join(pub, f"icon-{t}.png"), optimize=True)
+        return print("public/icons/icon-180/192/512.png  (ícone do app)")
+    if modo == "recorte":
+        # interface: tira o fundo e corta no contorno, mantendo a proporção (lado maior = tam)
+        rgb = np.asarray(Image.open(os.path.join(ORIG, arq)).convert("RGB")).astype(np.float32)
+        img = Image.fromarray(remover_fundo(rgb), "RGBA")
+        bbox = img.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
+        if bbox:
+            img = img.crop(bbox)
+        k = tam / max(img.size)
+        img = img.resize((max(1, round(img.width * k)), max(1, round(img.height * k))), Image.LANCZOS)
+        img.save(os.path.join(SAIDA, nome + ".png"), optimize=True)
+        return print(f"{nome}.png  {img.width}x{img.height}  (interface)")
     if modo == "carta":
         im = Image.open(os.path.join(ORIG, arq)).convert("RGB")
         im = im.resize((tam, round(tam * im.height / im.width)), Image.LANCZOS)

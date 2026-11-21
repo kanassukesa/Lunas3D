@@ -1,6 +1,6 @@
 import type { Battle } from "../battle/Battle";
 import { CAMPOS } from "../data/journey";
-import { fmtInt, fmtTempo, h } from "./dom";
+import { fmtInt, fmtTempo, h, iconeImg } from "./dom";
 
 export interface HudAcoes {
   pausar(): void;
@@ -50,7 +50,7 @@ export class Hud {
     this.nivel = h("span", { text: "Lv.1" });
     this.xp = h("b");
     this.vel = h("button", { class: "btn icone", text: "x1", onclick: () => acoes.velocidade() });
-    this.ult = h("button", { class: "hud-ult", onclick: () => acoes.ultimate() }, h("span", { text: "⚡" }), h("small", { text: "ULTIMATE" }));
+    this.ult = h("button", { class: "hud-ult", onclick: () => acoes.ultimate() }, h("span", { html: iconeImg("icone_ultimate", "⚡", "ic-ult") }), h("small", { text: "ULTIMATE" }));
     this.chefeNome = h("div");
     this.chefeBarra = h("b");
     this.chefe = h("div", { class: "hud-chefe oculto" }, this.chefeNome, h("div", { class: "barra" }, this.chefeBarra));

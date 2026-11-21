@@ -1,3 +1,4 @@
+import { urlArte } from "../render/Sprites";
 type Child = Node | string | number | null | undefined | false;
 type Props = {
   class?: string;
@@ -45,4 +46,20 @@ export function fmtInt(n: number): string {
   return Math.floor(n).toLocaleString("pt-BR");
 }
 
-export const ICONE_MOEDA = { creditos: "🪙", nucleos: "🔷", cristais: "💎" };
+const icone = (id: string, reserva: string): string => {
+  const u = urlArte(id);
+  return u ? `<img class="ic-moeda" src="${u}" alt="">` : reserva;
+};
+
+/** Ícones das moedas (HTML: use em `html:`, não em `text:`). */
+export const ICONE_MOEDA = {
+  get creditos() { return icone("moeda_creditos", "🪙"); },
+  get nucleos() { return icone("moeda_nucleos", "🔷"); },
+  get cristais() { return icone("moeda_cristais", "💎"); },
+  get sucata() { return icone("moeda_sucata", "⚙"); },
+};
+
+export function iconeImg(id: string, reserva: string, classe = "ic-moeda"): string {
+  const u = urlArte(id);
+  return u ? `<img class="${classe}" src="${u}" alt="">` : reserva;
+}

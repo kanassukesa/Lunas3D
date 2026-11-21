@@ -27,7 +27,7 @@ const H = BALANCE.mundo.altura;
 const DICAS: [number, number, string][] = [
   [0.5, 6, "As sentinelas atiram sozinhas. Proteja o planeta! 🌍"],
   [6.5, 12.5, "Inimigos destruídos dão XP. A cada nível, escolha uma carta de melhoria."],
-  [13, 19, "Quando o ⚡ encher, toque nele para soltar o ultimate."],
+  [13, 19, "Quando o botão do raio encher, toque nele para soltar o ultimate."],
   [19.5, 25.5, "Use x2 para acelerar e 🃏 para ver sua build."],
 ];
 
@@ -128,6 +128,7 @@ export class Game implements Nav {
       if (c) c.scrollTop = scroll;
     }
     if (tela === "hangar" || tela === "hub") this.recriarHub();
+    this.bg.setFundo(1);
     audio.tocarMusica("ambiente");
   }
 
@@ -198,6 +199,7 @@ export class Game implements Nav {
     });
     this.run = { b, r, loop, hud, overlay: null, overlayTipo: "", modo, idx, dificil, tutorial, recompensa: null };
     this.cena.addChild(r.world);
+    this.bg.setFundo(((stage.id - 1) % 3) + 1);
     this.root.append(hud.el);
     this.aplicarConfig();
     this.resize();

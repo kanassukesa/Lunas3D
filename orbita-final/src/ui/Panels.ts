@@ -4,7 +4,7 @@ import { RARIDADE_COR } from "../data/balance";
 import { CARD_MAP } from "../data/cards";
 import { CHIP_RARIDADE_COR, CHIP_SET_MAP, CHIP_SLOT_NOME } from "../data/chips";
 import { formatStat } from "../meta/Meta";
-import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA } from "./dom";
+import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg } from "./dom";
 
 function painelBuild(b: Battle): HTMLElement {
   const p = h("div", { class: "painel" });
@@ -72,13 +72,14 @@ export function telaResultado(
   }
   linhas.push(
     h("div", { class: "recompensas" },
-      h("span", { class: "moeda", text: `${ICONE_MOEDA.creditos} +${fmtInt(rec.creditos)}` }),
-      rec.nucleos ? h("span", { class: "moeda", text: `${ICONE_MOEDA.nucleos} +${rec.nucleos}` }) : null),
+      h("span", { class: "moeda", html: `${ICONE_MOEDA.creditos} +${fmtInt(rec.creditos)}` }),
+      rec.nucleos ? h("span", { class: "moeda", html: `${ICONE_MOEDA.nucleos} +${rec.nucleos}` }) : null),
   );
   if (rec.chip) {
     const c = rec.chip;
     linhas.push(
       h("div", { class: "chip", style: `--cor:${CHIP_RARIDADE_COR[c.raridade]};width:min(94vw,320px)` },
+        h("span", { class: "chip-ic", html: iconeImg(`chip_${c.set}`, "") }),
         h("b", { text: `Novo chip: ${CHIP_SET_MAP[c.set]?.nome} · ${CHIP_SLOT_NOME[c.slot]}` }),
         h("div", { text: formatStat(c.principal.stat, c.principal.valor) })),
     );
