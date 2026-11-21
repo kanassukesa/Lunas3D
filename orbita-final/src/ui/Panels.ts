@@ -55,7 +55,10 @@ export function telaPausa(acoes: { continuar(): void; config(): void; desistir()
 export function telaResultado(
   b: Battle,
   rec: Recompensa,
-  acoes: { hub(): void; repetir(): void; proxima: (() => void) | null; reviver: (() => void) | null; cristais: number; custoReviver: number },
+  acoes: {
+    hub(): void; repetir(): void; proxima: (() => void) | null; reviver: (() => void) | null; cristais: number; custoReviver: number;
+    dobrar?: (() => void) | null; semAnuncios?: boolean;
+  },
 ): HTMLElement {
   const f = b.fim!;
   const inf = b.cfg.modo === "sobrevivencia";
@@ -87,6 +90,9 @@ export function telaResultado(
         h("b", { text: `Novo chip: ${CHIP_SET_MAP[c.set]?.nome} · ${CHIP_SLOT_NOME[c.slot]}` }),
         h("div", { text: formatStat(c.principal.stat, c.principal.valor) })),
     );
+  }
+  if (acoes.dobrar) {
+    linhas.push(h("button", { class: "btn ouro btn-dobrar", html: `${ic("play")}<span>${acoes.semAnuncios ? "Dobrar recompensa (VIP)" : "Dobrar recompensa · assistir anúncio"}</span>`, onclick: acoes.dobrar }));
   }
   const painel = painelBuild(b);
   painel.style.maxHeight = "34vh";

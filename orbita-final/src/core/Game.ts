@@ -15,7 +15,12 @@ import { Hud } from "../ui/Hud";
 import { telaLevelUp } from "../ui/LevelUpScreen";
 import { telaBuild, telaPausa, telaResultado } from "../ui/Panels";
 import { telaBau } from "../ui/Bau";
+import { anuncioRecompensado, anunciosRestantes, talvezIntersticial } from "../meta/Anuncios";
+import { sincronizarCompras } from "../meta/Pagamentos";
+import { nuvem } from "./Nuvem";
+import { toast } from "../ui/dom";
 import { h, ICONE_MOEDA } from "../ui/dom";
+import { ic } from "../ui/Icones";
 import {
   painelConfig, telaChips, telaConfig, telaHangar, telaMapa, telaMissoes, telaModos, telaPlaneta, type Nav,
 } from "../ui/meta/Screens";
@@ -25,7 +30,7 @@ import {
 import { patenteDe, registrarPartida } from "../meta/Comandante";
 import { audio } from "./Audio";
 import { FixedLoop } from "./Loop";
-import { carregar, salvar, type SaveData } from "./Save";
+import { carregar, carregarDe, salvar, type SaveData } from "./Save";
 
 const W = BALANCE.mundo.largura;
 const H = BALANCE.mundo.altura;
@@ -57,6 +62,7 @@ interface Run {
   tutorial: boolean;
   recompensa: Recompensa | null;
   bauVisto?: boolean;
+  dobrou?: boolean;
 }
 
 /** Máquina de estados do jogo: Hub (menus) ↔ Batalha (LevelUp, Pausa, Resultado). */
@@ -96,12 +102,37 @@ export class Game implements Nav {
     this.app.ticker.add((t) => this.tick(t.deltaMS / 1000));
     this.ir(this.save.perfil.nome ? "hub" : "login");
     this.resize();
+    void this.conectarNuvem();
   }
 
   // ------------------------------------------------------------------ Nav (menus)
 
+  private nuvemTimer = 0;
+
   persistir(): void {
     salvar(this.save);
+    // salva na nuvem com atraso (junta várias alterações seguidas)
+    if (nuvem.logado()) {
+      clearTimeout(this.nuvemTimer);
+      this.nuvemTimer = window.setTimeout(() => void nuvem.salvar(this.save).catch(() => {}), 3000);
+    }
+  }
+
+  telaAtual(): string {
+    return this.telaEl?.dataset.tela ?? "hub";
+  }
+
+  /** Conecta a conta na nuvem: traz o progresso salvo e entrega compras aprovadas. */
+  async conectarNuvem(): Promise<void> {
+    if (!nuvem.configurada) return;
+    await nuvem.iniciar().catch(() => {});
+    if (!nuvem.logado()) return;
+    const remoto = await nuvem.carregar().catch(() => null);
+    if (remoto && (remoto.pontos ?? 0) >= this.save.pontos) Object.assign(this.save, carregarDe(remoto));
+    const n = await sincronizarCompras(this.save).catch(() => 0);
+    this.persistir();
+    if (n) toast(this.root, `${n} compra${n > 1 ? "s" : ""} entregue${n > 1 ? "s" : ""}!`);
+    if (!this.run) this.ir(this.telaAtual());
   }
 
   aplicarConfig(): void {
@@ -312,13 +343,21 @@ export class Game implements Nav {
       b.cards.ofertas = [];
       if (b.pendentes > 0) {
         b.cards.sortear(b.cards.numeroDeCartas());
-        this.abrir(telaLevelUp(b, escolher, rerrolar), "nivel");
+        this.abrir(telaLevelUp(b, escolher, rerrolar, anuncioDisp()), "nivel");
       } else this.fechar();
     };
-    const rerrolar = () => {
-      if (b.cards.rerrolar()) this.abrir(telaLevelUp(b, escolher, rerrolar), "nivel");
+    const rerrolar = async () => {
+      if (b.cards.podeRerrolar()) {
+        if (b.cards.rerrolar()) this.abrir(telaLevelUp(b, escolher, rerrolar, anuncioDisp()), "nivel");
+        return;
+      }
+      if (!(await anuncioRecompensado(this.save, this.root, "rerrolar"))) return;
+      this.persistir();
+      b.cards.rerrolagensGratis++;
+      if (b.cards.rerrolar()) this.abrir(telaLevelUp(b, escolher, rerrolar, anuncioDisp()), "nivel");
     };
-    const tela = telaLevelUp(b, escolher, rerrolar);
+    const anuncioDisp = () => anunciosRestantes(this.save, "rerrolar") > 0;
+    const tela = telaLevelUp(b, escolher, rerrolar, anuncioDisp());
     if (!this.save.tutorialPassos.includes("cartas")) {
       this.save.tutorialPassos.push("cartas");
       this.persistir();
@@ -342,6 +381,13 @@ export class Game implements Nav {
           b.reviver();
           this.fechar();
         } }),
+        h("button", { class: "btn ciano", disabled: anunciosRestantes(this.save, "reviver") <= 0,
+          html: `${ic("play")}<span>${this.save.monet.semAnuncios ? "Reviver grátis (VIP)" : "Reviver assistindo anúncio"}</span>`, onclick: async () => {
+            if (!(await anuncioRecompensado(this.save, this.root, "reviver"))) return;
+            this.persistir();
+            b.reviver();
+            this.fechar();
+          } }),
         h("button", { class: "btn", text: "Ver resultado", onclick: () => {
           b.reviveu = true;
           this.mostrarFim();
@@ -374,9 +420,21 @@ export class Game implements Nav {
     };
     this.abrir(
       telaResultado(b, run.recompensa, {
-        hub: () => this.ir("hub"),
-        repetir,
-        proxima: temProxima ? () => this.jogarCampanha(idx + 1, run.dificil) : null,
+        hub: () => this.depoisDaPartida(() => this.ir("hub")),
+        repetir: () => this.depoisDaPartida(repetir),
+        proxima: temProxima ? () => this.depoisDaPartida(() => this.jogarCampanha(idx + 1, run.dificil)) : null,
+        dobrar: run.dobrou || (run.recompensa.creditos <= 0 && run.recompensa.nucleos <= 0) || anunciosRestantes(this.save, "dobrar") <= 0 ? null : async () => {
+          if (!(await anuncioRecompensado(this.save, this.root, "dobrar"))) return;
+          run.dobrou = true;
+          this.save.creditos += run.recompensa!.creditos;
+          this.save.nucleos += run.recompensa!.nucleos;
+          run.recompensa!.creditos *= 2;
+          run.recompensa!.nucleos *= 2;
+          this.persistir();
+          toast(this.root, "Recompensa dobrada!");
+          this.mostrarFim();
+        },
+        semAnuncios: this.save.monet.semAnuncios,
         reviver: null,
         cristais: this.save.cristais,
         custoReviver: CUSTO_REVIVER,
@@ -418,6 +476,14 @@ export class Game implements Nav {
     }
     this.tutorialGuiado(run, dt);
     audio.tocarMusica(b.boss && b.boss.alive ? "chefe" : "ambiente");
+  }
+
+  /** Anúncio entre partidas (com limite de frequência), depois segue. */
+  private depoisDaPartida(seguir: () => void): void {
+    void talvezIntersticial(this.save, this.root).finally(() => {
+      this.persistir();
+      seguir();
+    });
   }
 
   private tutoAtivo: { id: string; t: number } | null = null;

@@ -667,3 +667,35 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 .aparencia-bloco { display: flex; flex-direction: column; gap: 6px; }
 .aparencia-vitrine { height: 190px; margin: 0; }
 .hg-carrossel { padding-bottom: 10px; min-height: 92px; }
+
+/* monetização */
+.selo-teste { padding: 7px 10px; border-radius: 10px; background: rgba(255, 194, 61, 0.12); border: 1px dashed var(--ouro); color: var(--ouro); font-size: 11.5px; font-weight: 700; text-align: center; }
+.produto { position: relative; }
+.produto.comprado { opacity: 0.55; }
+.produto .selo { position: absolute; top: 6px; right: 12px; z-index: 2; padding: 1px 7px; border-radius: 6px; font-size: 9.5px; font-weight: 900; letter-spacing: 0.06em;
+  background: linear-gradient(90deg, #ff9a3c, #ffc23d); color: #2a1500; }
+.btn-preco.real { background: linear-gradient(180deg, #3fd47a, #1b8e4a); border-color: #9dffc2; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 10px rgba(73, 224, 122, 0.45); color: #fff; min-width: 96px; font-size: 14px; }
+.bau-ad { display: flex; align-items: center; gap: 12px; }
+.btn-dobrar { width: min(94vw, 380px); }
+.passe-cab { display: grid; grid-template-columns: 1fr 112px; gap: 6px; font-size: 11px; font-weight: 900; letter-spacing: 0.12em; color: var(--texto2); padding: 0 4px; }
+.passe-cab span:last-child { text-align: center; color: var(--ouro); }
+.passe-linha { display: grid; grid-template-columns: 1fr 112px; gap: 6px; align-items: stretch; }
+.passe-linha .passe-nivel .loja-txt b { font-size: 12.5px; }
+.passe-prem { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 4px; border-radius: 12px; text-align: center;
+  background: linear-gradient(180deg, rgba(70, 48, 8, 0.9), rgba(22, 16, 6, 0.9)); border: 1.5px solid #ffc23d; }
+.passe-prem .passe-ic { width: 44px; height: 40px; }
+.passe-prem .passe-ic .premio-img { height: 36px; }
+.passe-prem small { font-size: 10.5px; font-weight: 800; line-height: 1.2; }
+.passe-prem .btn { min-height: 28px; padding: 3px 10px; font-size: 12px; }
+.passe-prem.travado { filter: saturate(0.5) brightness(0.75); }
+.passe-prem .cad { position: absolute; top: 4px; right: 6px; color: var(--ouro); }
+.passe-prem .cad .ic { width: 14px; height: 14px; }
+.passe-prem.pegou { opacity: 0.5; }
+.premium-ativo { color: var(--ouro); font-weight: 800; display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+.passe-topo .btn.ouro { margin-top: 8px; width: 100%; }
+.ad-teste { gap: 12px; background: rgba(0, 0, 0, 0.92); z-index: 20; }
+.ad-teste small { color: var(--ouro); font-weight: 900; letter-spacing: 0.12em; }
+.ad-caixa { width: min(88vw, 360px); aspect-ratio: 16 / 9; border-radius: 12px; border: 1px solid var(--borda); background: linear-gradient(135deg, #1b2a4a, #0a1222);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--texto2); }
+.ad-caixa b { font-size: 36px; color: var(--texto); }
+.config-linha.conta { flex-direction: column; align-items: stretch; }

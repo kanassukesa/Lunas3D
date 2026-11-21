@@ -45,6 +45,17 @@ export interface SaveData {
   passe: { temporada: string; pontos: number; resgatados: number[] };
   /** Passos do tutorial guiado já mostrados. */
   tutorialPassos: string[];
+  /** Compras com dinheiro real e anúncios. */
+  monet: {
+    passePremium: string; // temporada em que o premium foi comprado
+    premiumResgatados: number[];
+    semAnuncios: boolean;
+    unicosComprados: string[];
+    comprasAplicadas: string[]; // ids de pagamento já entregues (idempotência)
+    partidasDesdeAnuncio: number;
+    ultimoAnuncio: number;
+    primeiroDia: string;
+  };
 }
 
 export function saveNovo(): SaveData {
@@ -77,6 +88,7 @@ export function saveNovo(): SaveData {
     skins: { possui: ["escudo_azul", "planeta_terra"], planeta: "planeta_terra", escudo: "escudo_azul" },
     passe: { temporada: "", pontos: 0, resgatados: [] },
     tutorialPassos: [],
+    monet: { passePremium: "", premiumResgatados: [], semAnuncios: false, unicosComprados: [], comprasAplicadas: [], partidasDesdeAnuncio: 0, ultimoAnuncio: 0, primeiroDia: "" },
   };
 }
 
@@ -99,6 +111,13 @@ function preencher<T>(padrao: T, dado: unknown): T {
     return out as T;
   }
   return (typeof dado === typeof padrao ? dado : padrao) as T;
+}
+
+/** Normaliza um save vindo de outro lugar (nuvem) com os campos atuais. */
+export function carregarDe(obj: unknown): SaveData {
+  const s = preencher(saveNovo(), obj);
+  s.v = SAVE_VERSAO;
+  return s;
 }
 
 export function carregar(): SaveData {

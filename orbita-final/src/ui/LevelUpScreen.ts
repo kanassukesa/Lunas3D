@@ -29,7 +29,7 @@ export function slotsSentinelas(b: Battle, destaque?: string): HTMLElement {
 }
 
 /** Tela de level-up: slots no topo, cartas lado a lado (título, ilustração, descrição) e rerrolagem. */
-export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrolar: () => void): HTMLElement {
+export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrolar: () => void, anuncio = false): HTMLElement {
   const ofertas = b.cards.ofertas;
   const lista = h("div", { class: "cartas-lv" + (ofertas.length > 3 ? " cinco" : "") });
   ofertas.forEach((o, i) => {
@@ -64,7 +64,9 @@ export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrol
     h("div", { class: "lv-painel" }, slotsSentinelas(b), h("div", { class: "lv-legenda", text: `Sentinelas ${b.sentinels.length}/${b.slots()}` })),
     lista,
     h("div", { class: "linha" },
-      h("button", { class: "btn", html: txtRer, disabled: !b.cards.podeRerrolar(), onclick: aoRerrolar }),
+      b.cards.podeRerrolar() || !anuncio
+        ? h("button", { class: "btn", html: txtRer, disabled: !b.cards.podeRerrolar(), onclick: aoRerrolar })
+        : h("button", { class: "btn ciano", html: `${ic("play")}<span>Rerrolar · anúncio</span>`, onclick: aoRerrolar }),
       h("span", { class: "moeda", style: "color:var(--texto2)", html: `${ICONE_MOEDA.sucata} ${Math.floor(b.sucata)} sucata` })),
   );
 }

@@ -115,11 +115,15 @@ export const SKINS: SkinDef[] = [
   { id: "escudo_vermelho", nome: "Escudo Rubi", tipo: "escudo", cor: 0xff8a8a, preco: 35 },
   { id: "escudo_roxo", nome: "Escudo Nebulosa", tipo: "escudo", cor: 0xd0a0ff, preco: null },
   { id: "escudo_dourado", nome: "Escudo Solar", tipo: "escudo", cor: 0xffd77a, preco: null },
+  { id: "escudo_aurora", nome: "Escudo Aurora", tipo: "escudo", cor: 0x9fffe0, preco: null },
+  { id: "escudo_premium", nome: "Escudo Cobalto", tipo: "escudo", cor: 0x6f8cff, preco: null },
+  { id: "escudo_supernova", nome: "Escudo Supernova", tipo: "escudo", cor: 0xff9e5e, preco: null },
   { id: "planeta_terra", nome: "Terra Nova", tipo: "planeta", preco: 0 },
   { id: "planeta_lava", nome: "Mundo de Lava", tipo: "planeta", preco: 60 },
   { id: "planeta_gelo", nome: "Mundo Congelado", tipo: "planeta", preco: 60 },
   { id: "planeta_deserto", nome: "Mundo Desértico", tipo: "planeta", preco: 60 },
   { id: "planeta_alien", nome: "Mundo Alienígena", tipo: "planeta", preco: null },
+  { id: "planeta_premium_lava", nome: "Lava Premium", tipo: "planeta", preco: null },
 ];
 
 // ------------------------------------------------------------- passe de batalha (gratuito)

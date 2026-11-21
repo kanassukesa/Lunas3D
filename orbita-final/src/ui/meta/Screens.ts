@@ -14,6 +14,8 @@ import {
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg, toast } from "../dom";
 import { ic, icT } from "../Icones";
 import { urlArte } from "../../render/Sprites";
+import { nuvem } from "../../core/Nuvem";
+import { sincronizarCompras } from "../../meta/Pagamentos";
 import metaCabecas from "../../assets/sprites/cabecas.json";
 import { secaoAparencia } from "./Hub";
 import { CARD_MAP } from "../../data/cards";
@@ -30,6 +32,7 @@ export interface Nav {
   jogarJornada(): void;
   aplicarConfig(): void;
   persistir(): void;
+  telaAtual(): string;
 }
 
 export function moedas(nav: Nav): HTMLElement {
@@ -397,6 +400,30 @@ export function painelConfig(nav: Nav, voltar: () => void, noJogo = false): HTML
     slider("Música", c.musica, (n) => (c.musica = n)),
   );
   if (!noJogo) {
+    // conta na nuvem (só aparece com o Supabase configurado)
+    if (nuvem.configurada) {
+      if (nuvem.logado()) {
+        p.append(h("div", { class: "config-linha" }, h("span", { text: `Conta: ${nuvem.email}` }),
+          h("button", { class: "btn pequeno", html: icT("sair", "Sair"), onclick: async () => { await nuvem.sair(); nav.ir("config"); } })));
+        p.append(h("div", { class: "config-linha" }, h("span", { text: "Compras" }),
+          h("button", { class: "btn pequeno", html: icT("repetir", "Restaurar compras"), onclick: async () => {
+            const n = await sincronizarCompras(nav.save).catch(() => 0);
+            nav.persistir();
+            toast(nav.root, n ? `${n} compra(s) entregue(s)!` : "Nenhuma compra pendente.");
+          } })));
+      } else {
+        const email = h("input", { class: "campo", id: "email-conta", type: "email", placeholder: "seu@email.com", autocomplete: "email" }) as HTMLInputElement;
+        p.append(h("div", { class: "config-linha conta" },
+          h("span", { text: "Conta na nuvem (salva o progresso e as compras)" }),
+          h("div", { class: "campo-linha" }, email),
+          h("button", { class: "btn ciano pequeno", html: icT("correio", "Receber link de acesso"), onclick: async () => {
+            const v = email.value.trim();
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { toast(nav.root, "Digite um e-mail válido."); return; }
+            try { await nuvem.entrarEmail(v); toast(nav.root, "Link enviado! Abra o e-mail neste aparelho."); }
+            catch (e) { toast(nav.root, `Erro: ${(e as Error).message}`); }
+          } })));
+      }
+    }
     p.append(h("div", { class: "config-linha" }, h("span", { text: `Comandante: ${nav.save.perfil.nome || "—"}` }),
       h("button", { class: "btn pequeno", html: icT("usuario", "Editar perfil"), onclick: () => nav.ir("login") })));
     p.append(h("div", { class: "config-linha" }, h("span", { text: "Apagar progresso" }),

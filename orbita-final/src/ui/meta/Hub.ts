@@ -10,11 +10,42 @@ import {
 } from "../../meta/Comandante";
 import { desafioDoDia, formatStat, hojeStr, missoesProntas, semanaStr } from "../../meta/Meta";
 import { urlArte } from "../../render/Sprites";
+import { PASSE_PREMIUM, PRODUTOS, ANUNCIOS, precoBRL } from "../../data/monetizacao";
+import { MODO_PAGAMENTO, iniciarCompra, produtoDisponivel, premiumProntos, resgatarPremium, temPremium } from "../../meta/Pagamentos";
+import { MODO_ANUNCIO, anunciosRestantes, bauAnuncio } from "../../meta/Anuncios";
 import { fmtInt, fmtTempo, h, ICONE_MOEDA, iconeImg, toast } from "../dom";
 import { ic, icT } from "../Icones";
 import { moedas, proximaFase, tela, type Nav } from "./Screens";
 
 // ------------------------------------------------------------------ peças
+
+function seloTeste(): HTMLElement | null {
+  const partes: string[] = [];
+  if (MODO_PAGAMENTO === "teste") partes.push("pagamentos");
+  if (MODO_ANUNCIO === "teste") partes.push("anúncios");
+  return partes.length ? h("div", { class: "selo-teste", text: `MODO TESTE (${partes.join(" e ")}): nada é cobrado de verdade.` }) : null;
+}
+
+function cartaoProduto(nav: Nav, id: string, destaque = ""): HTMLElement | null {
+  const s = nav.save;
+  const p = PRODUTOS.find((x) => x.id === id);
+  if (!p) return null;
+  const disp = produtoDisponivel(s, p);
+  return h("div", { class: "loja-item neon produto " + destaque + (disp ? "" : " comprado") },
+    p.selo ? h("span", { class: "selo", text: p.selo }) : null,
+    h("span", { class: "loja-ic", html: iconeImg(p.icone, ic("presente"), "loja-img") }),
+    h("div", { class: "loja-txt" }, h("b", { text: p.nome }), h("span", { text: p.desc })),
+    h("button", { class: "btn-preco real", disabled: !disp, html: disp ? precoBRL(p.centavos) : ic("check"),
+      onclick: async () => {
+        const r = await iniciarCompra(s, p.id);
+        toast(nav.root, r.msg);
+        if (r.ok && MODO_PAGAMENTO === "teste") {
+          audio.sfx("vitoria");
+          nav.persistir();
+          nav.ir(nav.telaAtual());
+        }
+      } }));
+}
 
 /** Imagem grande de um prêmio (pilha de moedas/cristais/chip) para as telas de recompensa. */
 function imgPremio(p: { creditos?: number; nucleos?: number; cristais?: number; chip?: number }): string {
@@ -118,7 +149,7 @@ export function telaHub(nav: Nav): HTMLElement {
       h("div", { class: "lat-col dir" },
         lateral("config", "Ajustes", () => nav.ir("config")),
         lateral("presente", "Recompensas", () => nav.ir("recompensas"), loginDisponivel(s) ? 1 : 0),
-        lateral("passe", "Passe de Batalha", () => nav.ir("passe"), passeProntos(s)),
+        lateral("passe", "Passe de Batalha", () => nav.ir("passe"), passeProntos(s) + premiumProntos(s)),
         lateral("carrinho", "Loja", () => nav.ir("loja"), s.dia.lojaGratis ? 0 : 1, "lat-ouro"))),
     h("button", { class: "btn-batalha" + (urlArte("botao_batalha") ? " com-arte" : ""), style: urlArte("botao_batalha") ? `--arte:url("${urlArte("botao_batalha")}")` : "", onclick: () => nav.jogarCampanha(idx, false) },
       h("span", { class: "bb-play", html: ic("play") }),
@@ -295,6 +326,17 @@ export function telaRecompensas(nav: Nav): HTMLElement {
         toast(nav.root, r.chip ? `Novo chip ${CHIP_RARIDADES[r.chip.raridade]}!` : "Recompensa resgatada!");
         nav.ir("recompensas");
       } }),
+    (() => {
+      const resta = anunciosRestantes(s, "bau");
+      const pr = ANUNCIOS.recompensa.bau.premio;
+      return h("div", { class: "cartao neon roxo bau-ad" },
+        h("span", { class: "loja-ic", html: iconeImg("loja_creditos", ic("presente"), "loja-img") }),
+        h("div", { class: "loja-txt" }, h("b", { text: "Baú bônus" }), h("span", { html: `${s.monet.semAnuncios ? "Sem anúncio (VIP)" : "Assista a um anúncio"}: ${textoPremio(pr, ICONE_MOEDA)} · ${resta}/${ANUNCIOS.recompensa.bau.limite} hoje` })),
+        h("button", { class: "btn ouro pequeno", disabled: resta <= 0, html: icT("play", "Abrir"),
+          onclick: async () => {
+            if (await bauAnuncio(s, nav.root)) { audio.sfx("vitoria"); nav.persistir(); toast(nav.root, "Baú bônus aberto!"); nav.ir("recompensas"); }
+          } }));
+    })(),
     pedestal());
 }
 
@@ -328,8 +370,14 @@ export function telaLoja(nav: Nav): HTMLElement {
       h("button", { class: "btn-preco", disabled: tem || s.cristais < (k.preco ?? 0), html: tem ? "Comprado" : `${ICONE_MOEDA.cristais} ${k.preco}`,
         onclick: () => { if (comprarSkin(s, k.id)) { usarSkin(s, k.id); audio.sfx("vitoria"); nav.persistir(); toast(nav.root, `${k.nome} equipado!`); nav.ir("loja"); } } }));
   });
-  return tela(nav, "LOJA", banner("banner_loja"),
-    h("div", { class: "cartao desc neon", text: "Tudo com moedas do jogo. Cristais vêm de missões, conquistas, eventos e recompensas diárias." }), ...itens,
+  return tela(nav, "LOJA", banner("banner_loja"), seloTeste(),
+    h("div", { class: "secao-titulo", text: "Ofertas" }),
+    cartaoProduto(nav, "inicial", "ouro"),
+    cartaoProduto(nav, "passe_premium", "roxo"),
+    cartaoProduto(nav, "sem_anuncios"),
+    h("div", { class: "secao-titulo", text: "Cristais" }),
+    ...["cristais_60", "cristais_330", "cristais_900", "cristais_2000"].map((id) => cartaoProduto(nav, id)),
+    h("div", { class: "secao-titulo", text: "Com moedas do jogo" }), ...itens,
     skins.length ? h("div", { class: "secao-titulo", text: "Skins" }) : null, ...skins, pedestal());
 }
 
@@ -447,6 +495,26 @@ export function telaPasse(nav: Nav): HTMLElement {
   const dias = Math.max(0, Math.ceil((fimMes.getTime() - Date.now()) / 864e5));
   const [ano, mes] = temporadaAtual().split("-");
   const nomeSkin = (id?: string) => SKINS.find((k) => k.id === id)?.nome ?? "";
+  const premium = temPremium(s);
+  const celPremium = (n: number, alcancado: boolean) => {
+    const pp = PASSE_PREMIUM[n - 1];
+    const pegou = s.monet.premiumResgatados.includes(n);
+    const skin = pp.skin ? SKINS.find((k) => k.id === pp.skin) : null;
+    return h("div", { class: "passe-prem" + (premium ? "" : " travado") + (pegou ? " pegou" : "") },
+      h("span", { class: "passe-ic", html: skin ? previaSkin(skin) : imgPremio(pp) }),
+      h("small", { html: skin ? skin.nome : textoPremio(pp, ICONE_MOEDA) }),
+      !premium ? h("span", { class: "cad", html: ic("cadeado") })
+        : pegou ? h("span", { class: "passe-ok", html: ic("check") })
+        : h("button", { class: "btn ouro pequeno", disabled: !alcancado, html: alcancado ? "Pegar" : ic("cadeado"),
+          onclick: () => {
+            const r = resgatarPremium(s, n);
+            if (!r) return;
+            audio.sfx("vitoria");
+            nav.persistir();
+            toast(nav.root, r.skin ? `Skin desbloqueada: ${nomeSkin(r.skin)}!` : "Resgatado!");
+            nav.ir("passe");
+          } }));
+  };
   const linhas = PASSE_PREMIOS.map((p, i) => {
     const n = i + 1;
     const alcancado = nivel >= n;
@@ -466,12 +534,22 @@ export function telaPasse(nav: Nav): HTMLElement {
             toast(nav.root, r.skin ? `Skin desbloqueada: ${nomeSkin(r.skin)}!` : r.chip ? `Chip ${CHIP_RARIDADES[r.chip.raridade]}!` : "Resgatado!");
             nav.ir("passe");
           } }));
-  });
+  }).map((linhaGratis, i) => h("div", { class: "passe-linha" }, linhaGratis, celPremium(i + 1, nivel >= i + 1)));
+  const produtoPremium = PRODUTOS.find((x) => x.id === "passe_premium")!;
   return tela(nav, "PASSE DE BATALHA",
     h("div", { class: "cartao neon roxo passe-topo" },
       h("div", { class: "nome", text: `Temporada ${mes}/${ano} · Gratuito` }),
       h("div", { class: "pat-nome", text: `Nível ${nivel} de ${PASSE.niveis}` }),
       h("div", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(frac * 100)}%` })),
-      h("div", { class: "desc", html: `${ic("relogio")} termina em ${dias} dia${dias === 1 ? "" : "s"} · cada nível = ${fmtInt(PASSE.pontosPorNivel)} pontos de partida` })),
+      h("div", { class: "desc", html: `${ic("relogio")} termina em ${dias} dia${dias === 1 ? "" : "s"} · cada nível = ${fmtInt(PASSE.pontosPorNivel)} pontos de partida` }),
+      premium ? h("div", { class: "premium-ativo", html: `${ic("coroa", "ic ic-ouro")} Premium ativo nesta temporada` })
+        : h("button", { class: "btn ouro", html: `${ic("coroa")}<span>Liberar Premium · ${precoBRL(produtoPremium.centavos)}</span>`,
+          onclick: async () => {
+            const r = await iniciarCompra(s, "passe_premium");
+            toast(nav.root, r.msg);
+            if (r.ok && MODO_PAGAMENTO === "teste") { audio.sfx("vitoria"); nav.persistir(); nav.ir("passe"); }
+          } })),
+    seloTeste(),
+    h("div", { class: "passe-cab" }, h("span", { text: "GRÁTIS" }), h("span", { text: "PREMIUM" })),
     ...linhas);
 }
