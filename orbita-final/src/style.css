@@ -1073,7 +1073,7 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 .bau-v3.aberto .bau3-corpo::after { content: ""; position: absolute; left: 7%; right: 7%; top: -4%; height: 16%; border-radius: 50%;
   background: radial-gradient(ellipse at 50% 60%, #fff, color-mix(in srgb, var(--cor) 85%, #fff) 35%, transparent 72%); filter: blur(2px); }
 /* baú com arte final: 3 quadros (fechado → entreaberto → aberto) trocados com clarão */
-.bau3.com-arte { aspect-ratio: 1 / 1; width: min(70vw, 280px); }
+.bau3.com-arte { aspect-ratio: 640 / 567; width: min(74vw, 300px); margin-top: 10px; }
 .bau3-img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 0.12s;
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 14px color-mix(in srgb, var(--cor) 50%, transparent)); }
 .bau3-img.f { opacity: 1; animation: bau3Respira 2.2s ease-in-out infinite; }

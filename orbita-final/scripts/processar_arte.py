@@ -31,7 +31,7 @@ CONFIG = {
     "avatar_": ("avatar", 256),
     "botao_batalha": ("recorte", 1024),
     "banner_": ("recorte", 900),
-    "bau_": ("recorte", 640),
+    "bau_": ("quadro", 640),
     "fase_": ("carta", 640),
     "modo_": ("carta", 640),
     "talento_": ("recorte", 192),
@@ -203,6 +203,15 @@ def processar(arq):
         for t in (180, 192, 512):
             im.resize((t, t), Image.LANCZOS).save(os.path.join(pub, f"icon-{t}.png"), optimize=True)
         return print("public/icons/icon-180/192/512.png  (ícone do app)")
+    if modo == "quadro":
+        # quadros de animação (baú): tira o fundo mas corta TODOS no mesmo retângulo, para ficarem alinhados
+        rgb = np.asarray(Image.open(os.path.join(ORIG, arq)).convert("RGB")).astype(np.float32)
+        img = Image.fromarray(remover_fundo(rgb), "RGBA")
+        w, hh = img.size
+        img = img.crop((round(w * 0.02), round(hh * 0.02), round(w * 0.98), round(hh * 0.87)))
+        img = img.resize((tam, round(tam * img.height / img.width)), Image.LANCZOS)
+        img.save(os.path.join(SAIDA, nome + ".png"), optimize=True)
+        return print(f"{nome}.png  {img.width}x{img.height}  (quadro)")
     if modo == "recorte":
         # interface: tira o fundo e corta no contorno, mantendo a proporção (lado maior = tam)
         rgb = np.asarray(Image.open(os.path.join(ORIG, arq)).convert("RGB")).astype(np.float32)
