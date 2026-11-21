@@ -51,6 +51,17 @@ O jogo carrega sozinho qualquer sprite com o mesmo ID da textura procedural; o r
 2. Em **Root Directory** escolha `orbita-final` (o resto é lido do `vercel.json`).
 3. Deploy. No iPhone: abra o link no Safari → Compartilhar → **Adicionar à Tela de Início**.
 
+## APK Android (Capacitor)
+Requer JDK 21 e Android SDK (platforms;android-35, build-tools;35.0.0).
+```bash
+npm run build && npx cap sync android
+cd android && ORBITA_CHAVE=/caminho/chave.properties ./gradlew assembleRelease
+# saída: android/app/build/outputs/apk/release/app-release.apk
+```
+`chave.properties` (storeFile, storePassword, keyAlias, keyPassword) e o `.jks` ficam FORA do repositório.
+Use sempre a mesma chave: com outra, o Android não instala a atualização por cima.
+Antes de cada nova versão, suba `versionCode` em `android/app/build.gradle`.
+
 ## Pendências
 - Arena assíncrona (precisa de backend)
 - Arte final (sprites) e música composta; hoje tudo é procedural

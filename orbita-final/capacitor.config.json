@@ -1,0 +1,7 @@
+{
+  "appId": "com.orbitafinal.jogo",
+  "appName": "Órbita Final",
+  "webDir": "dist",
+  "backgroundColor": "#05070f",
+  "android": { "allowMixedContent": false }
+}
