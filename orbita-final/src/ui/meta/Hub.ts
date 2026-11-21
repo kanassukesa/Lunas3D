@@ -161,7 +161,7 @@ export function telaHub(nav: Nav): HTMLElement {
         h("span", { class: "bb-txt" },
           h("b", { text: "BATALHA" }),
           h("small", { text: `Fase ${st.id} · ${st.nome}` }),
-          h("span", { class: "bb-estrelas", html: estrelas })),
+          urlArte("botao_batalha") ? null : h("span", { class: "bb-estrelas", html: estrelas })),
         h("span", { class: "bb-seta esq", html: "&#10094;&#10094;" }))),
     h("div", { class: "grade" },
       tile("mapa", "Fases", `${vencidas}/${STAGES.length} · ${totalEstrelas} estrelas`, "mapa", "#4fd6ff", "carta_radar"),
