@@ -489,3 +489,10 @@ input[type="range"] { width: 140px; accent-color: var(--ciano); }
 .btn-batalha.com-arte .bb-corpo { clip-path: none; background: var(--arte) center / 100% 100% no-repeat; box-shadow: none; }
 .btn-batalha.com-arte .bb-corpo::before, .btn-batalha.com-arte .bb-seta, .btn-batalha.com-arte .bb-play { display: none; }
 .btn-batalha.com-arte .bb-txt { padding-top: 22px; }
+/* botão BATALHA com a arte final (moldura hexagonal com play no topo) */
+.btn-batalha.com-arte { height: auto; aspect-ratio: 1024 / 400; max-height: 140px; margin-top: 4px; filter: drop-shadow(0 0 16px rgba(255, 140, 30, 0.55)); }
+.btn-batalha.com-arte .bb-corpo { background-size: 100% 100%; }
+.btn-batalha.com-arte .bb-txt { padding-top: 13%; }
+.btn-batalha.com-arte .bb-txt b { font-size: clamp(24px, 7.6vw, 34px); }
+.btn-batalha.com-arte .bb-txt small { font-size: clamp(10.5px, 3.1vw, 13px); color: #3a1600; }
+@media (max-height: 720px) { .btn-batalha.com-arte { max-height: 108px; } }
