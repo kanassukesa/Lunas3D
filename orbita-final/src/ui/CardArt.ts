@@ -626,6 +626,8 @@ export function arteCarta(card: CardDef): string {
     return real ?? arteSentinela(card.alvo, card.tipo === "evolucao");
   }
   if (card.tipo === "passiva") {
+    const real = urlArte("carta_passiva");
+    if (real) return real;
     const sid = card.requisitos?.sentinela;
     const cor = sid ? SENTINELS[sid].cor : 0xb36bff;
     return gerar(`p_${card.id}`, (c) => {
@@ -651,6 +653,8 @@ export function arteCarta(card: CardDef): string {
     });
   }
   const motivo = POR_ID[card.id] ?? "dano";
+  const real = urlArte(`carta_${motivo === "planetaHp" ? "hp" : motivo}`);
+  if (real) return real;
   const [cor, draw] = MOTIVOS[motivo];
   return gerar(`m_${motivo}`, (c) => {
     fundo(c, cor, motivo.length * 13 + 3, ["planetaHp", "escudo", "espinhos", "cura"].includes(motivo) === false);

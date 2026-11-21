@@ -217,7 +217,8 @@ input[type="range"] { width: 140px; accent-color: var(--ciano); }
 .estrelinhas i.novo { background: #e05cff; animation: pulsarEst 0.8s ease-in-out infinite; }
 @keyframes pulsarEst { 50% { transform: scale(1.35); } }
 .cartas-lv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: min(96vw, 480px); }
-.cartas-lv.cinco { grid-template-columns: repeat(3, 1fr); }
+.cartas-lv.cinco { display: flex; flex-wrap: wrap; justify-content: center; }
+.cartas-lv.cinco .carta-lv { width: calc((100% - 16px) / 3); }
 .carta-lv {
   display: flex; flex-direction: column; text-align: left; min-width: 0; padding: 0; overflow: hidden;
   background: linear-gradient(180deg, #12263a, #0b1626); border: 2px solid var(--cor);
