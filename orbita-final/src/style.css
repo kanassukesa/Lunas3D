@@ -435,3 +435,57 @@ input[type="range"] { width: 140px; accent-color: var(--ciano); }
 .avatar { width: 38px; height: 38px; }
 .topo .pil-mais { display: none; }
 .topo .pilula { padding-right: 7px; }
+
+/* =================== painéis neon (padrão do mockup) =================== */
+.neon { --borda-neon: rgba(90, 200, 255, 0.85); --fundo-neon: linear-gradient(180deg, rgba(16, 36, 70, 0.96), rgba(8, 18, 38, 0.96));
+  position: relative; isolation: isolate; border: 0 !important; background: var(--borda-neon) !important;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+  border-radius: 0 !important; filter: drop-shadow(0 0 6px rgba(79, 214, 255, 0.35)); }
+.neon::before { content: ""; position: absolute; inset: 1.5px; z-index: -1; background: var(--fundo-neon); clip-path: inherit; }
+.neon.ouro, .dia.atual, .pat-linha.atual { --borda-neon: #ffc23d; --fundo-neon: linear-gradient(180deg, rgba(70, 48, 8, 0.95), rgba(22, 16, 6, 0.95)); filter: drop-shadow(0 0 8px rgba(255, 194, 61, 0.5)); }
+.neon.roxo { --borda-neon: #c06bff; --fundo-neon: linear-gradient(180deg, rgba(56, 22, 96, 0.96), rgba(20, 8, 40, 0.96)); filter: drop-shadow(0 0 8px rgba(179, 107, 255, 0.5)); }
+.neon.centro { text-align: center; }
+.cartao.neon { padding: 12px 14px; }
+.banner { width: 100%; max-height: 190px; object-fit: contain; display: block; margin: -4px auto -10px; filter: drop-shadow(0 6px 20px rgba(79, 214, 255, 0.25)); }
+.pedestal { width: min(92%, 420px); align-self: center; margin-top: 8px; opacity: 0.95; pointer-events: none; }
+
+/* recompensas */
+.dia { min-height: 104px; padding: 8px 4px 10px; gap: 4px; }
+.dia small { color: #e6f1ff; font-size: 12.5px; }
+.dia-img { height: 42px; display: grid; place-items: center; }
+.premio-img { height: 42px; width: auto; max-width: 64px; object-fit: contain; filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.25)); }
+.dia.grande .premio-img { height: 52px; max-width: 90px; }
+.dia-premio { font-size: 13px; }
+.dia-premio .ic-moeda { width: 1em; height: 1em; }
+
+/* loja */
+.loja-item.neon { padding: 12px 12px 12px 10px; }
+.loja-ic { width: 60px; height: 56px; }
+.loja-img { width: 60px; height: 56px; }
+.btn-preco { display: inline-flex; align-items: center; gap: 6px; min-width: 84px; justify-content: center; padding: 8px 14px; border-radius: 22px; font-weight: 800; font-size: 15px;
+  background: linear-gradient(180deg, #1f5ea8, #0d2f63); border: 1.5px solid #6fd0ff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 10px rgba(79, 214, 255, 0.45); }
+.btn-preco:disabled { opacity: 0.45; filter: grayscale(0.6); }
+.btn-preco .ic-moeda { width: 1.15em; height: 1.15em; }
+
+/* progresso */
+.est-item.neon { padding: 8px 4px 9px; gap: 1px; align-items: center; }
+.est-ic { color: #bfe6ff; }
+.est-ic .ic { width: 22px; height: 22px; filter: drop-shadow(0 0 4px rgba(79, 214, 255, 0.7)); }
+.perfil-grande.neon .avatar.grande { width: 72px; height: 72px; }
+.perfil-grande .perfil-barra { height: 7px; }
+.perfil-grande .perfil-barra i { background: linear-gradient(90deg, #ffb31f, #ffe07a); box-shadow: 0 0 6px #ffc23d; }
+.patentes .pat-linha { padding: 6px 8px; border-bottom-color: rgba(120, 200, 255, 0.12); }
+.pat-linha.atual { position: relative; isolation: isolate; margin: 4px -4px; border-bottom: 0;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); background: #ffc23d; }
+.pat-linha.atual::before { content: ""; position: absolute; inset: 1.5px; z-index: -1; clip-path: inherit; background: linear-gradient(90deg, rgba(90, 60, 8, 0.97), rgba(40, 26, 4, 0.97)); }
+.pat-linha.atual b, .pat-linha.atual small { color: var(--ouro); }
+.pat-ic { width: 24px; display: grid; place-items: center; }
+.pat-ic img { width: 26px; height: 26px; object-fit: contain; }
+
+/* botão batalha: play acima do texto (sem sobrepor) e versão com arte final */
+.btn-batalha { height: 96px; margin-top: 22px; }
+.bb-play { top: -22px; }
+.bb-txt { padding-top: 12px; }
+.btn-batalha.com-arte .bb-corpo { clip-path: none; background: var(--arte) center / 100% 100% no-repeat; box-shadow: none; }
+.btn-batalha.com-arte .bb-corpo::before, .btn-batalha.com-arte .bb-seta, .btn-batalha.com-arte .bb-play { display: none; }
+.btn-batalha.com-arte .bb-txt { padding-top: 22px; }

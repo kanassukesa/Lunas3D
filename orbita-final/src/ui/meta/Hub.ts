@@ -16,6 +16,23 @@ import { moedas, proximaFase, tela, type Nav } from "./Screens";
 
 // ------------------------------------------------------------------ peças
 
+/** Imagem grande de um prêmio (pilha de moedas/cristais/chip) para as telas de recompensa. */
+function imgPremio(p: { creditos?: number; nucleos?: number; cristais?: number; chip?: number }): string {
+  const id = p.chip !== undefined ? "premio_chip" : p.cristais ? "premio_cristais" : p.nucleos ? "premio_nucleos" : "premio_moedas";
+  const reserva = p.chip !== undefined ? "chip_vortice" : p.cristais ? "moeda_cristais" : p.nucleos ? "moeda_nucleos" : "moeda_creditos";
+  return iconeImg(id, iconeImg(reserva, "", "premio-img"), "premio-img");
+}
+
+function banner(id: string): HTMLElement | null {
+  const u = urlArte(id);
+  return u ? h("img", { class: "banner", src: u, alt: "" }) : null;
+}
+
+function pedestal(): HTMLElement | null {
+  const u = urlArte("pedestal");
+  return u ? h("img", { class: "pedestal", src: u, alt: "" }) : null;
+}
+
 export function avatar(n: number, classe = "avatar"): HTMLElement {
   const url = urlArte(`avatar_${n}`);
   const cor = AVATARES.find((a) => a.id === n)?.cor ?? "#4fd6ff";
@@ -97,7 +114,7 @@ export function telaHub(nav: Nav): HTMLElement {
         lateral("presente", "Recompensas", () => nav.ir("recompensas"), loginDisponivel(s) ? 1 : 0),
         lateral("passe", "Passe de Batalha", emBreve(nav, "Passe de Batalha")),
         lateral("carrinho", "Loja", () => nav.ir("loja"), s.dia.lojaGratis ? 0 : 1, "lat-ouro"))),
-    h("button", { class: "btn-batalha", onclick: () => nav.jogarCampanha(idx, false) },
+    h("button", { class: "btn-batalha" + (urlArte("botao_batalha") ? " com-arte" : ""), style: urlArte("botao_batalha") ? `--arte:url("${urlArte("botao_batalha")}")` : "", onclick: () => nav.jogarCampanha(idx, false) },
       h("span", { class: "bb-play", html: ic("play") }),
       h("span", { class: "bb-corpo" },
         h("span", { class: "bb-seta", html: "&#10095;&#10095;" }),
@@ -253,13 +270,15 @@ export function telaRecompensas(nav: Nav): HTMLElement {
   const dias = LOGIN_DIAS.map((p, i) => {
     const feito = s.login.dias - ciclo > i;
     const atual = i === hojeIdx && pode;
-    return h("div", { class: "dia" + (feito ? " feito" : "") + (atual ? " atual" : "") + (i === 6 ? " grande" : "") },
+    return h("div", { class: "dia neon" + (feito ? " feito" : "") + (atual ? " atual" : "") + (i === 6 ? " grande roxo" : "") },
       h("small", { text: `Dia ${i + 1}` }),
+      h("span", { class: "dia-img", html: imgPremio(p) }),
       h("span", { class: "dia-premio", html: textoPremio(p, ICONE_MOEDA).replace(/ &nbsp;/g, "<br>") }),
       feito ? h("span", { class: "dia-ok", html: ic("check") }) : null);
   });
   return tela(nav, "RECOMPENSAS",
-    h("div", { class: "cartao desc", text: "Entre todo dia para resgatar. O 7º dia dá um chip épico garantido." }),
+    banner("banner_recompensas"),
+    h("div", { class: "cartao desc neon centro", text: "Entre todo dia para resgatar. O 7º dia dá um chip épico garantido." }),
     h("div", { class: "dias" }, ...dias),
     h("button", { class: "btn ouro", disabled: !pode, html: pode ? icT("presente", "Resgatar recompensa de hoje") : icT("check", "Volte amanhã"),
       onclick: () => {
@@ -269,7 +288,8 @@ export function telaRecompensas(nav: Nav): HTMLElement {
         nav.persistir();
         toast(nav.root, r.chip ? `Novo chip ${CHIP_RARIDADES[r.chip.raridade]}!` : "Recompensa resgatada!");
         nav.ir("recompensas");
-      } }));
+      } }),
+    pedestal());
 }
 
 // ------------------------------------------------------------------ LOJA
@@ -281,10 +301,10 @@ export function telaLoja(nav: Nav): HTMLElement {
     const gratisUsado = !it.custo && s.dia.lojaGratis;
     const podePagar = !it.custo || s[it.custo.moeda] >= it.custo.valor;
     const preco = it.custo ? `${ICONE_MOEDA[it.custo.moeda]} ${fmtInt(it.custo.valor)}` : "Grátis";
-    return h("div", { class: "loja-item" + (it.custo ? "" : " gratis") },
-      h("span", { class: "loja-ic", html: iconeImg(it.icone, ic("caixa"), "loja-img") }),
+    return h("div", { class: "loja-item neon" + (it.custo ? "" : " gratis ouro") },
+      h("span", { class: "loja-ic", html: iconeImg(`loja_${it.id}`, iconeImg(it.icone, ic("caixa"), "loja-img"), "loja-img") }),
       h("div", { class: "loja-txt" }, h("b", { text: it.nome }), h("span", { text: it.desc })),
-      h("button", { class: "btn " + (it.custo ? "primario" : "ouro") + " pequeno", disabled: gratisUsado || !podePagar, html: gratisUsado ? "Amanhã" : preco,
+      h("button", { class: it.custo ? "btn-preco" : "btn ouro pequeno", disabled: gratisUsado || !podePagar, html: gratisUsado ? "Amanhã" : preco,
         onclick: () => {
           const r = comprar(s, it.id);
           if (!r.ok) { toast(nav.root, r.msg); return; }
@@ -294,7 +314,8 @@ export function telaLoja(nav: Nav): HTMLElement {
           nav.ir("loja");
         } }));
   });
-  return tela(nav, "LOJA", h("div", { class: "cartao desc", text: "Tudo com moedas do jogo. Cristais vêm de missões, conquistas, eventos e recompensas diárias." }), ...itens);
+  return tela(nav, "LOJA", banner("banner_loja"),
+    h("div", { class: "cartao desc neon", text: "Tudo com moedas do jogo. Cristais vêm de missões, conquistas, eventos e recompensas diárias." }), ...itens, pedestal());
 }
 
 // ------------------------------------------------------------------ PROGRESSO (perfil e patentes)
@@ -303,9 +324,9 @@ export function telaProgresso(nav: Nav): HTMLElement {
   const s = nav.save;
   const pt = patenteDe(s.pontos);
   const e = s.estatisticas;
-  const est = (k: string, v: string) => h("div", { class: "est-item" }, h("b", { text: v }), h("small", { text: k }));
+  const est = (icone: string, k: string, v: string) => h("div", { class: "est-item neon" }, h("span", { class: "est-ic", html: ic(icone) }), h("b", { text: v }), h("small", { text: k }));
   const el = tela(nav, "PROGRESSO",
-    h("div", { class: "cartao perfil-grande" },
+    h("div", { class: "cartao perfil-grande neon" },
       avatar(s.perfil.avatar, "avatar grande"),
       h("div", { style: "flex:1;min-width:0" },
         h("div", { class: "nome", text: `Cmd. ${s.perfil.nome || "Comandante"}` }),
@@ -314,12 +335,13 @@ export function telaProgresso(nav: Nav): HTMLElement {
         h("div", { class: "desc", text: pt.prox ? `${fmtInt(s.pontos)} / ${fmtInt(pt.prox.pontos)} pontos para ${pt.prox.nome}` : `${fmtInt(s.pontos)} pontos · patente máxima` })),
       h("button", { class: "btn icone", html: ic("usuario"), "aria-label": "Editar perfil", onclick: () => nav.ir("login") })),
     h("div", { class: "estatisticas" },
-      est("Partidas", fmtInt(e.partidas ?? 0)), est("Abates", fmtInt(e.abates ?? 0)), est("Chefes", fmtInt(e.chefes ?? 0)),
-      est("Estrelas", fmtInt(e.estrelas ?? 0)), est("Evoluções", fmtInt(e.evolucoes ?? 0)), est("Melhor partida", `${fmtInt(e.melhorPartida ?? 0)} pts`),
-      est("Sobrevivência", fmtTempo(s.sobrevivenciaMelhor)), est("Jornadas", fmtInt(e.jornadas ?? 0)), est("Desafios", fmtInt(e.diarios ?? 0))),
-    h("div", { class: "cartao" }, h("div", { class: "nome", style: "margin-bottom:6px", text: "Patentes" }),
+      est("espadas", "Partidas", fmtInt(e.partidas ?? 0)), est("mira", "Abates", fmtInt(e.abates ?? 0)), est("coroa2", "Chefes", fmtInt(e.chefes ?? 0)),
+      est("estrela", "Estrelas", fmtInt(e.estrelas ?? 0)), est("evoluir", "Evoluções", fmtInt(e.evolucoes ?? 0)), est("trofeu", "Melhor partida", `${fmtInt(e.melhorPartida ?? 0)} pts`),
+      est("ampulheta", "Sobrevivência", fmtTempo(s.sobrevivenciaMelhor)), est("camadas", "Jornadas", fmtInt(e.jornadas ?? 0)), est("bandeira", "Desafios", fmtInt(e.diarios ?? 0))),
+    h("div", { class: "cartao neon patentes" }, h("div", { class: "nome", style: "margin-bottom:6px", text: "Patentes" }),
       ...PATENTES.map((p, i) => h("div", { class: "pat-linha" + (i <= pt.indice ? " ok" : "") + (i === pt.indice ? " atual" : "") },
-        h("span", { html: i <= pt.indice ? ic("estrela", "ic-estrela") : ic("cadeado") }), h("b", { text: p.nome }), h("small", { text: `${fmtInt(p.pontos)} pts` })))));
+        h("span", { class: "pat-ic", html: urlArte(`patente_${i + 1}`) ? `<img src="${urlArte(`patente_${i + 1}`)}" alt="">` : i <= pt.indice ? ic("estrela", "ic-estrela") : ic("cadeado") }),
+        h("b", { text: p.nome }), h("small", { text: `${fmtInt(p.pontos)} pts` })))));
   el.append(barraInferior(nav, "progresso"));
   return el;
 }

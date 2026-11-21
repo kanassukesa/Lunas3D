@@ -42,6 +42,12 @@ const P: Record<string, string> = {
   usuario: '<path d="M5 12a7 7 0 0 1 14 0v3H5z"/><path d="M7.5 12.5h9l-1 3h-7z" fill="currentColor"/><path d="M6 15v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-3"/>',
   sair: '<path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/>',
   relogio: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  espadas: '<path d="M4 4l9 9M4 4v3.5M4 4h3.5M20 4l-9 9M20 4v3.5M20 4h-3.5M7 14l3 3M17 14l-3 3M5.5 18.5l2-2M18.5 18.5l-2-2"/>',
+  ampulheta: '<path d="M6 3h12M6 21h12M7 3c0 5 10 6 10 9s-10 4-10 9M17 3c0 5-10 6-10 9s10 4 10 9"/>',
+  camadas: '<path d="M12 3 2 8l10 5 10-5z"/><path d="M2 12l10 5 10-5M2 16l10 5 10-5"/>',
+  bandeira: '<path d="M5 21V4M5 4h12l-2.5 4L17 12H5"/>',
+  evoluir: '<path d="M6 13l6-6 6 6M6 19l6-6 6 6"/>',
+  coroa2: '<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/>',
   // efeitos de campo da Jornada
   radiacao: '<circle cx="12" cy="12" r="1.8" fill="currentColor"/><path fill="currentColor" stroke="none" d="M12 9.5 8.6 3.6A9.5 9.5 0 0 0 2.6 12H9.5a2.5 2.5 0 0 1 2.5-2.5zM12 9.5l3.4-5.9A9.5 9.5 0 0 1 21.4 12h-6.9a2.5 2.5 0 0 0-2.5-2.5zM10.8 14.2l-3.4 6a9.5 9.5 0 0 0 9.2 0l-3.4-6a2.5 2.5 0 0 1-2.4 0z"/>',
   espiral: '<path d="M12 12a2 2 0 1 1 2 2 4 4 0 1 1-4-4 6 6 0 1 1 6 6 8 8 0 1 1-8-8"/>',

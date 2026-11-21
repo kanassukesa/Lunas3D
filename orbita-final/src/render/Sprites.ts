@@ -14,7 +14,7 @@ export async function carregarSprites(): Promise<void> {
     Object.entries(URLS).map(async ([caminho, url]) => {
       const id = caminho.split("/").pop()!.replace(/\.(png|jpg)$/, "");
       // elementos só de interface (DOM) não precisam virar textura do Pixi
-      if (/^(carta_|moeda_|chip_|logo|icone_|tile_|avatar_)/.test(id)) return;
+      if (/^(carta_|moeda_|chip_|logo|icone_|tile_|avatar_|botao_|banner_|pedestal|premio_|loja_|patente_)/.test(id)) return;
       try {
         const t = (await Assets.load(url)) as Texture;
         t.source.scaleMode = "linear";
