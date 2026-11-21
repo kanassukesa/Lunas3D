@@ -52,7 +52,7 @@ const MANUAIS: CardDef[] = [
   { id: "canhao_gatilho", nome: "Gatilho Leve", raridade: "rara", tipo: "sentinela_mod", alvo: "canhao", texto: "Canhão de Pulso: +40% de cadência", efeito: { cadenciaPct: 0.4 }, maxPilhas: 3, requisitos: { sentinela: "canhao" } },
   { id: "trilho_bobina", nome: "Bobina Dupla", raridade: "rara", tipo: "sentinela_mod", alvo: "trilho", texto: "Acelerador: +50% de dano", efeito: { danoPct: 0.5 }, maxPilhas: 3, requisitos: { sentinela: "trilho" } },
   { id: "grav_horizonte", nome: "Horizonte Largo", raridade: "rara", tipo: "sentinela_mod", alvo: "gravidade", texto: "Poço: +30% de área e +1 s", efeito: { areaPct: 0.3, duracao: 1 }, maxPilhas: 2, requisitos: { sentinela: "gravidade" } },
-  { id: "campo_capacitor", nome: "Capacitor do Domo", raridade: "rara", tipo: "sentinela_mod", alvo: "campo", texto: "Domo: +40% de dano e +10% de raio", efeito: { danoPct: 0.4, areaPct: 0.1, alcancePct: 0.1 }, maxPilhas: 3, requisitos: { sentinela: "campo" } },
+  { id: "campo_capacitor", nome: "Capacitor do Domo", raridade: "rara", tipo: "sentinela_mod", alvo: "campo", texto: "Domo: +30% de dano e +6% de raio", efeito: { danoPct: 0.3, areaPct: 0.06, alcancePct: 0.06 }, maxPilhas: 3, requisitos: { sentinela: "campo" } },
   { id: "drone_extra", nome: "Fábrica de Drones", raridade: "rara", tipo: "sentinela_mod", alvo: "drone", texto: "Colmeia: +1 drone", efeito: { projeteis: 1 }, maxPilhas: 3, requisitos: { sentinela: "drone" } },
   { id: "gelo_fragil", nome: "Gelo Quebradiço", raridade: "rara", tipo: "sentinela_mod", alvo: "gelo", texto: "Criostase: +50% de dano e +10% de lentidão", efeito: { danoPct: 0.5, lentidao: 0.1 }, maxPilhas: 3, requisitos: { sentinela: "gelo" } },
 

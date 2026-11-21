@@ -18,8 +18,11 @@ export class Ultimate {
     this.energia = Math.min(100, b.gAdd("ultInicio"));
   }
 
+  /** Dano já causado em chefes nesta ativação (para o limite por ativação). */
+  danoChefe = 0;
+
   private cargaMult(): number {
-    return 1 + (this.b.globais.pct.ultCarga ?? 0);
+    return 1 + Math.min(BALANCE.ultimate.cargaMax, this.b.globais.pct.ultCarga ?? 0);
   }
 
   aoAbater(): void {
@@ -48,6 +51,7 @@ export class Ultimate {
     const b = this.b;
     this.energia = 0;
     this.usos++;
+    this.danoChefe = 0;
     this.timer = 0;
     this.conta = 0;
     b.fx.push({ t: "flash", força: 0.8 });
@@ -82,9 +86,9 @@ export class Ultimate {
       }
       case "campo": {
         b.beam("pulso", pl.x, pl.y, 2400, 0, 0x5effa8, 0.8, 30);
-        for (const e of b.enemies) if (e.alive && e.alvoavel) b.hitEnemy(e, 150 * pw, null, { semMods: true });
-        pl.escudo = pl.escudoMax;
-        b.curar(pl.hpMax * 0.15);
+        for (const e of b.enemies) if (e.alive && e.alvoavel) b.hitEnemy(e, 150 * pw, null, { semMods: true, ult: true });
+        pl.escudo = Math.min(pl.escudoMax, pl.escudo + pl.escudoMax * 0.5);
+        b.curar(pl.hpMax * 0.06);
         this.ativo = 0.8;
         break;
       }
@@ -98,7 +102,7 @@ export class Ultimate {
         this.congelado = this.dur(4);
         for (const e of b.enemies) {
           if (!e.alive || !e.alvoavel) continue;
-          b.hitEnemy(e, 80 * pw, null, { semMods: true });
+          b.hitEnemy(e, 80 * pw, null, { semMods: true, ult: true });
           e.slowAmt = 0.95;
           e.slowT = this.congelado;
         }
@@ -130,7 +134,7 @@ export class Ultimate {
           const x = e ? e.x : b.rng.range(v.left, v.right);
           const y = e ? e.y : b.rng.range(v.top, pl.y - 300);
           b.beam("linha", x, v.top - 50, x, y, 0xffd9a0, 0.1, 6);
-          b.explodir(x, y, 130, 60 * pw, null, 0xff9a3c, true);
+          b.explodir(x, y, 130, 60 * pw, null, 0xff9a3c, true, true);
           b.fx.push({ t: "tremor", força: 4 });
         }
         break;
@@ -141,7 +145,7 @@ export class Ultimate {
         b.beam("linha", v.left - 50, y, v.right + 50, y, 0xff4d6d, 0.05, 50);
         while (this.timer <= 0) {
           this.timer += 0.05;
-          for (const e of b.enemies) if (e.alive && e.alvoavel && Math.abs(e.y - y) < 70 + e.r) b.hitEnemy(e, 22 * pw, null, { semMods: true });
+          for (const e of b.enemies) if (e.alive && e.alvoavel && Math.abs(e.y - y) < 70 + e.r) b.hitEnemy(e, 22 * pw, null, { semMods: true, ult: true });
         }
         break;
       }
@@ -164,7 +168,7 @@ export class Ultimate {
           for (const e of b.enemies) {
             if (!e.alive || !e.alvoavel || !b.naTela(e)) continue;
             b.beam("raio", e.x + b.rng.range(-80, 80), v.top - 20, e.x, e.y, 0x7df9ff, 0.25, 4);
-            b.hitEnemy(e, 50 * pw, null, { semMods: true });
+            b.hitEnemy(e, 50 * pw, null, { semMods: true, ult: true });
           }
         }
         break;

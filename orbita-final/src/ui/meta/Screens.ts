@@ -13,6 +13,7 @@ import {
 } from "../../meta/Meta";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg, toast } from "../dom";
 import { ic, icT } from "../Icones";
+import { celebrar } from "../Premio";
 import { urlArte } from "../../render/Sprites";
 import { nuvem } from "../../core/Nuvem";
 import { sincronizarCompras } from "../../meta/Pagamentos";
@@ -37,10 +38,10 @@ export interface Nav {
 
 export function moedas(nav: Nav): HTMLElement {
   const s = nav.save;
-  const pilula = (icone: string, v: number) =>
-    h("button", { class: "pilula", "aria-label": "Loja", onclick: () => nav.ir("loja") },
-      h("span", { class: "moeda", html: `${icone} ${fmtInt(v)}` }), h("span", { class: "pil-mais", html: ic("mais") }));
-  return h("div", { class: "moedas" }, pilula(ICONE_MOEDA.creditos, s.creditos), pilula(ICONE_MOEDA.nucleos, s.nucleos), pilula(ICONE_MOEDA.cristais, s.cristais));
+  const pilula = (m: "creditos" | "nucleos" | "cristais", v: number) =>
+    h("button", { class: "pilula", "data-moeda": m, "data-valor": String(v), "aria-label": "Loja", onclick: () => nav.ir("loja") },
+      h("span", { class: "moeda", html: `${ICONE_MOEDA[m]} <span class="pil-num">${fmtInt(v)}</span>` }), h("span", { class: "pil-mais", html: ic("mais") }));
+  return h("div", { class: "moedas" }, pilula("creditos", s.creditos), pilula("nucleos", s.nucleos), pilula("cristais", s.cristais));
 }
 
 export function topo(nav: Nav, titulo: string | null): HTMLElement {
@@ -328,7 +329,7 @@ export function telaMissoes(nav: Nav): HTMLElement {
     const rec = [m.recompensa.creditos ? `${ICONE_MOEDA.creditos} ${m.recompensa.creditos}` : "", m.recompensa.nucleos ? `${ICONE_MOEDA.nucleos} ${m.recompensa.nucleos}` : "", m.recompensa.cristais ? `${ICONE_MOEDA.cristais} ${m.recompensa.cristais}` : ""].filter(Boolean).join("  ");
     return { feita, pronta, el: h("div", { class: "cartao" + (feita ? " bloq" : "") },
       h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", style: "font-size:14px", text: m.texto }), h("div", { class: "desc", html: rec })),
-        pronta ? h("button", { class: "btn ouro pequeno", text: "Resgatar", onclick: () => { if (resgatarMissao(s, m.id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("missoes"); } } })
+        pronta ? h("button", { class: "btn ouro pequeno", text: "Resgatar", onclick: (ev: MouseEvent) => { const o = (ev.currentTarget as HTMLElement).getBoundingClientRect(); if (resgatarMissao(s, m.id)) { nav.persistir(); nav.ir("conquistas"); celebrar(nav.root, o, m.recompensa); } } })
           : h("span", { style: "font-size:12px;color:var(--texto2)", html: feita ? ic("check") : `${fmtInt(Math.min(v, m.meta))}/${fmtInt(m.meta)}` })),
       h("div", { class: "prog" }, h("b", { style: `width:${Math.min(100, (v / m.meta) * 100)}%` }))) };
   });

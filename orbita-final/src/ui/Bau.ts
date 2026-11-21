@@ -1,4 +1,15 @@
-import type { Recompensa } from "../meta/Meta";
+import type { Chip } from "../data/types";
+
+/** Conteúdo do baú (resultado da partida ou prêmio da loja/recompensas). */
+export interface ConteudoBau {
+  creditos: number;
+  nucleos: number;
+  cristais?: number;
+  chip?: Chip | null;
+  pontos?: number;
+  novaPatente?: string;
+  titulo?: string;
+}
 import { CHIP_RARIDADE_COR, CHIP_RARIDADES, CHIP_SET_MAP, CHIP_SLOT_NOME } from "../data/chips";
 import { formatStat } from "../meta/Meta";
 import { urlArte } from "../render/Sprites";
@@ -21,14 +32,14 @@ function contar(el: HTMLElement, alvo: number, ms = 700): void {
  * Baú de recompensas animado (antes da tela de resultado): o baú treme, abre com um clarão,
  * moedas voam para cima e cada prêmio aparece contando. Toque pula a animação.
  */
-export function telaBau(rec: Recompensa, aoTerminar: () => void): HTMLElement {
+export function telaBau(rec: ConteudoBau, aoTerminar: () => void): HTMLElement {
   const fechado = urlArte("loja_creditos");
   const aberto = urlArte("banner_recompensas");
   const bau = h("div", { class: "bau-img" },
     fechado ? h("img", { class: "bau-fechado", src: fechado, alt: "" }) : h("span", { class: "bau-fechado", html: ic("presente") }),
     aberto ? h("img", { class: "bau-aberto", src: aberto, alt: "" }) : null);
   const premios = h("div", { class: "bau-premios" });
-  const titulo = h("div", { class: "titulo", text: "RECOMPENSAS" });
+  const titulo = h("div", { class: "titulo", text: rec.titulo ?? "RECOMPENSAS" });
   const dica = h("div", { class: "subtitulo bau-dica", text: "Toque para abrir" });
   const btn = h("button", { class: "btn primario oculto", html: `<span>Continuar</span>${ic("play")}`, onclick: (e: MouseEvent) => { e.stopPropagation(); aoTerminar(); } });
   const el = h("div", { class: "overlay bau" }, titulo, bau, dica, premios, btn);
@@ -38,6 +49,7 @@ export function telaBau(rec: Recompensa, aoTerminar: () => void): HTMLElement {
   if (rec.pontos) itens.push({ html: ic("estrela", "ic-estrela"), valor: rec.pontos });
   if (rec.creditos) itens.push({ html: ICONE_MOEDA.creditos, valor: rec.creditos });
   if (rec.nucleos) itens.push({ html: ICONE_MOEDA.nucleos, valor: rec.nucleos });
+  if (rec.cristais) itens.push({ html: ICONE_MOEDA.cristais, valor: rec.cristais });
 
   const abrir = () => {
     if (aberto_) return;

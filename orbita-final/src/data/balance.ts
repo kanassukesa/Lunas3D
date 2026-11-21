@@ -25,7 +25,16 @@ export const BALANCE = {
   nivelCincoCartas: 10,
   raridades: { comum: 60, rara: 28, epica: 10, lendaria: 2 } as Record<Raridade, number>,
   rerrolagem: { gratis: 1, custoSucata: 25, custoIncremento: 25 },
-  ultimate: { tempoCarga: 45, porAbate: 0.12 },
+  ultimate: {
+    tempoCarga: 50,
+    porAbate: 0.09,
+    /** Bônus máximo de velocidade de carga (cartas + chips + passivas). */
+    cargaMax: 1.0,
+    /** Contra chefes o ultimate causa só esta fração do dano… */
+    fatorChefe: 0.25,
+    /** …e no máximo esta fração do HP do chefe por ativação. */
+    limiteChefe: 0.12,
+  },
   escalaOnda: 0.12,
   duracaoOnda: 30,
   avisoChefe: 270,

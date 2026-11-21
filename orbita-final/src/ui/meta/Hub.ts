@@ -15,6 +15,9 @@ import { MODO_PAGAMENTO, iniciarCompra, produtoDisponivel, premiumProntos, resga
 import { MODO_ANUNCIO, anunciosRestantes, bauAnuncio } from "../../meta/Anuncios";
 import { fmtInt, fmtTempo, h, ICONE_MOEDA, iconeImg, toast } from "../dom";
 import { ic, icT } from "../Icones";
+import { celebrar } from "../Premio";
+import { telaBau } from "../Bau";
+const ret = (ev: MouseEvent) => (ev.currentTarget as HTMLElement).getBoundingClientRect();
 import { moedas, proximaFase, tela, type Nav } from "./Screens";
 
 // ------------------------------------------------------------------ peças
@@ -36,14 +39,14 @@ function cartaoProduto(nav: Nav, id: string, destaque = ""): HTMLElement | null 
     h("span", { class: "loja-ic", html: iconeImg(p.icone, ic("presente"), "loja-img") }),
     h("div", { class: "loja-txt" }, h("b", { text: p.nome }), h("span", { text: p.desc })),
     h("button", { class: "btn-preco real", disabled: !disp, html: disp ? precoBRL(p.centavos) : ic("check"),
-      onclick: async () => {
+      onclick: async (ev: MouseEvent) => {
+        const o = ret(ev);
         const r = await iniciarCompra(s, p.id);
-        toast(nav.root, r.msg);
-        if (r.ok && MODO_PAGAMENTO === "teste") {
-          audio.sfx("vitoria");
-          nav.persistir();
-          nav.ir(nav.telaAtual());
-        }
+        if (!r.ok || MODO_PAGAMENTO !== "teste") { toast(nav.root, r.msg); return; }
+        nav.persistir();
+        nav.ir(nav.telaAtual());
+        if (p.premio) celebrar(nav.root, o, p.premio, r.chip ?? null, p.nome.toUpperCase());
+        else { audio.sfx("vitoria"); toast(nav.root, r.msg); }
       } }));
 }
 
@@ -230,7 +233,7 @@ export function telaCorreio(nav: Nav): HTMLElement {
       m.premio ? h("div", { class: "acoes" },
         h("span", { class: "premio", html: textoPremio(m.premio, ICONE_MOEDA) }),
         h("button", { class: "btn ouro pequeno", disabled: pegou, html: pegou ? icT("check", "Resgatado") : icT("presente", "Resgatar"),
-          onclick: () => { if (resgatarMensagem(s, m.id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("correio"); } } })) : null);
+          onclick: (ev: MouseEvent) => { const o = ret(ev); if (resgatarMensagem(s, m.id)) { nav.persistir(); nav.ir("correio"); celebrar(nav.root, o, m.premio!); } } })) : null);
   });
   nav.persistir();
   return tela(nav, "CORREIO", ...itens);
@@ -282,7 +285,7 @@ export function telaDiarias(nav: Nav): HTMLElement {
     const pronta = !feita && v >= m.meta;
     return h("div", { class: "cartao" + (feita ? " lida" : "") },
       h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", text: m.texto }), h("div", { class: "desc premio", html: textoPremio(m.premio, ICONE_MOEDA) })),
-        pronta ? h("button", { class: "btn ouro pequeno", text: "Resgatar", onclick: () => { if (resgatarDiaria(s, m.id)) { audio.sfx("nivel"); nav.persistir(); nav.ir("missoes"); } } })
+        pronta ? h("button", { class: "btn ouro pequeno", text: "Resgatar", onclick: (ev: MouseEvent) => { const o = ret(ev); if (resgatarDiaria(s, m.id)) { nav.persistir(); nav.ir("missoes"); celebrar(nav.root, o, m.premio); } } })
           : h("span", { class: "desc", html: feita ? ic("check") : `${fmtInt(Math.min(v, m.meta))}/${fmtInt(m.meta)}` })),
       h("div", { class: "prog" }, h("b", { style: `width:${Math.min(100, (v / m.meta) * 100)}%` })));
   });
@@ -293,7 +296,7 @@ export function telaDiarias(nav: Nav): HTMLElement {
     h("div", { class: "cartao" },
       h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", text: "Bônus: complete as 3" }), h("div", { class: "desc premio", html: textoPremio(BONUS_DIARIAS, ICONE_MOEDA) })),
         h("button", { class: "btn ouro pequeno", disabled: !todas || s.dia.bonus, html: s.dia.bonus ? icT("check", "Feito") : "Resgatar",
-          onclick: () => { if (resgatarBonusDiario(s)) { audio.sfx("nivel"); nav.persistir(); nav.ir("missoes"); } } }))),
+          onclick: (ev: MouseEvent) => { const o = ret(ev); if (resgatarBonusDiario(s)) { nav.persistir(); nav.ir("missoes"); celebrar(nav.root, o, BONUS_DIARIAS); } } }))),
     h("button", { class: "btn", html: icT("trofeu", "Ver conquistas"), onclick: () => nav.ir("conquistas") }));
 }
 
@@ -318,13 +321,13 @@ export function telaRecompensas(nav: Nav): HTMLElement {
     h("div", { class: "cartao desc neon centro", text: "Entre todo dia para resgatar. O 7º dia dá um chip épico garantido." }),
     h("div", { class: "dias" }, ...dias),
     h("button", { class: "btn ouro", disabled: !pode, html: pode ? icT("presente", "Resgatar recompensa de hoje") : icT("check", "Volte amanhã"),
-      onclick: () => {
+      onclick: (ev: MouseEvent) => {
+        const o = ret(ev);
         const r = resgatarLogin(s);
         if (!r) return;
-        audio.sfx("vitoria");
         nav.persistir();
-        toast(nav.root, r.chip ? `Novo chip ${CHIP_RARIDADES[r.chip.raridade]}!` : "Recompensa resgatada!");
         nav.ir("recompensas");
+        celebrar(nav.root, o, r.premio, r.chip, `DIA ${((s.login.dias - 1) % 7) + 1}`);
       } }),
     (() => {
       const resta = anunciosRestantes(s, "bau");
@@ -334,7 +337,15 @@ export function telaRecompensas(nav: Nav): HTMLElement {
         h("div", { class: "loja-txt" }, h("b", { text: "Baú bônus" }), h("span", { html: `${s.monet.semAnuncios ? "Sem anúncio (VIP)" : "Assista a um anúncio"}: ${textoPremio(pr, ICONE_MOEDA)} · ${resta}/${ANUNCIOS.recompensa.bau.limite} hoje` })),
         h("button", { class: "btn ouro pequeno", disabled: resta <= 0, html: icT("play", "Abrir"),
           onclick: async () => {
-            if (await bauAnuncio(s, nav.root)) { audio.sfx("vitoria"); nav.persistir(); toast(nav.root, "Baú bônus aberto!"); nav.ir("recompensas"); }
+            if (await bauAnuncio(s, nav.root)) {
+              nav.persistir();
+              nav.ir("recompensas");
+              const el = telaBau({ creditos: pr.creditos ?? 0, nucleos: pr.nucleos ?? 0, cristais: pr.cristais ?? 0, titulo: "BAÚ BÔNUS" }, () => {
+                el.remove();
+                celebrar(nav.root, null, pr);
+              });
+              nav.root.append(el);
+            }
           } }));
     })(),
     pedestal());
@@ -353,13 +364,13 @@ export function telaLoja(nav: Nav): HTMLElement {
       h("span", { class: "loja-ic", html: iconeImg(`loja_${it.id}`, iconeImg(it.icone, ic("caixa"), "loja-img"), "loja-img") }),
       h("div", { class: "loja-txt" }, h("b", { text: it.nome }), h("span", { text: it.desc })),
       h("button", { class: it.custo ? "btn-preco" : "btn ouro pequeno", disabled: gratisUsado || !podePagar, html: gratisUsado ? "Amanhã" : preco,
-        onclick: () => {
+        onclick: (ev: MouseEvent) => {
+          const o = ret(ev);
           const r = comprar(s, it.id);
           if (!r.ok) { toast(nav.root, r.msg); return; }
-          audio.sfx("nivel");
           nav.persistir();
-          toast(nav.root, r.chip ? `Chip ${CHIP_RARIDADES[r.chip.raridade]}: ${CHIP_SET_MAP[r.chip.set]?.nome}` : r.msg);
           nav.ir("loja");
+          celebrar(nav.root, o, it.premio, r.chip ?? null, it.nome.toUpperCase());
         } }));
   });
   const skins = SKINS.filter((k) => k.preco && skinDisponivel(k)).map((k) => {
@@ -506,13 +517,14 @@ export function telaPasse(nav: Nav): HTMLElement {
       !premium ? h("span", { class: "cad", html: ic("cadeado") })
         : pegou ? h("span", { class: "passe-ok", html: ic("check") })
         : h("button", { class: "btn ouro pequeno", disabled: !alcancado, html: alcancado ? "Pegar" : ic("cadeado"),
-          onclick: () => {
+          onclick: (ev: MouseEvent) => {
+            const o = ret(ev);
             const r = resgatarPremium(s, n);
             if (!r) return;
-            audio.sfx("vitoria");
             nav.persistir();
-            toast(nav.root, r.skin ? `Skin desbloqueada: ${nomeSkin(r.skin)}!` : "Resgatado!");
             nav.ir("passe");
+            if (r.skin) { audio.sfx("vitoria"); toast(nav.root, `Skin desbloqueada: ${nomeSkin(r.skin)}!`); }
+            celebrar(nav.root, o, pp, r.chip, `PREMIUM · NÍVEL ${n}`);
           } }));
   };
   const linhas = PASSE_PREMIOS.map((p, i) => {
@@ -526,13 +538,14 @@ export function telaPasse(nav: Nav): HTMLElement {
       h("div", { class: "loja-txt" }, h("b", { html: p.skin ? `Skin: ${nomeSkin(p.skin)}` : textoPremio(p, ICONE_MOEDA) }), p.skin && (p.cristais || p.chip !== undefined) ? h("span", { html: textoPremio(p, ICONE_MOEDA) }) : null),
       pegou ? h("span", { class: "passe-ok", html: ic("check") })
         : h("button", { class: "btn ouro pequeno", disabled: !alcancado, html: alcancado ? "Resgatar" : ic("cadeado"),
-          onclick: () => {
+          onclick: (ev: MouseEvent) => {
+            const o = ret(ev);
             const r = resgatarPasse(s, n);
             if (!r) return;
-            audio.sfx(r.skin || r.chip ? "vitoria" : "nivel");
             nav.persistir();
-            toast(nav.root, r.skin ? `Skin desbloqueada: ${nomeSkin(r.skin)}!` : r.chip ? `Chip ${CHIP_RARIDADES[r.chip.raridade]}!` : "Resgatado!");
             nav.ir("passe");
+            if (r.skin) { audio.sfx("vitoria"); toast(nav.root, `Skin desbloqueada: ${nomeSkin(r.skin)}!`); }
+            celebrar(nav.root, o, p, r.chip, `PASSE · NÍVEL ${n}`);
           } }));
   }).map((linhaGratis, i) => h("div", { class: "passe-linha" }, linhaGratis, celPremium(i + 1, nivel >= i + 1)));
   const produtoPremium = PRODUTOS.find((x) => x.id === "passe_premium")!;

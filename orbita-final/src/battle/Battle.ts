@@ -306,8 +306,16 @@ export class Battle {
   // ------------------------------------------------------------------ dano
 
   /** Aplica dano a um inimigo. Retorna o dano efetivo. */
-  hitEnemy(e: Enemy, dano: number, src: SentinelRun | null, opts?: { dot?: boolean; semCrit?: boolean; semMods?: boolean }): number {
+  hitEnemy(e: Enemy, dano: number, src: SentinelRun | null, opts?: { dot?: boolean; semCrit?: boolean; semMods?: boolean; ult?: boolean }): number {
     if (!e.alive || (!e.alvoavel && !opts?.dot)) return 0;
+    if (opts?.ult && e.boss) {
+      // o ultimate não pode apagar o chefe: dano reduzido e teto por ativação
+      const U = BALANCE.ultimate;
+      const resta = Math.max(0, e.hpMax * U.limiteChefe - this.ult.danoChefe);
+      dano = Math.min(dano * U.fatorChefe, resta);
+      this.ult.danoChefe += dano;
+      if (dano <= 0) return 0;
+    }
     let crit = false;
     if (src && !opts?.semCrit && !opts?.dot) {
       crit = this.rng.next() < src.stats.critChance;
@@ -342,11 +350,11 @@ export class Battle {
   }
 
   /** Dano em área (agenda para evitar recursão profunda em reações em cadeia). */
-  explodir(x: number, y: number, r: number, dano: number, src: SentinelRun | null, cor = 0xffa040, imediato = false): void {
+  explodir(x: number, y: number, r: number, dano: number, src: SentinelRun | null, cor = 0xffa040, imediato = false, ult = false): void {
     this.fx.push({ t: "explosao", x, y, r, cor });
     if (imediato) {
       const list = this.grid.query(x, y, r, this.tmp2);
-      for (let i = list.length - 1; i >= 0; i--) this.hitEnemy(list[i], dano, src);
+      for (let i = list.length - 1; i >= 0; i--) this.hitEnemy(list[i], dano, src, ult ? { semMods: true, ult: true } : undefined);
     } else {
       this.explosoes.push({ x, y, r, dano });
     }
@@ -656,10 +664,10 @@ export class Battle {
     const src = p.src;
     if (p.kind === "missil") {
       p.alive = false;
-      this.explodir(p.x, p.y, p.area, p.dano, src, 0xffc040, true);
+      this.explodir(p.x, p.y, p.area, p.dano, src, 0xffc040, true, p.ult);
       return;
     }
-    this.hitEnemy(e, p.dano, src, { semMods: p.ult });
+    this.hitEnemy(e, p.dano, src, { semMods: p.ult, ult: p.ult });
     p.hits.push(e.id);
 
     if (src && !p.ult) {

@@ -381,7 +381,7 @@ export function updateZones(b: Battle, dt: number): void {
           continue;
         }
       }
-      if (doTick) b.hitEnemy(e, z.dano, z.src);
+      if (doTick) b.hitEnemy(e, z.dano, z.src, z.src ? undefined : { semMods: true, ult: true });
     }
   }
 }
