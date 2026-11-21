@@ -85,7 +85,7 @@ function perfilCard(nav: Nav): HTMLElement {
   return h("button", { class: "perfil", onclick: () => nav.ir("progresso") },
     h("span", { class: "perfil-av" }, avatar(s.perfil.avatar), insignia(pt.indice, "insignia mini")),
     h("span", { class: "perfil-txt" },
-      h("b", { text: `Cmd. ${s.perfil.nome || "Comandante"}` }),
+      h("b", { text: s.perfil.nome || "Comandante" }),
       h("span", { class: "perfil-pat", html: `<em>${pt.atual.nome}</em> · ${fmtInt(s.pontos)} pts` }),
       h("span", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(pt.frac * 100)}%` }))));
 }
@@ -204,7 +204,7 @@ export function telaLogin(nav: Nav): HTMLElement {
     h("form", { class: "login-painel", novalidate: "true" },
       h("div", { class: "login-titulo", text: editando ? "Editar comandante" : "Identifique-se, comandante" }),
       h("label", { for: "nome-comandante", text: "Nome de usuário" }),
-      h("div", { class: "campo-linha" }, h("span", { class: "campo-pre", text: "Cmd." }), input),
+      h("div", { class: "campo-linha" }, input),
       erro,
       h("label", { text: "Avatar" }),
       grade,
@@ -403,7 +403,7 @@ export function telaProgresso(nav: Nav): HTMLElement {
     h("div", { class: "cartao perfil-grande neon" },
       h("span", { class: "perfil-av" }, avatar(s.perfil.avatar, "avatar grande"), insignia(pt.indice, "insignia media")),
       h("div", { style: "flex:1;min-width:0" },
-        h("div", { class: "nome", text: `Cmd. ${s.perfil.nome || "Comandante"}` }),
+        h("div", { class: "nome", text: s.perfil.nome || "Comandante" }),
         h("div", { class: "pat-nome", text: pt.atual.nome }),
         pt.prox ? h("div", { class: "pat-prox" }, h("span", { text: "Próxima:" }), insignia(pt.indice + 1, "insignia micro"), h("b", { text: pt.prox.nome })) : null,
         h("div", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(pt.frac * 100)}%` })),

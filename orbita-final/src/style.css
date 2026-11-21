@@ -1018,3 +1018,57 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 .passe-n::before { content: ""; position: absolute; inset: 1.5px; z-index: -1; clip-path: inherit; background: radial-gradient(circle at 50% 30%, #1b4f8c, #0a1c3c 75%); }
 .passe-nivel.ouro .passe-n { background: #ffc23d; color: #2a1200; }
 .passe-nivel.ouro .passe-n::before { background: radial-gradient(circle at 50% 30%, #ffb33d, #a85400 80%); }
+
+/* =================== BAÚ v3: SVG com tampa que abre =================== */
+.overlay.bau-v3 { gap: 8px; background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--cor) 22%, #0a1430), rgba(3, 5, 12, 0.95) 68%); }
+.bau3-titulo { letter-spacing: 0.18em; text-shadow: 0 0 14px color-mix(in srgb, var(--cor) 70%, transparent); animation: entrar 0.4s backwards; }
+.bau3 { position: relative; width: min(64vw, 250px); aspect-ratio: 220 / 190; margin: 26px 0 6px; animation: bau3Cai 0.7s cubic-bezier(0.3, 1.4, 0.5, 1) backwards; }
+@keyframes bau3Cai { from { opacity: 0; transform: translateY(-220px) scale(0.7); } 70% { opacity: 1; } }
+.bau3-corpo, .bau3-tampa { position: absolute; left: 0; width: 100%; }
+.bau3-corpo svg, .bau3-tampa svg { display: block; width: 100%; height: auto; overflow: visible; }
+.bau3-corpo { bottom: 0; z-index: 2; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 10px color-mix(in srgb, var(--cor) 45%, transparent)); }
+.bau3-tampa { top: 0; z-index: 3; transform-origin: 50% 96%; transition: transform 0.45s cubic-bezier(0.25, 1.6, 0.45, 1);
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--cor) 45%, transparent)); }
+.bau3-sombra { position: absolute; left: 8%; right: 8%; bottom: -14px; height: 22px; border-radius: 50%; background: radial-gradient(rgba(0, 0, 0, 0.7), transparent 70%); }
+/* parado: respira e a fresta da tampa brilha */
+.bau3 .bau3-corpo, .bau3 .bau3-tampa { animation: bau3Respira 2.2s ease-in-out infinite; }
+@keyframes bau3Respira { 50% { transform: translateY(-3px); } }
+/* tremendo: chacoalha cada vez mais forte e a luz vaza */
+.bau-v3.tremendo .bau3 { animation: bau3Treme 0.75s ease-in forwards; }
+@keyframes bau3Treme { 0% { transform: rotate(0); } 15% { transform: rotate(-3deg); } 30% { transform: rotate(3deg); } 45% { transform: rotate(-5deg) scale(1.03); }
+  60% { transform: rotate(5deg) scale(1.05); } 75% { transform: rotate(-7deg) scale(1.07); } 90% { transform: rotate(7deg) scale(1.08); } 100% { transform: rotate(0) scale(1.1); } }
+.bau-v3.tremendo .bau3-luz { opacity: 0.6; transform: translateX(-50%) scaleY(0.25); }
+/* aberto: tampa gira para trás, feixe de luz sobe, raios giram atrás */
+.bau-v3.aberto .bau3-tampa { transform: translateY(-34%) rotate(-24deg) translateX(-14%); animation: none; }
+.bau-v3.aberto .bau3-corpo { animation: bau3Pulo 0.35s ease-out; }
+@keyframes bau3Pulo { 40% { transform: scaleY(0.9) scaleX(1.06); } }
+.bau3-luz { position: absolute; z-index: 1; left: 50%; bottom: 46%; width: 70%; height: 190%; transform: translateX(-50%) scaleY(0); transform-origin: 50% 100%; opacity: 0;
+  background: linear-gradient(0deg, #fff 0%, color-mix(in srgb, var(--cor) 80%, #fff) 25%, transparent 100%);
+  clip-path: polygon(30% 100%, 70% 100%, 100% 0, 0 0); filter: blur(3px); transition: transform 0.5s cubic-bezier(0.2, 1.2, 0.4, 1), opacity 0.3s; }
+.bau-v3.aberto .bau3-luz { opacity: 0.85; transform: translateX(-50%) scaleY(1); animation: bau3Luz 1.6s 0.5s ease-in-out infinite alternate; }
+@keyframes bau3Luz { to { opacity: 0.45; } }
+.bau3-raios { position: absolute; left: 50%; top: 45%; width: 520px; height: 520px; margin: -260px 0 0 -260px; z-index: 0; opacity: 0; pointer-events: none;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--cor) 30%, transparent) 0 8deg, transparent 8deg 22deg);
+  -webkit-mask-image: radial-gradient(circle, #000 10%, transparent 60%); mask-image: radial-gradient(circle, #000 10%, transparent 60%); }
+.bau-v3.aberto .bau3-raios { opacity: 1; transition: opacity 0.5s; animation: promoGira 18s linear infinite; }
+.bau3 .bau-moeda { z-index: 4; top: 40%; }
+.bau3-faisca { position: absolute; z-index: 4; left: 50%; top: 40%; width: 7px; height: 7px; margin: -3px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 10px 3px var(--cor); opacity: 0; animation: bauMoeda 1s cubic-bezier(0.2, 0.7, 0.4, 1) forwards; }
+/* prêmios como cartões que saltam */
+.bau3-premios { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: min(94vw, 400px); min-height: 92px; }
+.bau3-item { position: relative; isolation: isolate; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 82px; padding: 10px 10px 8px;
+  background: color-mix(in srgb, var(--cor) 75%, transparent);
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  animation: bau3Item 0.45s cubic-bezier(0.25, 1.6, 0.45, 1) backwards; }
+.bau3-item::before { content: ""; position: absolute; inset: 1.5px; z-index: -1; clip-path: inherit; background: linear-gradient(180deg, #13305c, #08142c); }
+@keyframes bau3Item { from { opacity: 0; transform: translateY(-90px) scale(0.4); } }
+.bau3-item-ic .ic-moeda, .bau3-item-ic .ic-estrela, .bau3-item-ic img { width: 34px; height: 34px; }
+.bau3-item b { font-size: 20px; font-weight: 900; }
+.bau3-item small { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texto2); }
+.bau3-chip { width: 100%; animation: chipRevela 0.6s cubic-bezier(0.25, 1.5, 0.45, 1) backwards; }
+/* ajuste: a tampa gira para trás na dobradiça (vista de frente vira a parte de dentro, mais escura) */
+.overlay.bau-v3 { z-index: 50; }
+.bau3 { perspective: 520px; }
+.bau-v3.aberto .bau3-tampa { transform: translateY(-46%) rotateX(62deg) scale(1.04); filter: brightness(0.55) drop-shadow(0 0 12px color-mix(in srgb, var(--cor) 60%, transparent)); transition: transform 0.5s cubic-bezier(0.3, 1.5, 0.5, 1), filter 0.4s; }
+.bau-v3.aberto .bau3-corpo::after { content: ""; position: absolute; left: 7%; right: 7%; top: -4%; height: 16%; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 60%, #fff, color-mix(in srgb, var(--cor) 85%, #fff) 35%, transparent 72%); filter: blur(2px); }

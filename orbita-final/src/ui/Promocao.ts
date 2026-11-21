@@ -31,7 +31,7 @@ export function telaPromocao(anterior: number, nova: number, nomeCmd: string, ao
       insig(nova, "promo-insig nova"),
       faiscas),
     letras,
-    h("div", { class: "promo-sub", text: `Cmd. ${nomeCmd || "Comandante"}, você foi promovido a ${nome}!` }),
+    h("div", { class: "promo-sub", text: `${nomeCmd || "Comandante"}, você foi promovido a ${nome}!` }),
     h("div", { class: "promo-de", html: `${PATENTES[anterior].nome} ${ic("play")} <b>${nome}</b>` }),
     btn);
   el.addEventListener("click", () => el.classList.add("pular"));
