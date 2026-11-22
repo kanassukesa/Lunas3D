@@ -22,7 +22,7 @@ export interface SaveData {
   cristais: number;
   sentinelas: Record<SentinelId, { desbloqueada: boolean; nivel: number }>;
   deck: { base: SentinelId; pool: SentinelId[] };
-  campanha: { normal: number[]; dificil: number[] };
+  campanha: { normal: number[]; dificil: number[]; pesadelo: number[]; apocalipse: number[] };
   chips: Chip[];
   equipados: Partial<Record<ChipSlot, number>>;
   proxUid: number;
@@ -70,7 +70,7 @@ export function saveNovo(): SaveData {
     cristais: 0,
     sentinelas,
     deck: { base: "canhao", pool: ["laser", "feixe", "missil", "campo"] },
-    campanha: { normal: STAGES.map(() => 0), dificil: STAGES.map(() => 0) },
+    campanha: { normal: STAGES.map(() => 0), dificil: STAGES.map(() => 0), pesadelo: STAGES.map(() => 0), apocalipse: STAGES.map(() => 0) },
     chips: [],
     equipados: {},
     proxUid: 1,

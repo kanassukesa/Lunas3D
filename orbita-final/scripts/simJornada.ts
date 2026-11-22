@@ -13,7 +13,7 @@ console.log("Campos:", j.campos.map((c) => c.id).join(", "), "| Etapas:", j.etap
 const pool: SentinelId[] = ["canhao", "laser", "missil", "feixe", "campo"];
 for (let r = 0; r < Number(runsArg); r++) {
   const cfg = montarRun({
-    modo: "jornada", stage: { ...j.etapas[0] }, dificil: false, seed: 500 + r, campos: j.campos.map((c) => c.id), etapas: j.etapas.map((e) => ({ ...e })),
+    modo: "jornada", stage: { ...j.etapas[0] }, dif: 0, seed: 500 + r, campos: j.campos.map((c) => c.id), etapas: j.etapas.map((e) => ({ ...e })),
     meta: { niveis: Object.fromEntries(pool.map((p) => [p, nivel])), talentos: { dano: Math.floor(nivel / 2), hp: Math.floor(nivel / 2) }, chipsEquipados: [], base: "canhao", pool },
   });
   const b = new Battle(cfg);

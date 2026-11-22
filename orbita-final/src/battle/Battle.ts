@@ -1,4 +1,4 @@
-import { BALANCE, xpParaNivel } from "../data/balance";
+import { BALANCE, DIFICULDADES, xpParaNivel } from "../data/balance";
 import { ENEMIES } from "../data/enemies";
 import { SENTINELS } from "../data/sentinels";
 import type { SentinelId } from "../data/types";
@@ -222,8 +222,8 @@ export class Battle {
     const e = this.enemyPool.get();
     const onda = Math.floor(this.t / BALANCE.duracaoOnda);
     const mult = this.multDificuldade();
-    const hpScale = (1 + BALANCE.escalaOnda * onda) * mult * (this.cfg.dificil ? BALANCE.dificil.hpMult : 1) * (this.cfg.daily?.hpInimigoMult ?? 1) * this.campoHp;
-    const danoScale = (1 + 0.04 * onda) * Math.sqrt(mult) * (this.cfg.dificil ? BALANCE.dificil.danoMult : 1);
+    const hpScale = (1 + BALANCE.escalaOnda * onda) * mult * DIFICULDADES[this.cfg.dif].hpMult * (this.cfg.daily?.hpInimigoMult ?? 1) * this.campoHp;
+    const danoScale = (1 + 0.04 * onda) * Math.sqrt(mult) * DIFICULDADES[this.cfg.dif].danoMult;
     e.id = this.nextId++;
     e.alive = true;
     e.def = def;

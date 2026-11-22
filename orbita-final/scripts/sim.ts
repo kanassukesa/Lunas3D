@@ -2,7 +2,7 @@
  * Simulador headless de balanceamento: um bot joga as fases escolhendo cartas e usando o ultimate.
  * Uso: npm run sim -- [fases=1-10] [runs=4] [nivelHangar=1]
  */
-declare const process: { argv: string[] };
+declare const process: { argv: string[]; env: Record<string, string | undefined> };
 import { Battle } from "../src/battle/Battle";
 import { montarRun } from "../src/battle/Loadout";
 import { STAGES } from "../src/data/stages";
@@ -29,7 +29,7 @@ for (let s = a; s <= (z || a); s++) {
   for (let r = 0; r < runs; r++) {
     const niveis = Object.fromEntries(pool.map((p) => [p, nivel]));
     const cfg = montarRun({
-      modo: modo as "campanha", stage, dificil: false, seed: 1000 + r * 77 + s, campos: stage.campos,
+      modo: modo as "campanha", stage, dif: Number(process.env.DIF ?? 0), seed: 1000 + r * 77 + s, campos: stage.campos,
       meta: { niveis, talentos: { dano: Math.min(10, Math.floor(nivel / 2)), hp: Math.min(10, Math.floor(nivel / 2)), escudo: Math.min(10, Math.floor(nivel / 3)) }, chipsEquipados: [], base: "canhao", pool },
     });
     const b = new Battle(cfg);

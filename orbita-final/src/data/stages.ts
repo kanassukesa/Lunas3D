@@ -278,8 +278,6 @@ export const SETORES = [
   { id: 2, nome: "Setor 2 · Fronteira Sombria", desc: "Efeitos de campo e inimigos muito mais fortes." },
 ];
 
-/** Fase normal que libera o modo Difícil (índice 0-based). */
-export const FASE_LIBERA_DIFICIL = 9;
 
 /** Sobrevivência infinita: ondas geradas por tempo; chefe a cada 180 s. */
 export const SOBREVIVENCIA = {

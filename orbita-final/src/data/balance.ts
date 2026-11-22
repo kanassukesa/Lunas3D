@@ -40,7 +40,6 @@ export const BALANCE = {
   avisoChefe: 270,
   entradaChefe: 280,
   retargetIntervalo: 0.1,
-  dificil: { hpMult: 2.5, danoMult: 1.4 },
   recompensas: {
     creditosPorAbate: 0.35,
     creditosPorSegundo: 0.4,
@@ -84,3 +83,26 @@ export function xpParaNivel(nivel: number): number {
 export function custoHangar(nivel: number): number {
   return Math.round(BALANCE.hangar.custoBase * Math.pow(BALANCE.hangar.custoCresc, nivel - 1));
 }
+
+/** Níveis de dificuldade da campanha. Cada um libera ao vencer a fase `liberaFase` do nível anterior. */
+export interface DificuldadeDef {
+  id: "normal" | "dificil" | "pesadelo" | "apocalipse";
+  nome: string;
+  hpMult: number;
+  danoMult: number;
+  /** Multiplica créditos, núcleos e pontos. */
+  premio: number;
+  /** Bônus na chance de chip raro. */
+  raridade: number;
+  cor: string;
+  icone: string;
+  desc: string;
+}
+export const DIFICULDADES: DificuldadeDef[] = [
+  { id: "normal", nome: "Normal", hpMult: 1, danoMult: 1, premio: 1, raridade: 0, cor: "#4fd6ff", icone: "play", desc: "A campanha padrão." },
+  { id: "dificil", nome: "Difícil", hpMult: 2.5, danoMult: 1.4, premio: 2, raridade: 0.5, cor: "#ff9a3c", icone: "alerta", desc: "Inimigos com 2,5× HP e +40% de dano. Prêmios ×2." },
+  { id: "pesadelo", nome: "Pesadelo", hpMult: 4.2, danoMult: 1.75, premio: 3.5, raridade: 1, cor: "#ff4d6d", icone: "radiacao", desc: "Inimigos com 4,2× HP e +75% de dano. Prêmios ×3,5 e mais chips raros." },
+  { id: "apocalipse", nome: "Apocalipse", hpMult: 6.5, danoMult: 2.2, premio: 6, raridade: 1.6, cor: "#b36bff", icone: "coroa2", desc: "Inimigos com 6,5× HP e dano dobrado. Prêmios ×6 e chips lendários com frequência." },
+];
+/** Fase (índice 0-based) do nível anterior que libera o próximo nível de dificuldade. */
+export const DIF_LIBERA_FASE = 9;

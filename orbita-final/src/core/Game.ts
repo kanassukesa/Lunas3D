@@ -3,7 +3,7 @@ import { Battle } from "../battle/Battle";
 import { montarRun } from "../battle/Loadout";
 import type { Oferta } from "../battle/CardSystem";
 import type { Modo } from "../battle/types";
-import { BALANCE } from "../data/balance";
+import { BALANCE, DIFICULDADES } from "../data/balance";
 import { STAGES } from "../data/stages";
 import { calcularRecompensas, creditosParciais, CUSTO_REVIVER, desafioDoDia, faseLiberada, hojeStr, jornadaDaSemana, snapshot, type Recompensa } from "../meta/Meta";
 import { Background } from "../render/Background";
@@ -60,7 +60,7 @@ interface Run {
   overlayTipo: "" | "nivel" | "pausa" | "build" | "config" | "reviver" | "resultado";
   modo: Modo;
   idx: number;
-  dificil: boolean;
+  dif: number;
   tutorial: boolean;
   recompensa: Recompensa | null;
   bauVisto?: boolean;
@@ -179,8 +179,8 @@ export class Game implements Nav {
     this.telaEl?.remove();
     const mapa: Record<string, () => HTMLElement> = {
       hub: () => telaHub(this),
-      mapa: () => telaFases(this, false),
-      mapaDificil: () => telaFases(this, true),
+      mapa: () => telaFases(this, -1),
+      mapaDificil: () => telaFases(this, 1),
       hangar: () => telaHangarV2(this),
       chips: () => telaChipsV2(this),
       planeta: () => telaPlanetaV2(this),
@@ -234,32 +234,32 @@ export class Game implements Nav {
     this.resize();
   }
 
-  jogarCampanha(idx: number, dificil: boolean): void {
-    if (!faseLiberada(this.save, idx, dificil)) return;
+  jogarCampanha(idx: number, dif: number): void {
+    if (!faseLiberada(this.save, idx, dif)) return;
     const stage = STAGES[idx];
-    this.iniciar("campanha", stage, idx, dificil, (Date.now() >>> 0) ^ (idx * 7919), undefined, stage.campos);
+    this.iniciar("campanha", stage, idx, dif, (Date.now() >>> 0) ^ (idx * 7919), undefined, stage.campos);
   }
 
   jogarDiario(): void {
     const d = desafioDoDia();
     if (this.save.diario.data !== hojeStr()) this.save.diario = { data: hojeStr(), melhor: 0, concluido: false };
-    this.iniciar("diario", d.stage, d.stage.id - 1, false, d.seed, d.mod);
+    this.iniciar("diario", d.stage, d.stage.id - 1, 0, d.seed, d.mod);
   }
 
   jogarSobrevivencia(): void {
     const base = { ...STAGES[0], nome: "Sobrevivência", ondas: [], mult: 1 };
-    this.iniciar("sobrevivencia", base, 0, false, Date.now() >>> 0);
+    this.iniciar("sobrevivencia", base, 0, 0, Date.now() >>> 0);
   }
 
   jogarJornada(): void {
     const j = jornadaDaSemana();
-    this.iniciar("jornada", j.etapas[0], 0, false, j.seed, undefined, j.campos.map((c) => c.id), j.etapas);
+    this.iniciar("jornada", j.etapas[0], 0, 0, j.seed, undefined, j.campos.map((c) => c.id), j.etapas);
   }
 
   // ------------------------------------------------------------------ batalha
 
   private iniciar(
-    modo: Modo, stage: (typeof STAGES)[number], idx: number, dificil: boolean, seed: number,
+    modo: Modo, stage: (typeof STAGES)[number], idx: number, dif: number, seed: number,
     daily?: ReturnType<typeof desafioDoDia>["mod"], campos?: string[], etapas?: (typeof STAGES)[number][],
   ): void {
     this.sairDaBatalha();
@@ -272,14 +272,14 @@ export class Game implements Nav {
     aparencia.planeta = this.save.skins.planeta;
     aparencia.escudo = this.save.skins.escudo;
     const tutorial = modo === "campanha" && idx === 0 && !this.save.tutorialVisto;
-    const cfg = montarRun({ modo, stage, dificil, seed, meta: snapshot(this.save), daily, tutorial, campos, etapas: etapas?.map((e) => ({ ...e })) });
+    const cfg = montarRun({ modo, stage, dif, seed, meta: snapshot(this.save), daily, tutorial, campos, etapas: etapas?.map((e) => ({ ...e })) });
     const b = new Battle(cfg);
     const r = new BattleRenderer(b);
     const loop = new FixedLoop((dt) => {
       if (b.pendentes > 0 || b.fim) return;
       b.step(dt);
     });
-    const nome = modo === "campanha" ? `${dificil ? "Difícil" : "Normal"} · Fase ${stage.id}` : stage.nome;
+    const nome = modo === "campanha" ? `${DIFICULDADES[dif].nome} · Fase ${stage.id}` : stage.nome;
     const hud = new Hud(nome, {
       pausar: () => this.pausar(),
       velocidade: () => {
@@ -296,7 +296,7 @@ export class Game implements Nav {
         b.focoChefe = !b.focoChefe;
       },
     });
-    this.run = { b, r, loop, hud, overlay: null, overlayTipo: "", modo, idx, dificil, tutorial, recompensa: null };
+    this.run = { b, r, loop, hud, overlay: null, overlayTipo: "", modo, idx, dif, tutorial, recompensa: null };
     this.cena.addChild(r.world);
     this.bg.setFundo(((stage.id - 1) % 3) + 1);
     this.root.append(hud.el);
@@ -469,9 +469,9 @@ export class Game implements Nav {
       return;
     }
     const idx = run.idx;
-    const temProxima = run.modo === "campanha" && f.vitoria && idx + 1 < STAGES.length && faseLiberada(this.save, idx + 1, run.dificil);
+    const temProxima = run.modo === "campanha" && f.vitoria && idx + 1 < STAGES.length && faseLiberada(this.save, idx + 1, run.dif);
     const repetir = () => {
-      if (run.modo === "campanha") this.jogarCampanha(idx, run.dificil);
+      if (run.modo === "campanha") this.jogarCampanha(idx, run.dif);
       else if (run.modo === "diario") this.jogarDiario();
       else if (run.modo === "jornada") this.jogarJornada();
       else this.jogarSobrevivencia();
@@ -480,7 +480,7 @@ export class Game implements Nav {
       telaResultado(b, run.recompensa, {
         hub: () => this.depoisDaPartida(() => this.ir("hub")),
         repetir: () => this.depoisDaPartida(repetir),
-        proxima: temProxima ? () => this.depoisDaPartida(() => this.jogarCampanha(idx + 1, run.dificil)) : null,
+        proxima: temProxima ? () => this.depoisDaPartida(() => this.jogarCampanha(idx + 1, run.dif)) : null,
         dobrar: run.dobrou || (run.recompensa.creditos <= 0 && run.recompensa.nucleos <= 0) || anunciosRestantes(this.save, "dobrar") <= 0 ? null : async () => {
           if (!(await anuncioRecompensado(this.save, this.root, "dobrar"))) return;
           run.dobrou = true;

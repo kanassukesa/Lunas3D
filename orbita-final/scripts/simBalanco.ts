@@ -9,7 +9,7 @@ const pool: SentinelId[] = ["canhao", "laser", "missil", "feixe", "campo"];
 for (let r = 0; r < Number(runsA); r++) {
   const n = Number(nivelA);
   const base: SentinelId = foco === "campo" ? "campo" : "canhao";
-  const cfg = montarRun({ modo: "campanha", stage: STAGES[Number(faseA) - 1], dificil: false, seed: 900 + r,
+  const cfg = montarRun({ modo: "campanha", stage: STAGES[Number(faseA) - 1], dif: 0, seed: 900 + r,
     meta: { niveis: Object.fromEntries(pool.map((p) => [p, n])), talentos: {}, chipsEquipados: [], base, pool } });
   const b = new Battle(cfg);
   let usos = 0, danoUltChefe = 0, hpMin = 1, tChefe = 0, bossHp0 = 0;

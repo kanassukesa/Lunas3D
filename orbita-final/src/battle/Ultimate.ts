@@ -1,4 +1,4 @@
-import { BALANCE } from "../data/balance";
+import { BALANCE, DIFICULDADES } from "../data/balance";
 const P = BALANCE.planeta;
 import type { SentinelId } from "../data/types";
 import type { Battle } from "./Battle";
@@ -39,7 +39,7 @@ export class Ultimate {
   poder(): number {
     const b = this.b;
     const onda = Math.floor(b.t / BALANCE.duracaoOnda);
-    const escala = (1 + BALANCE.escalaOnda * onda) * b.multDificuldade() * (b.cfg.dificil ? BALANCE.dificil.hpMult : 1);
+    const escala = (1 + BALANCE.escalaOnda * onda) * b.multDificuldade() * DIFICULDADES[b.cfg.dif].hpMult;
     return (1 + (b.globais.pct.ultDano ?? 0)) * (1 + (b.globais.pct.dano ?? 0)) * (1 + 0.05 * (b.nivel - 1)) * escala;
   }
 

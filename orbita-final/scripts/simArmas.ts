@@ -14,7 +14,7 @@ for (const id of SENTINEL_IDS) {
   let vit = 0, tempo = 0, hp = 0, dps = 0, nivel = 0, t5 = 0, tBoss = 0, nBoss = 0;
   const R = Number(runsA);
   for (let r = 0; r < R; r++) {
-    const cfg = montarRun({ modo: "campanha", stage: STAGES[Number(faseA) - 1], dificil: false, seed: 77 + r * 31,
+    const cfg = montarRun({ modo: "campanha", stage: STAGES[Number(faseA) - 1], dif: 0, seed: 77 + r * 31,
       meta: { niveis: { [id]: Number(nvA) }, talentos: {}, chipsEquipados: [], base: id, pool: [id] } });
     const b = new Battle(cfg);
     const rng = new Rng(5 + r);

@@ -3,22 +3,22 @@
  * Cada tela usa arte final quando existe (`banner_<tela>`, `fase_<n>`, `talento_<id>`, `modo_<id>`)
  * e cai para a arte que já temos enquanto ela não chega.
  */
-import { BALANCE } from "../../data/balance";
+import { BALANCE, DIF_LIBERA_FASE, DIFICULDADES } from "../../data/balance";
 import { BOSSES } from "../../data/bosses";
 import { CHIP_RARIDADE_COR, CHIP_RARIDADES, CHIP_SET_MAP, CHIP_SETS, CHIP_SLOT_NOME, CHIP_SLOTS } from "../../data/chips";
 import { SENTINELS, SENTINEL_IDS } from "../../data/sentinels";
-import { FASE_LIBERA_DIFICIL, SETORES, STAGES } from "../../data/stages";
+import { SETORES, STAGES } from "../../data/stages";
 import { CAMPOS } from "../../data/journey";
 import { TALENTS } from "../../data/talents";
 import type { Chip, ChipSlot, SentinelId } from "../../data/types";
 import { audio } from "../../core/Audio";
 import {
-  comprarTalento, desafioDoDia, desbloquear, faseLiberada, formatStat, fundir, hojeStr, jornadaDaSemana, melhorar, podeMelhorar, semanaStr,
+  comprarTalento, desafioDoDia, desbloquear, difLiberada, estrelasDe, faseLiberada, formatStat, fundir, hojeStr, jornadaDaSemana, melhorar, podeMelhorar, semanaStr,
 } from "../../meta/Meta";
 import { urlArte } from "../../render/Sprites";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg, toast } from "../dom";
 import { ic, icT } from "../Icones";
-import { moedas, proximaFase, type Nav } from "./Screens";
+import { moedas, type Nav } from "./Screens";
 
 // ------------------------------------------------------------------ moldura comum
 
@@ -43,23 +43,39 @@ const arte = (...ids: string[]) => ids.map((i) => urlArte(i)).find(Boolean) ?? n
 /** Arte de fundo de cada fase enquanto `fase_<n>` não chega. */
 const ARTE_FASE = ["planeta_mapa_lava", "carta_explosao", "tile_planeta", "chefe_eclipse", "carta_veneno", "carta_estilhaco", "carta_escudo", "carta_cadencia", "carta_velocidade", "chefe_singularidade"];
 
-export function telaFases(nav: Nav, dificil: boolean): HTMLElement {
+/** Dificuldade escolhida na tela de fases (lembrada enquanto o app está aberto). */
+let difAtual = 0;
+
+/** `dif` = -1 usa a última escolhida. */
+export function telaFases(nav: Nav, difPedida: number): HTMLElement {
   const s = nav.save;
-  const difLib = s.campanha.normal[FASE_LIBERA_DIFICIL] > 0;
-  const arr = dificil ? s.campanha.dificil : s.campanha.normal;
-  const atual = proximaFase(s);
-  const abas = h("div", { class: "abas-v2" },
-    h("button", { class: "aba" + (!dificil ? " ativa" : ""), html: icT("play", "Normal"), onclick: () => nav.ir("mapa") }),
-    h("button", { class: "aba" + (dificil ? " ativa" : ""), html: difLib ? icT("alerta", "Difícil") : icT("cadeado", "Difícil"), disabled: !difLib, onclick: () => nav.ir("mapaDificil") }));
+  if (difPedida >= 0) difAtual = difPedida;
+  if (!difLiberada(s, difAtual)) difAtual = 0;
+  const dif = difAtual;
+  const D = DIFICULDADES[dif];
+  const arr = estrelasDe(s, dif);
+  const atual = Math.max(0, arr.findIndex((x) => x === 0));
+  const abas = h("div", { class: "abas-dif" },
+    ...DIFICULDADES.map((d, k) => {
+      const lib = difLiberada(s, k);
+      const est = estrelasDe(s, k).reduce((a, x) => a + x, 0);
+      return h("button", { class: "aba-dif" + (k === dif ? " ativa" : "") + (lib ? "" : " bloq"), style: `--cor:${d.cor}`, disabled: !lib,
+        onclick: () => { difAtual = k; nav.ir("mapa"); } },
+        h("span", { html: ic(lib ? d.icone : "cadeado") }), h("b", { text: d.nome }), h("small", { text: lib ? `${est}/${STAGES.length * 3}` : `Fase ${DIF_LIBERA_FASE + 1}` }));
+    }));
+  const proxDif = DIFICULDADES[dif + 1];
+  const info = h("div", { class: "dif-info", style: `--cor:${D.cor}` },
+    h("span", { html: ic(D.icone) }),
+    h("div", null, h("b", { text: D.nome }), h("small", { text: D.desc + (proxDif && !difLiberada(s, dif + 1) ? ` Vença a Fase ${DIF_LIBERA_FASE + 1} para liberar o ${proxDif.nome}.` : "") })));
   const linhas = STAGES.map((st, i) => {
-    const lib = faseLiberada(s, i, dificil);
+    const lib = faseLiberada(s, i, dif);
     const est = arr[i];
-    const ehAtual = lib && i === (dificil ? Math.max(0, arr.findIndex((x) => x === 0)) : atual);
+    const ehAtual = lib && i === atual;
     // setor 2 reaproveita a arte do setor 1 com outra tonalidade até chegar arte própria (fase_11..20)
     const propria = urlArte(`fase_${st.id}`);
     const fundo = propria ?? arte(`fase_${((st.id - 1) % 10) + 1}`, ARTE_FASE[i % ARTE_FASE.length]);
     const campos = (st.campos ?? []).map((c) => CAMPOS.find((x) => x.id === c)).filter(Boolean) as typeof CAMPOS;
-    const linha = h("button", { class: "fase-v2" + (lib ? "" : " bloq") + (ehAtual ? " atual" : "") + ((st.setor ?? 1) === 2 ? " setor2" : ""), disabled: !lib, onclick: () => nav.jogarCampanha(i, dificil) },
+    const linha = h("button", { class: "fase-v2" + (lib ? "" : " bloq") + (ehAtual ? " atual" : "") + ((st.setor ?? 1) === 2 ? " setor2" : ""), disabled: !lib, onclick: () => nav.jogarCampanha(i, dif) },
       fundo ? h("img", { class: "fase-arte" + (!propria && (st.setor ?? 1) === 2 ? " tingida" : ""), src: fundo, alt: "" }) : null,
       h("span", { class: "fase-num" + (est > 0 ? " feita" : ""), html: lib ? `<b>${st.id}</b>` : ic("cadeado") }),
       h("span", { class: "fase-txt" },
@@ -76,7 +92,9 @@ export function telaFases(nav: Nav, dificil: boolean): HTMLElement {
       ? [h("div", { class: "setor-cab" + (setor.id === 2 ? " s2" : "") }, h("b", { text: setor.nome }), h("small", { text: setor.desc })), linha]
       : [linha];
   }).flat();
-  const el = telaBanner(nav, "FASES", arte("banner_fases", "tile_mapa") ? (urlArte("banner_fases") ? "banner_fases" : "tile_mapa") : null, abas, ...linhas);
+  const el = telaBanner(nav, "FASES", arte("banner_fases", "tile_mapa") ? (urlArte("banner_fases") ? "banner_fases" : "tile_mapa") : null, abas, info, ...linhas);
+  el.style.setProperty("--dif-cor", D.cor);
+  if (dif > 0) el.classList.add("dif-" + D.id);
   return el;
 }
 

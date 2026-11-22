@@ -1,4 +1,4 @@
-import { BALANCE } from "../data/balance";
+import { DIFICULDADES } from "../data/balance";
 import { BOSSES } from "../data/bosses";
 import type { Battle } from "./Battle";
 import type { Enemy } from "./types";
@@ -7,7 +7,7 @@ import type { Enemy } from "./types";
 export function spawnBoss(b: Battle, id: string, hpMult = 1): Enemy {
   const def = BOSSES[id];
   const e = b.spawnEnemy("tanque", b.planet.x, b.vis.top - def.raio - 40);
-  const mult = b.spawner.multCheio() * (b.cfg.dificil ? BALANCE.dificil.hpMult : 1) * (b.cfg.daily?.hpInimigoMult ?? 1) * hpMult;
+  const mult = b.spawner.multCheio() * DIFICULDADES[b.cfg.dif].hpMult * (b.cfg.daily?.hpInimigoMult ?? 1) * hpMult;
   e.hpMax = e.hp = Math.round(def.hp * mult);
   e.r = def.raio;
   e.vel = 70;
@@ -24,7 +24,7 @@ export function spawnBoss(b: Battle, id: string, hpMult = 1): Enemy {
 }
 
 function danoTiro(b: Battle, e: Enemy): number {
-  return e.boss!.def.danoTiro * Math.sqrt(b.multDificuldade()) * (b.cfg.dificil ? BALANCE.dificil.danoMult : 1);
+  return e.boss!.def.danoTiro * Math.sqrt(b.multDificuldade()) * DIFICULDADES[b.cfg.dif].danoMult;
 }
 
 function leque(b: Battle, e: Enemy, n: number, abertura: number, vel: number, cor: number): void {

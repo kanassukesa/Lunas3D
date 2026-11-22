@@ -48,7 +48,7 @@ export function modsGlobais(meta: MetaSnapshot): Mods {
 export function montarRun(opts: {
   modo: Modo;
   stage: StageDef;
-  dificil: boolean;
+  dif: number;
   seed: number;
   meta: MetaSnapshot;
   daily?: DailyMod;
@@ -72,7 +72,7 @@ export function montarRun(opts: {
   const perm: RunConfig["perm"] = {};
   for (const id of pool) perm[id] = modsPermanentes(id, meta.niveis[id] ?? 1);
   return {
-    modo: opts.modo, stage: opts.stage, dificil: opts.dificil, seed: opts.seed, base, pool, globais, perm, daily,
+    modo: opts.modo, stage: opts.stage, dif: opts.dif, seed: opts.seed, base, pool, globais, perm, daily,
     tutorial: opts.tutorial ?? false,
     campos: opts.campos,
     etapas: opts.etapas,

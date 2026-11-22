@@ -12,7 +12,7 @@ export interface Nav {
   save: SaveData;
   root: HTMLElement;
   ir(tela: string): void;
-  jogarCampanha(idx: number, dificil: boolean): void;
+  jogarCampanha(idx: number, dif: number): void;
   jogarDiario(): void;
   jogarSobrevivencia(): void;
   jogarJornada(): void;

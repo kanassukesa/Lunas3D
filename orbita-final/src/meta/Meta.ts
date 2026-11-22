@@ -1,11 +1,11 @@
 import type { Battle } from "../battle/Battle";
 import type { MetaSnapshot } from "../battle/Loadout";
-import { BALANCE, custoHangar } from "../data/balance";
+import { BALANCE, custoHangar, DIF_LIBERA_FASE, DIFICULDADES } from "../data/balance";
 import { CHIP_PRINCIPAL, CHIP_SECUNDARIO_FATOR, CHIP_SETS, CHIP_SLOTS, CHIP_STATS } from "../data/chips";
 import { MISSIONS } from "../data/missions";
 import { DAILY_MODS, type DailyMod } from "../data/modes";
 import { SENTINELS } from "../data/sentinels";
-import { FASE_LIBERA_DIFICIL, STAGES } from "../data/stages";
+import { STAGES } from "../data/stages";
 import { TALENTS } from "../data/talents";
 import type { Chip, SentinelId, StageDef } from "../data/types";
 import { Rng, hashString } from "../core/Rng";
@@ -82,8 +82,9 @@ export function gerarChip(s: SaveData, rng: Rng, raridade: number): Chip {
   return { uid: s.proxUid++, slot, set, raridade, principal: { stat: principal, valor: CHIP_STATS[principal].valores[raridade] }, secundarios };
 }
 
-export function raridadeDrop(rng: Rng, fase: number, dificil: boolean): number {
-  const bonus = Math.min(fase, 20) / 10 + (dificil ? 0.5 : 0);
+export function raridadeDrop(rng: Rng, fase: number, dif: number | boolean): number {
+  const extra = typeof dif === "boolean" ? (dif ? 0.5 : 0) : DIFICULDADES[dif]?.raridade ?? 0;
+  const bonus = Math.min(fase, 20) / 10 + extra;
   const pesos = [Math.max(10, 60 - bonus * 40), 28 + bonus * 15, 9 + bonus * 15, 2 + bonus * 6];
   return rng.weighted(pesos);
 }
@@ -186,7 +187,7 @@ export interface Recompensa {
 export function creditosParciais(b: Battle): number {
   const R = BALANCE.recompensas;
   const credMult = 1 + (b.cfg.globais.pct.creditos ?? 0);
-  const dif = b.cfg.dificil ? 2 : 1;
+  const dif = DIFICULDADES[b.cfg.dif].premio;
   return Math.round((b.abates * R.creditosPorAbate + b.t * R.creditosPorSegundo) * (1 + b.cfg.stage.id * 0.15) * credMult * dif);
 }
 
@@ -195,7 +196,7 @@ export function calcularRecompensas(s: SaveData, b: Battle, modo: Modo): Recompe
   const stage = b.cfg.stage;
   const R = BALANCE.recompensas;
   const credMult = 1 + (b.cfg.globais.pct.creditos ?? 0);
-  const dif = b.cfg.dificil ? 2 : 1;
+  const dif = DIFICULDADES[b.cfg.dif].premio;
   let creditos = (fim.abates * R.creditosPorAbate + fim.tempo * R.creditosPorSegundo) * (1 + stage.id * 0.15);
   if (fim.vitoria) creditos += R.creditosVitoriaPorFase * stage.id;
   creditos = Math.round(creditos * credMult * dif);
@@ -206,14 +207,14 @@ export function calcularRecompensas(s: SaveData, b: Battle, modo: Modo): Recompe
   const rng = new Rng((Date.now() ^ (fim.abates * 7919)) >>> 0);
 
   if (modo === "campanha") {
-    const arr = b.cfg.dificil ? s.campanha.dificil : s.campanha.normal;
+    const arr = estrelasDe(s, b.cfg.dif);
     const idx = stage.id - 1;
     if (fim.vitoria) {
       primeiraVez = arr[idx] === 0;
       nucleos = R.nucleosChefeBase + stage.id + (primeiraVez ? 5 : 0);
-      if (b.cfg.dificil) nucleos *= 2;
+      nucleos = Math.round(nucleos * DIFICULDADES[b.cfg.dif].premio);
       arr[idx] = Math.max(arr[idx], fim.estrelas);
-      chip = gerarChip(s, rng, raridadeDrop(rng, stage.id, b.cfg.dificil));
+      chip = gerarChip(s, rng, raridadeDrop(rng, stage.id, b.cfg.dif));
     }
   } else if (modo === "diario") {
     if (fim.vitoria) {
@@ -272,7 +273,7 @@ export function calcularRecompensas(s: SaveData, b: Battle, modo: Modo): Recompe
   stat(s, "partidas", 1);
   stat(s, "evolucoes", fim.evolucoes);
   if (fim.chefeDerrotado || (b.chefesMortos ?? 0) > 0) stat(s, "chefes", Math.max(1, b.chefesMortos ?? 0));
-  s.estatisticas.estrelas = s.campanha.normal.reduce((a, x) => a + x, 0) + s.campanha.dificil.reduce((a, x) => a + x, 0);
+  s.estatisticas.estrelas = DIFICULDADES.reduce((tot, _d, i) => tot + estrelasDe(s, i).reduce((a, x) => a + x, 0), 0);
   return { creditos, nucleos, chip, primeiraVez, recorde, perdaDesistencia };
 }
 
@@ -292,12 +293,19 @@ export function resgatarMissao(s: SaveData, id: string): boolean {
   return true;
 }
 
-export function faseLiberada(s: SaveData, idx: number, dificil: boolean): boolean {
-  if (dificil) {
-    if (s.campanha.normal[FASE_LIBERA_DIFICIL] === 0) return false;
-    return idx === 0 || s.campanha.dificil[idx - 1] > 0;
-  }
-  return idx === 0 || s.campanha.normal[idx - 1] > 0;
+/** Estrelas por fase no nível de dificuldade `dif`. */
+export function estrelasDe(s: SaveData, dif: number): number[] {
+  return s.campanha[DIFICULDADES[dif]?.id ?? "normal"];
+}
+
+/** O nível de dificuldade `dif` está liberado? (vencer a fase DIF_LIBERA_FASE+1 do nível anterior) */
+export function difLiberada(s: SaveData, dif: number): boolean {
+  return dif <= 0 || (estrelasDe(s, dif - 1)[DIF_LIBERA_FASE] ?? 0) > 0;
+}
+
+export function faseLiberada(s: SaveData, idx: number, dif: number): boolean {
+  if (!difLiberada(s, dif)) return false;
+  return idx === 0 || estrelasDe(s, dif)[idx - 1] > 0;
 }
 
 export const CUSTO_REVIVER = 15;

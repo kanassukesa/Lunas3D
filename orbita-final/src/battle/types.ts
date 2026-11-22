@@ -7,7 +7,8 @@ export type Modo = "campanha" | "diario" | "sobrevivencia" | "jornada";
 export interface RunConfig {
   modo: Modo;
   stage: StageDef;
-  dificil: boolean;
+  /** Nível de dificuldade (0 = Normal … 3 = Apocalipse), índice de DIFICULDADES. */
+  dif: number;
   seed: number;
   base: SentinelId;
   pool: SentinelId[];
