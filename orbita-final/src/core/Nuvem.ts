@@ -16,6 +16,10 @@ class Nuvem {
   private userId: string | null = null;
   email: string | null = null;
   telefone: string | null = null;
+  /** Abriu o jogo pelo link de "esqueci minha senha" (o Supabase manda type=recovery no endereço). */
+  readonly recuperacao = typeof location !== "undefined" && /type=recovery/.test(location.hash + location.search);
+  /** Conta de convidado (anônima): funciona igual, mas some se o app for apagado sem vincular um e-mail. */
+  anonimo = false;
 
   private async cliente(): Promise<SupabaseClient> {
     if (!this.sb) {
@@ -33,10 +37,12 @@ class Nuvem {
     this.userId = data.session?.user.id ?? null;
     this.email = data.session?.user.email ?? null;
     this.telefone = data.session?.user.phone || null;
+    this.anonimo = !!data.session?.user.is_anonymous;
     sb.auth.onAuthStateChange((_e, sess) => {
       this.userId = sess?.user.id ?? null;
       this.email = sess?.user.email ?? null;
       this.telefone = sess?.user.phone || null;
+      this.anonimo = !!sess?.user.is_anonymous;
     });
   }
 
@@ -46,15 +52,82 @@ class Nuvem {
 
   /** Nome da conta para mostrar (e-mail ou celular). */
   conta(): string {
+    if (this.anonimo) return "Convidado";
     return this.email || (this.telefone ? "+" + this.telefone.replace(/^\+/, "") : "") || "conectado";
   }
 
+  /** Entra como convidado (conta anônima do Supabase: entra no ranking e no clã sem e-mail). */
+  async entrarConvidado(): Promise<void> {
+    const sb = await this.cliente();
+    const { data, error } = await sb.auth.signInAnonymously();
+    if (error) throw error;
+    this.userId = data.user?.id ?? null;
+    this.email = null;
+    this.telefone = null;
+    this.anonimo = true;
+  }
+
+  private aplicarUsuario(u: { id: string; email?: string | null; phone?: string | null; is_anonymous?: boolean } | null | undefined): void {
+    this.userId = u?.id ?? null;
+    this.email = u?.email || null;
+    this.telefone = u?.phone || null;
+    this.anonimo = !!u?.is_anonymous;
+  }
+
+  /** Cria a conta com e-mail e senha. Devolve false se o servidor pedir confirmação por e-mail antes de entrar. */
+  async criarConta(email: string, senha: string): Promise<boolean> {
+    const sb = await this.cliente();
+    const { data, error } = await sb.auth.signUp({ email, password: senha, options: { emailRedirectTo: location.origin + location.pathname } });
+    if (error) throw error;
+    if (!data.session) return false;
+    this.aplicarUsuario(data.user);
+    return true;
+  }
+
+  async entrarComSenha(email: string, senha: string): Promise<void> {
+    const sb = await this.cliente();
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
+    if (error) throw error;
+    this.aplicarUsuario(data.user);
+  }
+
+  /** Manda o e-mail padrão do Supabase com o link para criar uma senha nova (volta para o jogo). */
+  async esqueciSenha(email: string): Promise<void> {
+    const sb = await this.cliente();
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    if (error) throw error;
+  }
+
+  /** Troca a senha de quem está logado (usado depois do "esqueci minha senha"). */
+  async definirSenha(senha: string): Promise<void> {
+    const sb = await this.cliente();
+    const { error } = await sb.auth.updateUser({ password: senha });
+    if (error) throw error;
+  }
+
+  /** Convidado vira conta de verdade (mesmo id: ranking, clã e progresso continuam). */
+  async salvarConvidado(email: string, senha: string): Promise<boolean> {
+    const sb = await this.cliente();
+    const { data, error } = await sb.auth.updateUser({ email, password: senha });
+    if (error) throw error;
+    const confirmado = !!data.user?.email && data.user.email === email;
+    if (confirmado) this.aplicarUsuario(data.user);
+    return confirmado;
+  }
+
+  /** Login com Google (site): vai para a página do Google e volta para o jogo já logado. */
+  async entrarGoogle(): Promise<void> {
+    const sb = await this.cliente();
+    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
+    if (error) throw error;
+  }
+
   /** Envia o código de 6 dígitos (por e-mail, ou SMS se `destino` for um celular +55...). */
-  async enviarCodigo(destino: string): Promise<void> {
+  async enviarCodigo(destino: string, criar = true): Promise<void> {
     const sb = await this.cliente();
     const { error } = destino.includes("@")
-      ? await sb.auth.signInWithOtp({ email: destino, options: { shouldCreateUser: true } })
-      : await sb.auth.signInWithOtp({ phone: destino, options: { shouldCreateUser: true } });
+      ? await sb.auth.signInWithOtp({ email: destino, options: { shouldCreateUser: criar } })
+      : await sb.auth.signInWithOtp({ phone: destino, options: { shouldCreateUser: criar } });
     if (error) throw error;
   }
 
@@ -68,12 +141,14 @@ class Nuvem {
     this.userId = data.session?.user.id ?? data.user?.id ?? null;
     this.email = data.user?.email || null;
     this.telefone = data.user?.phone || null;
+    this.anonimo = false;
   }
 
   async sair(): Promise<void> {
     const sb = await this.cliente();
     await sb.auth.signOut();
     this.userId = this.email = this.telefone = null;
+    this.anonimo = false;
   }
 
   /** Cria o checkout no servidor (Edge Function) e devolve a URL de pagamento. */
@@ -186,6 +261,20 @@ class Nuvem {
   editarCla(descricao: string, aberto: boolean): Promise<unknown> { return this.rpc("editar_cla", { p_descricao: descricao, p_aberto: aberto }); }
   enviarChat(texto: string): Promise<unknown> { return this.rpc("enviar_chat", { p_texto: texto }); }
 
+  /** Procura jogadores pelo nome do comandante (para convidar ao clã). */
+  async buscarJogadores(nome: string): Promise<JogadorBusca[]> {
+    return ((await this.rpc("buscar_jogadores", { p_nome: nome })) ?? []) as JogadorBusca[];
+  }
+  convidar(jogador: string): Promise<unknown> { return this.rpc("convidar_jogador", { p_jogador: jogador }); }
+  async meusConvites(): Promise<ConviteCla[]> {
+    const sb = await this.cliente();
+    const { data, error } = await sb.from("meus_convites").select("*").order("criado_em", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as ConviteCla[];
+  }
+  aceitarConvite(id: number): Promise<unknown> { return this.rpc("aceitar_convite", { p_convite: id }); }
+  recusarConvite(id: number): Promise<unknown> { return this.rpc("recusar_convite", { p_convite: id }); }
+
   async carregar(): Promise<SaveData | null> {
     if (!this.userId) return null;
     const sb = await this.cliente();
@@ -205,6 +294,13 @@ export interface LinhaRanking extends LinhaRankingEnvio { id: string; eu: boolea
 
 export const nuvem = new Nuvem();
 
+/** Dentro do APK (Android): o Google não deixa fazer login dentro do app por página web. */
+export function noApk(): boolean {
+  return !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+}
+
 export interface Cla { id: string; nome: string; tag: string; descricao: string; emblema: number; aberto: boolean; membros: number; pontos: number; estrelas: number; meu: boolean }
 export interface MembroCla { id: string; eu: boolean; cargo: "lider" | "oficial" | "membro"; nome: string; avatar: number; elite: boolean; patente: number; pontos: number }
 export interface MensagemCla { id: number; autor: string; eu: boolean; nome: string; texto: string; criado_em: string }
+export interface JogadorBusca { id: string; nome: string; avatar: number; patente: number; pontos: number; tem_cla: boolean; convidado: boolean }
+export interface ConviteCla { id: number; cla_id: string; nome: string; tag: string; emblema: number; membros: number; de_nome: string; criado_em: string }

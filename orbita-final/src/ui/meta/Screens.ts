@@ -7,6 +7,7 @@ import { ic, icT } from "../Icones";
 import { celebrar } from "../Premio";
 import { nuvem } from "../../core/Nuvem";
 import { sincronizarCompras } from "../../meta/Pagamentos";
+import { erroConta } from "./Hub";
 
 export interface Nav {
   save: SaveData;
@@ -34,15 +35,13 @@ function erroLogin(e: unknown): string {
 }
 
 /** Login por código de 6 dígitos (e-mail ou SMS). Funciona igual no site e no APK. */
-export function blocoLogin(nav: Nav, aoEntrar: () => void, texto = "Conta na nuvem: salva o progresso, entra no ranking e libera o clã"): HTMLElement {
-  let modo: "email" | "sms" = "email";
+export function blocoLogin(nav: Nav, aoEntrar: () => void, texto = "Conta na nuvem: salva o progresso, entra no ranking e libera o clã", criarConta = true): HTMLElement {
+  const modo: "email" | "sms" = "email";  // login só por e-mail (SMS fica pronto no código, desligado)
   let destino = "";
   const caixa = h("div", { class: "login-codigo" });
   const passo1 = () => {
     const campo = h("input", { class: "campo", id: "login-destino", type: modo === "email" ? "email" : "tel",
       placeholder: modo === "email" ? "seu@email.com" : "(85) 99999-9999", autocomplete: modo === "email" ? "email" : "tel" }) as HTMLInputElement;
-    const aba = (m: "email" | "sms", rotulo: string, icone: string) =>
-      h("button", { class: "login-aba" + (modo === m ? " ativa" : ""), html: icT(icone, rotulo), onclick: () => { modo = m; passo1(); } });
     const enviar = h("button", { class: "btn ciano", html: icT("correio", "Receber código"), onclick: async () => {
       let v = campo.value.trim();
       if (modo === "email") {
@@ -53,12 +52,11 @@ export function blocoLogin(nav: Nav, aoEntrar: () => void, texto = "Conta na nuv
         v = "+" + (d.length <= 11 ? "55" + d : d);  // sem código do país: Brasil
       }
       enviar.setAttribute("disabled", "");
-      try { await nuvem.enviarCodigo(v); destino = v; passo2(); }
+      try { await nuvem.enviarCodigo(v, criarConta); destino = v; passo2(); }
       catch (e) { toast(nav.root, erroLogin(e)); enviar.removeAttribute("disabled"); }
     } });
     caixa.replaceChildren(
       h("span", { class: "login-txt", text: texto }),
-      h("div", { class: "login-abas" }, aba("email", "E-mail", "correio"), aba("sms", "Celular (SMS)", "usuario")),
       h("div", { class: "campo-linha" }, campo), enviar);
   };
   const passo2 = () => {
@@ -161,7 +159,26 @@ export function painelConfig(nav: Nav, voltar: () => void, noJogo = false): HTML
   if (!noJogo) {
     // conta na nuvem (só aparece com o Supabase configurado)
     if (nuvem.configurada) {
-      if (nuvem.logado()) {
+      if (nuvem.logado() && nuvem.anonimo) {
+        // convidado: vira conta de verdade com e-mail e senha, mantendo tudo (mesmo id no servidor)
+        const email = h("input", { class: "campo", id: "salvar-email", type: "email", placeholder: "seu@email.com", autocomplete: "email" }) as HTMLInputElement;
+        const senha = h("input", { class: "campo", id: "salvar-senha", type: "password", placeholder: "Senha (mínimo 6)", autocomplete: "new-password" }) as HTMLInputElement;
+        const bt = h("button", { class: "btn primario pequeno", html: icT("check", "Salvar meu progresso"), onclick: async () => {
+          const e = email.value.trim();
+          if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { toast(nav.root, "Digite um e-mail válido."); return; }
+          if (senha.value.length < 6) { toast(nav.root, "A senha precisa ter pelo menos 6 caracteres."); return; }
+          bt.setAttribute("disabled", "");
+          try {
+            const ok = await nuvem.salvarConvidado(e, senha.value);
+            toast(nav.root, ok ? "Progresso salvo! Agora é só entrar com esse e-mail em qualquer aparelho." : "Quase lá: confirme pelo link que mandamos no e-mail.");
+            nav.persistir();
+            nav.ir("config");
+          } catch (err) { toast(nav.root, erroConta(err)); bt.removeAttribute("disabled"); }
+        } });
+        p.append(h("div", { class: "config-linha conta" },
+          h("span", { text: "Conta: Convidado. Para não perder o progresso se trocar de aparelho, salve com um e-mail:" }),
+          h("div", { class: "campo-linha" }, email), h("div", { class: "campo-linha" }, senha), bt));
+      } else if (nuvem.logado()) {
         p.append(h("div", { class: "config-linha" }, h("span", { text: `Conta: ${nuvem.conta()}` }),
           h("button", { class: "btn pequeno", html: icT("sair", "Sair"), onclick: async () => { await nuvem.sair(); nav.ir("config"); } })));
         p.append(h("div", { class: "config-linha" }, h("span", { text: "Compras" }),
@@ -171,7 +188,8 @@ export function painelConfig(nav: Nav, voltar: () => void, noJogo = false): HTML
             toast(nav.root, n ? `${n} compra(s) entregue(s)!` : "Nenhuma compra pendente.");
           } })));
       } else {
-        p.append(h("div", { class: "config-linha conta" }, blocoLogin(nav, () => nav.ir("config"))));
+        p.append(h("div", { class: "config-linha" }, h("span", { text: "Conta: não conectada (progresso só neste aparelho)" }),
+          h("button", { class: "btn ciano pequeno", html: icT("usuario", "Entrar ou criar conta"), onclick: () => nav.ir("entrada") })));
       }
     }
     if (nav.save.perfil.nome && nav.save.onboarding < 3) {

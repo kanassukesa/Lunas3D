@@ -18,7 +18,7 @@ import { ic, icT } from "../Icones";
 import { celebrar } from "../Premio";
 import { telaBau } from "../Bau";
 import { criarPreviaUlt } from "../PreviaUlt";
-import { nuvem, type LinhaRanking, type ModoRanking } from "../../core/Nuvem";
+import { nuvem, type LinhaRanking, type ModoRanking, noApk } from "../../core/Nuvem";
 const ret = (ev: MouseEvent) => (ev.currentTarget as HTMLElement).getBoundingClientRect();
 import { moedas, proximaFase, tela, type Nav } from "./Screens";
 import { abrirBriefing } from "./Paineis";
@@ -239,6 +239,142 @@ export function telaLogin(nav: Nav): HTMLElement {
     entrar();
   });
   return tela;
+}
+
+// ------------------------------------------------------------------ ENTRADA (convidado, e-mail ou Google)
+
+/** Depois de entrar: quem já tem comandante (save da nuvem) vai ao menu; quem não tem cria o nick. */
+function depoisDeEntrar(nav: Nav): void {
+  nav.ir(nav.save.perfil.nome ? "hub" : "login");
+}
+
+export function telaEntrada(nav: Nav): HTMLElement {
+  const corpo = h("div", { class: "login-painel entrada-painel" });
+  const logo = urlArte("logo") ? h("div", { class: "logo-img" }, h("img", { src: urlArte("logo")!, alt: "Órbita Final" })) : h("div", { class: "logo", text: "ÓRBITA FINAL" });
+  const campo = (id: string, tipo: string, ph: string, auto: string) =>
+    h("input", { class: "campo", id, type: tipo, placeholder: ph, autocomplete: auto }) as HTMLInputElement;
+  const linha = (el: HTMLElement) => h("div", { class: "campo-linha" }, el);
+  const emailOk = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+  const ocupado = async (bt: HTMLButtonElement, fn: () => Promise<void>) => {
+    bt.disabled = true;
+    try { await fn(); } catch (e) { toast(nav.root, erroConta(e)); } finally { if (bt.isConnected) bt.disabled = false; }
+  };
+
+  const inicio = () => {
+    const convidado = h("button", { class: "btn entrada-bt entrada-ghost", html: icT("usuario", "Jogar como convidado"), onclick: () => ocupado(convidado, async () => {
+      // conta anônima: entra no ranking e no clã sem e-mail; se o servidor não deixar, joga só no aparelho
+      try { await nuvem.entrarConvidado(); await nav.conectarNuvem(); } catch { /* segue offline */ }
+      depoisDeEntrar(nav);
+    }) });
+    const google = GOOGLE_LIGADO && !noApk() ? h("button", { class: "btn entrada-bt entrada-google", html: `<b class="g-logo">G</b><span>Entrar com Google</span>`, onclick: async () => {
+      try { await nuvem.entrarGoogle(); } catch (e) { toast(nav.root, erroConta(e)); }
+    } }) : null;
+    corpo.replaceChildren(
+      h("div", { class: "login-titulo", text: "Bem-vindo, comandante" }),
+      ...(google ? [google] : []),
+      h("button", { class: "btn ciano entrada-bt", html: icT("correio", "Entrar com e-mail"), onclick: entrar }),
+      h("button", { class: "btn primario entrada-bt", html: icT("mais", "Criar conta"), onclick: criar }),
+      h("div", { class: "entrada-ou", html: "<span>ou</span>" }),
+      convidado,
+      h("p", { class: "login-nota", text: "Convidado joga na hora, sem cadastro. Para não perder o progresso, depois é só tocar em “Salvar meu progresso” nos Ajustes." }));
+  };
+
+  const entrar = () => {
+    const email = campo("ent-email", "email", "seu@email.com", "email");
+    const senha = campo("ent-senha", "password", "Senha", "current-password");
+    const bt = h("button", { class: "btn primario entrada-bt", html: icT("play", "Entrar"), onclick: () => ocupado(bt, async () => {
+      const e = email.value.trim();
+      if (!emailOk(e)) { toast(nav.root, "Digite um e-mail válido."); return; }
+      if (!senha.value) { toast(nav.root, "Digite a senha."); return; }
+      await nuvem.entrarComSenha(e, senha.value);
+      await nav.conectarNuvem();
+      toast(nav.root, "Bem-vindo de volta!");
+      depoisDeEntrar(nav);
+    }) });
+    corpo.replaceChildren(
+      h("div", { class: "login-titulo", text: "Entrar com e-mail" }),
+      linha(email), linha(senha), bt,
+      h("button", { class: "btn-link", text: "Esqueci minha senha", onclick: esqueci }),
+      h("button", { class: "btn entrada-bt", html: icT("voltar", "Voltar"), onclick: inicio }));
+  };
+
+  const criar = () => {
+    const email = campo("cri-email", "email", "seu@email.com", "email");
+    const senha = campo("cri-senha", "password", "Senha (mínimo 6 caracteres)", "new-password");
+    const senha2 = campo("cri-senha2", "password", "Repita a senha", "new-password");
+    const bt = h("button", { class: "btn primario entrada-bt", html: icT("check", "Criar conta"), onclick: () => ocupado(bt, async () => {
+      const e = email.value.trim();
+      if (!emailOk(e)) { toast(nav.root, "Digite um e-mail válido."); return; }
+      if (senha.value.length < 6) { toast(nav.root, "A senha precisa ter pelo menos 6 caracteres."); return; }
+      if (senha.value !== senha2.value) { toast(nav.root, "As senhas não são iguais."); return; }
+      const entrou = await nuvem.criarConta(e, senha.value);
+      if (!entrou) { toast(nav.root, "Conta criada! Confirme pelo link que mandamos no e-mail e depois entre."); entrar(); return; }
+      await nav.conectarNuvem();
+      toast(nav.root, "Conta criada! Agora escolha o nome do seu comandante.");
+      depoisDeEntrar(nav);
+    }) });
+    corpo.replaceChildren(
+      h("div", { class: "login-titulo", text: "Criar conta" }),
+      linha(email), linha(senha), linha(senha2), bt,
+      h("p", { class: "login-nota", text: "Depois você escolhe o nome do comandante. Com a conta, o progresso, o ranking e o clã vão com você para qualquer aparelho." }),
+      h("button", { class: "btn entrada-bt", html: icT("voltar", "Voltar"), onclick: inicio }));
+  };
+
+  // esqueci a senha: o Supabase manda um link; ele abre o jogo e pede a senha nova (telaNovaSenha)
+  const esqueci = () => {
+    const email = campo("esq-email", "email", "seu@email.com", "email");
+    const bt = h("button", { class: "btn primario entrada-bt", html: icT("correio", "Mandar link"), onclick: () => ocupado(bt, async () => {
+      const e = email.value.trim();
+      if (!emailOk(e)) { toast(nav.root, "Digite um e-mail válido."); return; }
+      await nuvem.esqueciSenha(e);
+      toast(nav.root, "Pronto! Abra o link que mandamos no e-mail para criar uma senha nova.");
+      entrar();
+    }) });
+    corpo.replaceChildren(
+      h("div", { class: "login-titulo", text: "Esqueci minha senha" }),
+      h("p", { class: "login-nota", text: "Digite o e-mail da conta. Vamos mandar um link: ao abrir, o jogo pede a senha nova." }),
+      linha(email), bt,
+      h("button", { class: "btn entrada-bt", html: icT("voltar", "Voltar"), onclick: entrar }));
+  };
+
+  inicio();
+  return h("div", { class: "tela login entrada" }, logo, corpo);
+}
+
+/** Veio pelo link de "esqueci minha senha": pede a senha nova (janela por cima de qualquer tela). */
+export function telaNovaSenha(nav: Nav, fechar: () => void): HTMLElement {
+  const senha = h("input", { class: "campo", id: "nova-senha", type: "password", placeholder: "Nova senha (mínimo 6)", autocomplete: "new-password" }) as HTMLInputElement;
+  const bt = h("button", { class: "btn primario entrada-bt", html: icT("check", "Salvar senha nova"), onclick: async () => {
+    if (senha.value.length < 6) { toast(nav.root, "A senha precisa ter pelo menos 6 caracteres."); return; }
+    bt.disabled = true;
+    try {
+      await nuvem.definirSenha(senha.value);
+      history.replaceState(null, "", location.pathname);
+      toast(nav.root, "Senha nova salva! Use ela para entrar em qualquer aparelho.");
+      fechar();
+    } catch (e) { toast(nav.root, erroConta(e)); bt.disabled = false; }
+  } });
+  return h("div", { class: "overlay ov3" },
+    h("div", { class: "moldura3 login-painel entrada-painel" },
+      h("div", { class: "login-titulo", text: "Crie uma senha nova" }),
+      h("div", { class: "campo-linha" }, senha), bt,
+      h("button", { class: "btn-link", text: "Agora não", onclick: fechar })));
+}
+
+/** Login com Google: liga quando o Google estiver configurado no Supabase (VITE_LOGIN_GOOGLE=1). */
+const GOOGLE_LIGADO = import.meta.env.VITE_LOGIN_GOOGLE === "1";
+
+/** Erros de conta em português. */
+export function erroConta(e: unknown): string {
+  const m = (e as Error)?.message ?? String(e);
+  if (/invalid login credentials/i.test(m)) return "E-mail ou senha errados.";
+  if (/already registered|already been registered|user already exists|email_exists/i.test(m)) return "Esse e-mail já tem conta. Toque em “Entrar com e-mail”.";
+  if (/email not confirmed/i.test(m)) return "Confirme o e-mail pelo link que mandamos e tente de novo.";
+  if (/password should be|weak password/i.test(m)) return "Senha fraca. Use pelo menos 6 caracteres, com letras e números.";
+  if (/rate limit|too many/i.test(m)) return "Muitas tentativas. Espere um pouco e tente de novo.";
+  if (/provider is not enabled|unsupported provider/i.test(m)) return "Esse tipo de login ainda não está ligado no servidor.";
+  if (/anonymous sign-ins are disabled/i.test(m)) return "Modo convidado ainda não está ligado no servidor.";
+  return `Erro: ${m}`;
 }
 
 // ------------------------------------------------------------------ CORREIO

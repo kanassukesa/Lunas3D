@@ -5,11 +5,14 @@ Projeto Supabase **separado** da loja. Guarda o progresso na nuvem e confirma co
 ## 1. Criar o projeto
 1. supabase.com → New project (plano grátis serve para começar).
 2. Authentication → Providers → **Email** ligado. Em URL Configuration, coloque o endereço do jogo (`https://orbita-final.vercel.app`) em Site URL e Redirect URLs.
-3. **Login por código (6 dígitos):** Authentication → Emails → **Magic Link**: troque o corpo do e-mail por algo com `{{ .Token }}`
-   (ex.: `<h2>Seu código do Órbita Final: {{ .Token }}</h2>`). O jogo pede o código e confere com `verifyOtp`.
-   - SMS: Authentication → Providers → **Phone** + um provedor pago (Twilio, MessageBird, Vonage ou Textlocal).
-   - O e-mail padrão do Supabase só entrega para os membros do time e tem limite por hora: para jogadores de verdade, configure um SMTP próprio (Authentication → SMTP Settings, ex.: Resend).
-4. Banco: cole **`SETUP_SUPABASE.sql`** (tudo junto: saves, compras, ranking e clãs) no SQL Editor e rode. Pode rodar de novo sem problema.
+3. **Contas:** Authentication → Sign In / Providers:
+   - **Allow anonymous sign-ins** ligado (botão "Jogar como convidado").
+   - Em **Email**, desligue **Confirm email** (a conta criada já entra direto).
+   - Convidado vira conta de verdade em Ajustes → "Salvar meu progresso" (mesmo usuário: ranking e clã continuam).
+4. **Esqueci minha senha:** usa o e-mail padrão "Reset password" (link). O link volta para o jogo, que pede a senha nova.
+   - O e-mail padrão do Supabase só entrega para os membros do time e tem limite por hora (e não deixa editar os textos):
+     para jogadores de verdade, configure um SMTP próprio (Authentication → Emails → SMTP Settings, ex.: Resend).
+5. Banco: cole **`SETUP_SUPABASE.sql`** (tudo junto: saves, compras, ranking, clãs e convites) no SQL Editor e rode. Pode rodar de novo sem problema.
    (ou `supabase link --project-ref SEU_REF` e `supabase db push --workdir supabase-orbita`)
 
 ## 2. Mercado Pago

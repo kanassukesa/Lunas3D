@@ -1,10 +1,10 @@
 import { PATENTES } from "../../data/comandante";
-import { nuvem, type Cla, type MembroCla, type MensagemCla } from "../../core/Nuvem";
+import { nuvem, type Cla, type ConviteCla, type JogadorBusca, type MembroCla, type MensagemCla } from "../../core/Nuvem";
 import { audio } from "../../core/Audio";
-import { fmtInt, h, toast } from "../dom";
+import { fmtInt, h, ICONE_MOEDA, toast } from "../dom";
 import { ic, icT } from "../Icones";
 import { avatarComMoldura, barraInferior, insignia, nomeComandante } from "./Hub";
-import { blocoLogin, tela, type Nav } from "./Screens";
+import { tela, type Nav } from "./Screens";
 
 /** Emblemas do clã (índice 1-8 no banco): ícone + cor. */
 export const EMBLEMAS: { icone: string; cor: string }[] = [
@@ -25,6 +25,8 @@ function emblema(n: number, classe = "cla-emblema"): HTMLElement {
 
 const CARGO_NOME = { lider: "Líder", oficial: "Oficial", membro: "Membro" } as const;
 const MAX_MEMBROS = 30;
+/** Preço para fundar um clã (diamantes = cristais do jogo). */
+export const CUSTO_CLA = 50;
 
 let aba: "membros" | "chat" | "ranking" = "membros";
 let busca = "";
@@ -63,7 +65,7 @@ export function telaCla(nav: Nav): HTMLElement {
         emblema(1, "cla-emblema grande"),
         h("div", { class: "nome", text: "Entre num clã" }),
         h("div", { class: "desc", text: "Jogue junto com outros comandantes, converse no chat e suba no ranking de clãs. Para isso, entre com a sua conta." })),
-      h("div", { class: "cartao" }, blocoLogin(nav, () => nav.ir("cla"), "Entre com um código de 6 números (sem senha)")));
+      h("button", { class: "btn primario", html: icT("usuario", "Entrar ou criar conta"), onclick: () => nav.ir("entrada") }));
     return el;
   }
   if (!nav.save.perfil.nome) {
@@ -98,12 +100,21 @@ function semClaView(nav: Nav): HTMLElement[] {
     h("div", { class: "cla-nome-linha" }, h("div", { class: "campo-linha" }, nome), h("div", { class: "campo-linha cla-tag-linha" }, tag)),
     h("div", { class: "campo-linha" }, desc),
     h("small", { class: "desc", text: "Emblema" }), escolha,
-    h("button", { class: "btn primario", html: icT("check", "Criar clã"), onclick: async () => {
+    h("button", { class: "btn primario", html: `${ic("check")}<span>Criar clã · ${ICONE_MOEDA.cristais} ${CUSTO_CLA}</span>`, onclick: async () => {
       const n = nome.value.trim(), t = tag.value.trim();
       if (n.length < 3) { toast(nav.root, "O nome precisa ter pelo menos 3 letras."); return; }
       if (t.length < 2) { toast(nav.root, "A tag precisa ter de 2 a 4 letras ou números."); return; }
-      if (await acao(nav, () => nuvem.criarCla(n, t, desc.value.trim(), emb), `Clã ${n} criado! Você é o líder.`)) audio.sfx("vitoria");
-    } }));
+      if (nav.save.cristais < CUSTO_CLA) { toast(nav.root, `Faltam ${CUSTO_CLA - nav.save.cristais} diamantes para criar um clã.`); return; }
+      try {
+        await nuvem.criarCla(n, t, desc.value.trim(), emb);
+        nav.save.cristais -= CUSTO_CLA;  // só cobra depois que o servidor criou
+        nav.persistir();
+        audio.sfx("vitoria");
+        toast(nav.root, `Clã ${n} criado! Você é o líder. Convide jogadores na aba Membros.`);
+        nav.ir("cla");
+      } catch (e) { toast(nav.root, (e as Error).message); }
+    } }),
+    h("small", { class: "desc", text: `Seus diamantes: ${fmtInt(nav.save.cristais)}. O clã nasce fechado: só entra quem você convidar (dá para abrir depois).` }));
 
   const lista = h("div", { class: "rank-lista" }, h("div", { class: "rank-carregando", text: "Procurando clãs…" }));
   const campoBusca = h("input", { class: "campo", id: "cla-busca", placeholder: "Buscar por nome ou tag", value: busca }) as HTMLInputElement;
@@ -115,7 +126,13 @@ function semClaView(nav: Nav): HTMLElement[] {
   let t = 0;
   campoBusca.addEventListener("input", () => { clearTimeout(t); t = window.setTimeout(() => { busca = campoBusca.value; carregar(); }, 400); });
   carregar();
+  const convites = h("div", { class: "cla-convites" });
+  nuvem.meusConvites().then((cs) => {
+    if (!cs.length) return;
+    convites.replaceChildren(h("div", { class: "secao-titulo", text: `Convites para você (${cs.length})` }), ...cs.map((c) => linhaConvite(nav, c)));
+  }).catch(() => {});
   return [
+    convites,
     h("div", { class: "cartao neon cla-intro" }, emblema(1, "cla-emblema grande"),
       h("div", { class: "nome", text: "Você ainda não tem clã" }),
       h("div", { class: "desc", text: "Crie o seu ou entre num clã aberto. Os pontos de todos os membros somam no ranking de clãs." })),
@@ -124,6 +141,18 @@ function semClaView(nav: Nav): HTMLElement[] {
     h("div", { class: "campo-linha" }, campoBusca),
     lista,
   ];
+}
+
+function linhaConvite(nav: Nav, c: ConviteCla): HTMLElement {
+  return h("div", { class: "rank-linha cla-linha cla-convite" },
+    emblema(c.emblema),
+    h("div", { class: "rank-nome" }, h("b", { html: `${esc(c.nome)} <span class="cla-tag">[${esc(c.tag)}]</span>` }),
+      h("small", { text: `Convite de ${c.de_nome} · ${c.membros}/${MAX_MEMBROS} membros` })),
+    h("div", { class: "cla-acoes" },
+      h("button", { class: "btn ciano pequeno", text: "Aceitar", onclick: async () => {
+        if (await acao(nav, () => nuvem.aceitarConvite(c.id), `Bem-vindo ao clã ${c.nome}!`)) audio.sfx("nivel");
+      } }),
+      h("button", { class: "btn pequeno", "aria-label": "Recusar", html: ic("fechar"), onclick: () => acao(nav, () => nuvem.recusarConvite(c.id), "Convite recusado.") })));
 }
 
 function linhaCla(nav: Nav, c: Cla, pos: number, comBotao: boolean): HTMLElement {
@@ -136,7 +165,7 @@ function linhaCla(nav: Nav, c: Cla, pos: number, comBotao: boolean): HTMLElement
     h("div", { class: "cla-linha-dir" }, h("b", { class: "rank-val", text: fmtInt(c.pontos) }),
       comBotao ? (c.aberto && !cheio
         ? h("button", { class: "btn ciano pequeno", text: "Entrar", onclick: () => acao(nav, () => nuvem.entrarCla(c.id), `Bem-vindo ao clã ${c.nome}!`) })
-        : h("small", { class: "desc", text: cheio ? "Cheio" : "Fechado" })) : null));
+        : h("small", { class: "desc", text: cheio ? "Cheio" : "Só convite" })) : null));
 }
 
 function esc(t: string): string {
@@ -154,11 +183,12 @@ function meuClaView(nav: Nav, c: Cla, posicao: number): HTMLElement[] {
       h("div", { class: "cla-numeros" },
         h("span", { html: `${ic("grupo")} <b>${c.membros}/${MAX_MEMBROS}</b>` }),
         h("span", { html: `${ic("estrela", "ic ic-ouro")} <b>${fmtInt(c.pontos)}</b> pts` }),
-        h("span", { html: `${ic("ranking")} <b>#${posicao}</b>` }))));
+        h("span", { html: `${ic("ranking")} <b>#${posicao}</b>` }),
+        h("span", { class: "cla-estado", html: c.aberto ? `${ic("grupo")} Aberto` : `${ic("cadeado")} Só convite` }))));
   const abas = h("div", { class: "abas-rank cla-abas" }, ...([["membros", "grupo", "Membros"], ["chat", "correio", "Chat"], ["ranking", "ranking", "Clãs"]] as const).map(([id, icone, nome]) =>
     h("button", { class: "aba-rank" + (aba === id ? " ativa" : ""), onclick: () => { aba = id; nav.ir("cla"); } }, h("span", { html: ic(icone) }), h("small", { text: nome }))));
   const conteudo = h("div", { class: "cla-conteudo" }, h("div", { class: "rank-carregando", text: "Carregando…" }));
-  if (aba === "membros") abaMembros(nav, conteudo);
+  if (aba === "membros") abaMembros(nav, conteudo, c);
   else if (aba === "chat") abaChat(nav, conteudo);
   else abaRanking(nav, conteudo);
   const sair = h("button", { class: "btn pequeno cla-sair", html: icT("sair", "Sair do clã"), onclick: () => {
@@ -170,9 +200,10 @@ function meuClaView(nav: Nav, c: Cla, posicao: number): HTMLElement[] {
   return [topo, abas, conteudo, sair];
 }
 
-function abaMembros(nav: Nav, alvo: HTMLElement): void {
+function abaMembros(nav: Nav, alvo: HTMLElement, cla: Cla): void {
   nuvem.membrosCla().then((ms) => {
     const eu = ms.find((m) => m.eu);
+    const manda = eu && eu.cargo !== "membro";
     const linha = (m: MembroCla, pos: number) => {
       const podeExpulsar = eu && !m.eu && m.cargo !== "lider" && (eu.cargo === "lider" || (eu.cargo === "oficial" && m.cargo === "membro"));
       const podePromover = eu?.cargo === "lider" && !m.eu;
@@ -190,8 +221,44 @@ function abaMembros(nav: Nav, alvo: HTMLElement): void {
             podeExpulsar ? h("button", { class: "btn pequeno", "aria-label": "Expulsar", style: "color:var(--vermelho)", html: ic("fechar"),
               onclick: () => acao(nav, () => nuvem.expulsar(m.id), `${m.nome} foi expulso.`) }) : null) : null));
     };
-    alvo.replaceChildren(h("div", { class: "rank-lista" }, ...ms.map((m, i) => linha(m, i + 1))));
+    const extras: HTMLElement[] = [];
+    if (manda) extras.push(caixaConvidar(nav));
+    if (eu?.cargo === "lider") extras.push(h("button", { class: "btn pequeno cla-abrir", html: cla.aberto ? icT("cadeado", "Fechar: só por convite") : icT("grupo", "Abrir para qualquer um entrar"),
+        onclick: () => acao(nav, () => nuvem.editarCla(cla.descricao, !cla.aberto), cla.aberto ? "Agora só entra por convite." : "Clã aberto: qualquer um pode entrar.") }));
+    alvo.replaceChildren(...extras, h("div", { class: "rank-lista" }, ...ms.map((m, i) => linha(m, i + 1))));
   }).catch(() => alvo.replaceChildren(aviso("Não foi possível carregar os membros.")));
+}
+
+/** Líder/oficial procura um comandante pelo nome e manda o convite (o jogador vê na tela do clã). */
+function caixaConvidar(nav: Nav): HTMLElement {
+  const campo = h("input", { class: "campo", id: "cla-convidar", maxlength: "14", placeholder: "Nome do comandante", autocomplete: "off" }) as HTMLInputElement;
+  const res = h("div", { class: "cla-busca-res" });
+  const linha = (j: JogadorBusca) => h("div", { class: "rank-linha" },
+    avatarComMoldura(j.avatar, false),
+    h("div", { class: "rank-nome" }, nomeComandante(j.nome, false),
+      h("small", null, insignia(j.patente, "insignia micro"), h("span", { text: `${PATENTES[j.patente]?.nome ?? ""} · ${fmtInt(j.pontos)} pts` }))),
+    j.tem_cla ? h("small", { class: "desc", text: "Já tem clã" })
+      : j.convidado ? h("small", { class: "desc", html: icT("check", "Convidado") })
+      : h("button", { class: "btn ciano pequeno", text: "Convidar", onclick: async (ev: MouseEvent) => {
+        const b = ev.currentTarget as HTMLButtonElement;
+        b.disabled = true;
+        try { await nuvem.convidar(j.id); b.replaceWith(h("small", { class: "desc", html: icT("check", "Convidado") })); toast(nav.root, `Convite enviado para ${j.nome}!`); }
+        catch (e) { b.disabled = false; toast(nav.root, (e as Error).message); }
+      } }));
+  let t = 0;
+  campo.addEventListener("input", () => {
+    clearTimeout(t);
+    const v = campo.value.trim();
+    if (v.length < 2) { res.replaceChildren(); return; }
+    t = window.setTimeout(() => {
+      nuvem.buscarJogadores(v)
+        .then((js) => res.replaceChildren(...(js.length ? js.map(linha) : [h("div", { class: "desc", text: "Nenhum comandante com esse nome." })])))
+        .catch(() => res.replaceChildren(h("div", { class: "desc", text: "Não foi possível buscar agora." })));
+    }, 400);
+  });
+  return h("div", { class: "cartao cla-convidar" },
+    h("div", { class: "nome", html: icT("mais", "Convidar jogador") }),
+    h("div", { class: "campo-linha" }, campo), res);
 }
 
 function abaChat(nav: Nav, alvo: HTMLElement): void {

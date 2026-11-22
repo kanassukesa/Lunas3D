@@ -30,7 +30,7 @@ import {
   painelConfig, telaConfig, telaMissoes, type Nav,
 } from "../ui/meta/Screens";
 import {
-  telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaPasse, telaProgresso, telaRanking, telaComandantes, telaRecompensas, telaSkins,
+  telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaEntrada, telaNovaSenha, telaLoja, telaPasse, telaProgresso, telaRanking, telaComandantes, telaRecompensas, telaSkins,
 } from "../ui/meta/Hub";
 import { linhaRanking, patenteDe, registrarPartida, ultDoComandante } from "../meta/Comandante";
 import { telaBriefing, telaChipsV2, telaFases, telaHangarV2, telaModosV2, telaPlanetaV2 } from "../ui/meta/Paineis";
@@ -154,7 +154,8 @@ export class Game implements Nav {
     this.app.ticker.add((t) => this.tick(t.deltaMS / 1000));
     // quem já jogava antes do tutorial novo não precisa fazê-lo
     if (this.save.onboarding === 0 && (this.save.tutorialVisto || this.save.campanha.normal[0] > 0)) this.save.onboarding = 3;
-    this.ir(this.save.perfil.nome ? "hub" : "login");
+    // sem comandante: com o servidor ligado, primeiro escolhe como entrar (convidado, e-mail ou Google)
+    this.ir(this.save.perfil.nome ? "hub" : nuvem.configurada ? "entrada" : "login");
     this.resize();
     void this.conectarNuvem();
     this.cerimoniaPendente();
@@ -211,12 +212,19 @@ export class Game implements Nav {
     if (!nuvem.configurada) return;
     await nuvem.iniciar().catch(() => {});
     if (!nuvem.logado()) return;
+    // abriu pelo link de "esqueci minha senha": já está logado, falta só escolher a senha nova
+    if (nuvem.recuperacao && !document.querySelector("#nova-senha")) {
+      const el = telaNovaSenha(this, () => el.remove());
+      el.style.zIndex = "62";
+      this.root.append(el);
+    }
     const remoto = await nuvem.carregar().catch(() => null);
     if (remoto && (remoto.pontos ?? 0) >= this.save.pontos) Object.assign(this.save, carregarDe(remoto));
     const n = await sincronizarCompras(this.save).catch(() => 0);
     this.persistir();
     if (n) toast(this.root, `${n} compra${n > 1 ? "s" : ""} entregue${n > 1 ? "s" : ""}!`);
-    if (!this.run) this.ir(this.telaAtual());
+    // voltou do login (ex.: Google): quem já tem comandante na nuvem vai direto ao menu
+    if (!this.run) this.ir(this.telaAtual() === "entrada" ? (this.save.perfil.nome ? "hub" : "login") : this.telaAtual());
   }
 
   aplicarConfig(): void {
@@ -255,6 +263,7 @@ export class Game implements Nav {
       conquistas: () => telaMissoes(this),
       // o nick é definitivo: depois de criado, "login" vira a tela de comandantes
       login: () => (this.save.perfil.nome ? telaComandantes(this) : telaLogin(this)),
+      entrada: () => telaEntrada(this),
       correio: () => telaCorreio(this),
       eventos: () => telaEventos(this),
       recompensas: () => telaRecompensas(this),
