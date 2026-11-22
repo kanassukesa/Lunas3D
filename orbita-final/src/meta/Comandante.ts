@@ -2,10 +2,10 @@ import type { LinhaRankingEnvio } from "../core/Nuvem";
 import { BALANCE, DIFICULDADES } from "../data/balance";
 import type { Battle } from "../battle/Battle";
 import type { Modo } from "../battle/types";
-import { AVATARES, BONUS_DIARIAS, CORREIO, type ComandanteDef, type UltId, LOGIN_DIAS, LOJA, MISSOES_DIARIAS, PASSE, PASSE_PREMIOS, PATENTES, SKINS, type MissaoDiariaDef, type Patente, type Premio } from "../data/comandante";
+import { AVATARES, BONUS_DIARIAS, BONUS_DIARIAS_XP, CORREIO, DIARIAS_POR_DIA, type ComandanteDef, type UltId, LOGIN_DIAS, LOJA, MISSOES_DIARIAS, MISSOES_SEMANAIS, PASSE, PASSE_PREMIOS, PATENTES, SEMANAIS_POR_SEMANA, SKINS, type MissaoDiariaDef, type Patente, type Premio } from "../data/comandante";
 import { Rng, hashString } from "../core/Rng";
 import type { SaveData } from "../core/Save";
-import { gerarChip, hojeStr } from "./Meta";
+import { gerarChip, hojeStr, semanaStr } from "./Meta";
 import type { Chip } from "../data/types";
 
 // ------------------------------------------------------------- pontuação e patente
@@ -59,16 +59,48 @@ export function atualizarDia(s: SaveData): void {
   if (s.dia.data !== hoje) s.dia = { data: hoje, stats: {}, resgatadas: [], bonus: false, lojaGratis: false };
 }
 
+export function atualizarSemana(s: SaveData): void {
+  const sem = semanaStr();
+  if (s.semana.id !== sem) s.semana = { id: sem, stats: {}, resgatadas: [] };
+}
+
+/** Soma no contador do dia e no da semana (as missões semanais usam os mesmos stats). */
 export function statDia(s: SaveData, k: string, v: number): void {
   atualizarDia(s);
+  atualizarSemana(s);
   s.dia.stats[k] = (s.dia.stats[k] ?? 0) + v;
+  s.semana.stats[k] = (s.semana.stats[k] ?? 0) + v;
+}
+
+/** XP do passe: só missões dão (partida não dá). */
+function ganharXpPasse(s: SaveData, xp: number): void {
+  atualizarTemporada(s);
+  s.passe.pontos += xp;
+}
+
+export function missoesDaSemana(): MissaoDiariaDef[] {
+  const rng = new Rng(hashString("semanais-" + semanaStr()));
+  const pool = [...MISSOES_SEMANAIS];
+  const out: MissaoDiariaDef[] = [];
+  while (out.length < SEMANAIS_POR_SEMANA && pool.length) out.push(pool.splice(Math.floor(rng.next() * pool.length), 1)[0]);
+  return out;
+}
+
+export function resgatarSemanal(s: SaveData, id: string): boolean {
+  atualizarSemana(s);
+  const m = missoesDaSemana().find((x) => x.id === id);
+  if (!m || s.semana.resgatadas.includes(id) || (s.semana.stats[m.stat] ?? 0) < m.meta) return false;
+  s.semana.resgatadas.push(id);
+  darPremio(s, m.premio);
+  ganharXpPasse(s, m.xp);
+  return true;
 }
 
 export function missoesDoDia(): MissaoDiariaDef[] {
   const rng = new Rng(hashString("missoes-" + hojeStr()));
   const pool = [...MISSOES_DIARIAS];
   const out: MissaoDiariaDef[] = [];
-  while (out.length < 3 && pool.length) {
+  while (out.length < DIARIAS_POR_DIA && pool.length) {
     const m = pool.splice(Math.floor(rng.next() * pool.length), 1)[0];
     if (!out.some((o) => o.stat === m.stat)) out.push(m);
   }
@@ -81,30 +113,38 @@ export function resgatarDiaria(s: SaveData, id: string): boolean {
   if (!m || s.dia.resgatadas.includes(id) || (s.dia.stats[m.stat] ?? 0) < m.meta) return false;
   s.dia.resgatadas.push(id);
   darPremio(s, m.premio);
+  ganharXpPasse(s, m.xp);
+  // conta para a semanal "Complete 20 missões diárias"
+  atualizarSemana(s);
+  s.semana.stats.diarias = (s.semana.stats.diarias ?? 0) + 1;
   return true;
 }
 
 export function resgatarBonusDiario(s: SaveData): boolean {
   atualizarDia(s);
-  if (s.dia.bonus || s.dia.resgatadas.length < 3) return false;
+  if (s.dia.bonus || s.dia.resgatadas.length < DIARIAS_POR_DIA) return false;
   s.dia.bonus = true;
   darPremio(s, BONUS_DIARIAS);
+  ganharXpPasse(s, BONUS_DIARIAS_XP);
   return true;
 }
 
+/** Missões (diárias, bônus e semanais) prontas para resgatar: o número do selo no menu. */
 export function diariasProntas(s: SaveData): number {
   atualizarDia(s);
+  atualizarSemana(s);
   const n = missoesDoDia().filter((m) => !s.dia.resgatadas.includes(m.id) && (s.dia.stats[m.stat] ?? 0) >= m.meta).length;
-  return n + (s.dia.resgatadas.length >= 3 && !s.dia.bonus ? 1 : 0);
+  const sem = missoesDaSemana().filter((m) => !s.semana.resgatadas.includes(m.id) && (s.semana.stats[m.stat] ?? 0) >= m.meta).length;
+  return n + sem + (s.dia.resgatadas.length >= DIARIAS_POR_DIA && !s.dia.bonus ? 1 : 0);
 }
 
-/** Registra a partida nos contadores do dia e na pontuação do comandante. */
-export function registrarPartida(s: SaveData, b: Battle, modo: Modo): number {
+/** Registra a partida nos contadores do dia e na pontuação do comandante.
+ *  `valePontos = false` (partidas do tutorial): não conta nada (nem patente, nem missões, que dão XP do passe). */
+export function registrarPartida(s: SaveData, b: Battle, modo: Modo, valePontos = true): number {
+  if (!valePontos) return 0;
   const f = b.fim!;
   const pts = pontosDaPartida(b, modo);
   s.pontos += pts;
-  atualizarTemporada(s);
-  s.passe.pontos += pts;
   statDia(s, "partidas", 1);
   statDia(s, "abates", f.abates);
   statDia(s, "chefes", b.chefesMortos);
@@ -180,14 +220,18 @@ export function temporadaAtual(): string {
 
 export function atualizarTemporada(s: SaveData): void {
   const t = temporadaAtual();
-  if (s.passe.temporada !== t) s.passe = { temporada: t, pontos: 0, resgatados: [] };
+  if (s.passe.temporada !== t || s.passe.v !== PASSE.versao) {
+    // regra nova (passe por missões, 60 níveis): quem tinha progresso da regra antiga recomeça
+    if (s.passe.temporada === t && s.passe.v !== PASSE.versao) s.monet.premiumResgatados = [];
+    s.passe = { temporada: t, pontos: 0, resgatados: [], v: PASSE.versao };
+  }
 }
 
-export function nivelPasse(s: SaveData): { nivel: number; frac: number } {
+export function nivelPasse(s: SaveData): { nivel: number; frac: number; xp: number } {
   atualizarTemporada(s);
-  const n = Math.min(PASSE.niveis, Math.floor(s.passe.pontos / PASSE.pontosPorNivel));
-  const frac = n >= PASSE.niveis ? 1 : (s.passe.pontos % PASSE.pontosPorNivel) / PASSE.pontosPorNivel;
-  return { nivel: n, frac };
+  const n = Math.min(PASSE.niveis, Math.floor(s.passe.pontos / PASSE.xpPorNivel));
+  const frac = n >= PASSE.niveis ? 1 : (s.passe.pontos % PASSE.xpPorNivel) / PASSE.xpPorNivel;
+  return { nivel: n, frac, xp: s.passe.pontos % PASSE.xpPorNivel };
 }
 
 export function passeProntos(s: SaveData): number {

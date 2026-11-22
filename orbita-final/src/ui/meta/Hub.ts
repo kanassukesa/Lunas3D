@@ -1,4 +1,4 @@
-import { AVATARES, CORREIO, ULTIMATES, LOGIN_DIAS, LOJA, BONUS_DIARIAS, PASSE, PASSE_PREMIOS, PATENTES, SKINS, type SkinDef } from "../../data/comandante";
+import { AVATARES, CORREIO, ULTIMATES, LOGIN_DIAS, LOJA, BONUS_DIARIAS, BONUS_DIARIAS_XP, DIARIAS_POR_DIA, PASSE, PASSE_PREMIOS, PATENTES, SKINS, type MissaoDiariaDef, type SkinDef } from "../../data/comandante";
 import { CHIP_RARIDADE_COR, CHIP_RARIDADES, CHIP_SET_MAP, CHIP_SLOTS, CHIP_SLOT_NOME } from "../../data/chips";
 import { SENTINEL_IDS } from "../../data/sentinels";
 import { STAGES } from "../../data/stages";
@@ -6,7 +6,7 @@ import { audio } from "../../core/Audio";
 import type { Chip } from "../../data/types";
 import {
   atualizarDia, comprar, comprarSkin, diariasProntas, loginDisponivel, mensagensNovas, missoesDoDia, nivelPasse, passeProntos, patenteDe, linhaRanking, comandanteLiberado, ultDoComandante,
-  resgatarBonusDiario, resgatarDiaria, resgatarLogin, resgatarMensagem, resgatarPasse, temporadaAtual, textoPremio, usarSkin,
+  resgatarBonusDiario, resgatarDiaria, resgatarLogin, missoesDaSemana, resgatarSemanal, atualizarSemana, resgatarMensagem, resgatarPasse, temporadaAtual, textoPremio, usarSkin,
 } from "../../meta/Comandante";
 import { desafioDoDia, formatStat, hojeStr, missoesProntas, semanaStr } from "../../meta/Meta";
 import { urlArte } from "../../render/Sprites";
@@ -183,7 +183,7 @@ export function telaHub(nav: Nav): HTMLElement {
       tile("hangar", "Hangar", `${desbloq}/${SENTINEL_IDS.length} sentinelas`, "hangar", "#ff9a3c", "carta_canhao"),
       tile("chip", "Chips", `${equip}/${CHIP_SLOTS.length} equipados`, "chips", "#b36bff", "carta_dados"),
       tile("planeta", "Planeta", `${talentos} melhorias`, "planeta", "#49e07a", "carta_hp"),
-      tile("missoes", "Missões", diarias ? `${diarias} para resgatar` : "missões do dia", "missoes", "#ffc23d", "carta_crit", diarias),
+      tile("missoes", "Missões", diarias ? `${diarias} para resgatar` : "diárias e semanais", "missoes", "#ffc23d", "carta_crit", diarias),
       tile("modos", "Modos", `Diário: ${d.mod.nome}`, "modos", "#ff5aa5", "carta_gravidade")),
     barraInferior(nav, "hub"));
   return el;
@@ -294,30 +294,50 @@ export function telaEventos(nav: Nav): HTMLElement {
 
 // ------------------------------------------------------------------ MISSÕES DIÁRIAS
 
+/** Selo "+500 XP" do passe nas missões. */
+function seloXp(xp: number): string {
+  return `<span class="selo-xp">${ic("passe")} +${fmtInt(xp)} XP</span>`;
+}
+
 export function telaDiarias(nav: Nav): HTMLElement {
   const s = nav.save;
   atualizarDia(s);
-  const ms = missoesDoDia();
+  atualizarSemana(s);
   const amanha = new Date();
   amanha.setHours(24, 0, 0, 0);
-  const itens = ms.map((m) => {
-    const v = s.dia.stats[m.stat] ?? 0;
-    const feita = s.dia.resgatadas.includes(m.id);
+  const segunda = new Date();
+  segunda.setHours(0, 0, 0, 0);
+  segunda.setDate(segunda.getDate() + (((8 - segunda.getDay()) % 7) || 7));
+  const missao = (m: MissaoDiariaDef, v: number, feita: boolean, resgatar: () => boolean) => {
     const pronta = !feita && v >= m.meta;
-    return h("div", { class: "cartao" + (feita ? " lida" : "") },
-      h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", text: m.texto }), h("div", { class: "desc premio", html: textoPremio(m.premio, ICONE_MOEDA) })),
-        pronta ? h("button", { class: "btn ouro pequeno", text: "Resgatar", onclick: (ev: MouseEvent) => { const o = ret(ev); if (resgatarDiaria(s, m.id)) { nav.persistir(); nav.ir("missoes"); celebrar(nav.root, o, m.premio); } } })
+    return h("div", { class: "cartao missao" + (feita ? " lida" : "") },
+      h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", text: m.texto }),
+        h("div", { class: "desc premio", html: `${seloXp(m.xp)} ${textoPremio(m.premio, ICONE_MOEDA)}` })),
+        pronta ? h("button", { class: "btn ouro pequeno", text: "Resgatar", onclick: (ev: MouseEvent) => { const o = ret(ev); if (resgatar()) { nav.persistir(); nav.ir("missoes"); celebrar(nav.root, o, m.premio); } } })
           : h("span", { class: "desc", html: feita ? ic("check") : `${fmtInt(Math.min(v, m.meta))}/${fmtInt(m.meta)}` })),
       h("div", { class: "prog" }, h("b", { style: `width:${Math.min(100, (v / m.meta) * 100)}%` })));
-  });
-  const todas = s.dia.resgatadas.length >= 3;
+  };
+  const diarias = missoesDoDia().map((m) => missao(m, s.dia.stats[m.stat] ?? 0, s.dia.resgatadas.includes(m.id), () => resgatarDiaria(s, m.id)));
+  const semanais = missoesDaSemana().map((m) => missao(m, s.semana.stats[m.stat] ?? 0, s.semana.resgatadas.includes(m.id), () => resgatarSemanal(s, m.id)));
+  const todas = s.dia.resgatadas.length >= DIARIAS_POR_DIA;
+  const { nivel, frac, xp } = nivelPasse(s);
   return tela(nav, "MISSÕES",
-    h("div", { class: "cartao desc", html: `${ic("relogio")} Novas missões em ${faltaAte(amanha)}` }),
-    ...itens,
-    h("div", { class: "cartao" },
-      h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", text: "Bônus: complete as 3" }), h("div", { class: "desc premio", html: textoPremio(BONUS_DIARIAS, ICONE_MOEDA) })),
+    // resumo do passe: as missões são a única fonte de XP dele
+    h("button", { class: "cartao neon roxo missoes-passe", onclick: () => nav.ir("passe") },
+      h("div", { class: "nome", html: `${ic("passe")} Passe de Batalha · nível ${nivel}/${PASSE.niveis}` }),
+      h("div", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(frac * 100)}%` })),
+      h("div", { class: "desc", text: nivel >= PASSE.niveis ? "Passe completo!" : `${fmtInt(xp)} / ${fmtInt(PASSE.xpPorNivel)} XP para o nível ${nivel + 1} · o XP do passe vem só das missões` })),
+    h("div", { class: "secao-titulo", text: "Diárias" }),
+    h("div", { class: "cartao desc", html: `${ic("relogio")} Novas missões diárias em ${faltaAte(amanha)}` }),
+    ...diarias,
+    h("div", { class: "cartao missao" },
+      h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", text: `Bônus: complete as ${DIARIAS_POR_DIA}` }),
+        h("div", { class: "desc premio", html: `${seloXp(BONUS_DIARIAS_XP)} ${textoPremio(BONUS_DIARIAS, ICONE_MOEDA)}` })),
         h("button", { class: "btn ouro pequeno", disabled: !todas || s.dia.bonus, html: s.dia.bonus ? icT("check", "Feito") : "Resgatar",
           onclick: (ev: MouseEvent) => { const o = ret(ev); if (resgatarBonusDiario(s)) { nav.persistir(); nav.ir("missoes"); celebrar(nav.root, o, BONUS_DIARIAS); } } }))),
+    h("div", { class: "secao-titulo", text: "Semanais" }),
+    h("div", { class: "cartao desc", html: `${ic("relogio")} Novas missões semanais em ${faltaAte(segunda)}` }),
+    ...semanais,
     h("button", { class: "btn", html: icT("trofeu", "Ver conquistas"), onclick: () => nav.ir("conquistas") }));
 }
 
@@ -427,10 +447,10 @@ export function telaProgresso(nav: Nav): HTMLElement {
         nomeComandante(s.perfil.nome, temPremium(s), "div"),
         h("div", { class: "pat-nome", text: pt.atual.nome }),
         pt.prox ? h("div", { class: "pat-prox" }, h("span", { text: "Próxima:" }), insignia(pt.indice + 1, "insignia micro"), h("b", { text: pt.prox.nome })) : null,
-        h("div", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(pt.frac * 100)}%` })),
+        h("div", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(pt.frac * 100)}%` }),
+          pt.prox ? h("span", { text: `${Math.floor(pt.frac * 100)}%` }) : null),
         h("div", { class: "desc", text: pt.prox ? `${fmtInt(s.pontos)} / ${fmtInt(pt.prox.pontos)} pontos para ${pt.prox.nome}` : `${fmtInt(s.pontos)} pontos · patente máxima` }),
-        pt.trava ? h("div", { class: "pat-trava", html: `${ic("cadeado")} ${pt.trava}` }) : null),
-      h("button", { class: "btn icone", html: ic("usuario"), "aria-label": "Comandantes", onclick: () => nav.ir("comandantes") })),
+        pt.trava ? h("div", { class: "pat-trava", html: `${ic("cadeado")} ${pt.trava}` }) : null)),
     h("button", { class: "cartao neon ouro skins-atalho", onclick: () => nav.ir("comandantes") },
       h("span", { class: "skins-atalho-ic" }, avatar(s.perfil.avatar)),
       h("div", { style: "flex:1;text-align:left" }, h("div", { class: "nome", text: "Comandantes" }),
@@ -611,7 +631,8 @@ export function telaPasse(nav: Nav): HTMLElement {
       h("div", { class: "nome", text: `Temporada ${mes}/${ano} · Gratuito` }),
       h("div", { class: "pat-nome", text: `Nível ${nivel} de ${PASSE.niveis}` }),
       h("div", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(frac * 100)}%` })),
-      h("div", { class: "desc", html: `${ic("relogio")} termina em ${dias} dia${dias === 1 ? "" : "s"} · cada nível = ${fmtInt(PASSE.pontosPorNivel)} pontos de partida` }),
+      h("div", { class: "desc", html: `${ic("relogio")} termina em ${dias} dia${dias === 1 ? "" : "s"} · cada nível = ${fmtInt(PASSE.xpPorNivel)} XP de missões diárias e semanais` }),
+      h("button", { class: "btn pequeno", html: icT("missoes", "Fazer missões"), onclick: () => nav.ir("missoes") }),
       premium ? h("div", { class: "premium-ativo", html: `${ic("coroa", "ic ic-ouro")} Premium ativo nesta temporada` })
         : h("button", { class: "btn ouro", html: `${ic("coroa")}<span>Liberar Premium · ${precoBRL(produtoPremium.centavos)}</span>`,
           onclick: async () => {

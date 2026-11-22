@@ -20,7 +20,7 @@ for (const [caminho, url] of Object.entries(
 const VOL_ARQUIVO: Record<string, number> = {
   tiro: 0.22, gelo: 0.3, trilho: 0.45, raio: 0.3, missil: 0.35, gravidade: 0.5, pulso: 0.55,
   explosao: 0.35, explosaoGrande: 0.8, morte: 0.25, escudo: 0.35, dano: 0.6, nivel: 0.7, carta: 0.55,
-  clique: 0.5, ultimate: 0.85, alerta: 0.6, chefe: 0.85, muro: 0.6, vitoria: 0.8, derrota: 0.8,
+  clique: 0.5, ultimate: 0.85, alerta: 0.3, chefe: 0.85, muro: 0.6, vitoria: 0.8, derrota: 0.8,
   moeda: 0.6, bau: 0.75,
 };
 

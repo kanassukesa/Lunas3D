@@ -75,8 +75,12 @@ export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrol
     }
     const pilhas = b.cards.qtd(c.id);
     const max = c.maxPilhas ?? 1;
+    // moldura de arte por raridade (evolução usa a Suprema)
+    const molduraId = c.tipo === "evolucao" ? "suprema" : c.raridade;
+    const moldura = urlArte(`moldura_${molduraId}`);
     lista.append(
-      h("button", { class: "carta-lv " + c.raridade, style: `--cor:${cor};animation-delay:${i * 0.06}s`, onclick: () => aoEscolher(o) },
+      h("button", { class: "carta-lv " + c.raridade + (moldura ? ` com-moldura m-${molduraId}` : ""),
+        style: `--cor:${cor};animation-delay:${i * 0.06}s${moldura ? `;--moldura:url('${moldura}')` : ""}`, onclick: () => aoEscolher(o) },
         h("div", { class: "cl-titulo", text: c.nome }),
         h("div", { class: "cl-arte" }, h("img", { src: arteCarta(c), alt: "" }), tag, est),
         h("div", { class: "cl-desc", text: o.texto }),
@@ -92,7 +96,8 @@ export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrol
   return h(
     "div",
     { class: "overlay levelup" },
-    faixaTitulo("SUBIU DE NÍVEL", h("em", { class: "lv-nv", text: `Nv. ${b.nivel - b.pendentes + 1}` })),
+    urlArte("emblema_nivel") ? h("img", { class: "lv-emblema", src: urlArte("emblema_nivel")!, alt: "" }) : null,
+    faixaTitulo("SUBIU DE NÍVEL", h("em", { class: "lv-nv", text: `Nv. ${b.nivel - b.pendentes + 1}` }), "nivel"),
     h("div", { class: "moldura3 lv-painel3" }, slotsSentinelas(b), h("div", { class: "lv-legenda", text: `Sentinelas ${b.sentinels.length}/${b.slots()}` })),
     lista,
     h("div", { class: "linha" },

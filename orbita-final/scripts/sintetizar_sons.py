@@ -260,15 +260,13 @@ def ultimate():
 
 
 def alerta():
-    d = 1.2
-    t = tempo(d)
-    alto = (np.floor(t / 0.3) % 2) == 0
-    f = np.where(alto, 880.0, 660.0)
-    # suaviza a troca de nota
-    f = passa_baixa(f, 60)
-    s = aditivo(f, d, {1: 1, 3: 0.3, 5: 0.12})
-    pulsos = np.minimum(1, (t % 0.3) / 0.01) * np.minimum(1, (0.3 - t % 0.3) / 0.03)
-    return s * pulsos * janela(d, 0.01, 0.05)
+    """Aviso suave (chefe chegando / baú tremendo): dois toques graves de sino, não sirene."""
+    d = 1.1
+    s = np.zeros(int(SR * d))
+    for ini, f in [(0.0, 523.25), (0.28, 392.0)]:  # dó -> sol, descendo
+        s += em(d, sino(f, d - ini, 0.8, 0.3), ini)
+        s += em(d, osc(f / 2, 0.6) * env(0.6, 0.02, 0.18, 0.05) * 0.35, ini)  # corpo grave e macio
+    return s
 
 
 def chefe():

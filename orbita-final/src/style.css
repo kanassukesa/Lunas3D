@@ -1491,3 +1491,102 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 .coach-dica { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12.5px; font-weight: 800; color: var(--ouro); animation: piscar 0.8s steps(2, start) infinite; }
 .coach-dica .ic { width: 14px; height: 14px; }
 .pausa3-nota { text-align: center; color: var(--texto2); font-size: 12.5px; }
+/* =================== HUD v4: planeta da skin, barras com ícone/número, XP na largura toda =================== */
+.hud-planeta { position: relative; width: 48px; height: 48px; flex: none; border-radius: 50%; background: none; box-shadow: none; }
+/* anel de escudo em volta do planeta (enche conforme o escudo) */
+.hud-planeta::before { content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  background: conic-gradient(#6fe3ff calc(var(--esc, 0) * 1%), rgba(79, 214, 255, 0.14) 0);
+  -webkit-mask: radial-gradient(closest-side, transparent 84%, #000 87%); mask: radial-gradient(closest-side, transparent 84%, #000 87%);
+  filter: drop-shadow(0 0 4px rgba(79, 214, 255, 0.8)); }
+.hud-planeta-mapa { position: absolute; inset: 1px; border-radius: 50%; background: #1f6fc8 center / 200% 100% repeat-x;
+  box-shadow: inset -9px -7px 14px rgba(0, 0, 20, 0.8), inset 3px 3px 8px rgba(255, 255, 255, 0.22), 0 0 10px rgba(79, 214, 255, 0.45);
+  animation: girarMapa 14s linear infinite; }
+.hud-barras { display: flex; flex-direction: column; gap: 4px; min-width: 104px; }
+.hud-linha-hp, .hud-linha-esc { display: flex; align-items: center; gap: 4px; }
+.hud-rotulo { display: flex; width: 15px; height: 15px; flex: none; color: #ff5d72; filter: drop-shadow(0 0 3px rgba(255, 80, 100, 0.8)); }
+.hud-rotulo .ic { width: 15px; height: 15px; }
+.hud-rotulo.esc { color: #6fe3ff; filter: drop-shadow(0 0 3px rgba(79, 214, 255, 0.9)); }
+.hud-rotulo.esc .ic { fill: rgba(79, 214, 255, 0.35); }
+.hud-hp-barra { position: relative; flex: 1; min-width: 0; }
+.barra-seg { height: 18px; }
+.hud-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; pointer-events: none;
+  font-size: 12px; font-weight: 900; letter-spacing: 0.03em; text-shadow: 0 1px 2px #000, 0 0 4px #000; }
+.barra-escudo { position: relative; flex: 1; height: 11px; margin: 0; border-radius: 3px; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(79, 214, 255, 0.55); overflow: hidden; }
+.barra-escudo b { background: linear-gradient(180deg, #b5f4ff, #34b9f2 55%, #1677b5); box-shadow: 0 0 8px #4fd6ff; transition: width 0.2s; }
+.hud-esc-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; line-height: 1; text-shadow: 0 1px 2px #000; }
+/* nível: selo roxo que pula quando sobe */
+.hud-nivel { display: flex; justify-content: flex-end; }
+.hud-nivel-selo { display: inline-flex; align-items: baseline; gap: 3px; padding: 2px 12px 3px; color: #fff; font-weight: 900; font-style: italic;
+  background: linear-gradient(180deg, #a56bff, #5a1fc0); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  text-shadow: 0 1px 0 #2a0a60; filter: drop-shadow(0 0 6px rgba(164, 107, 255, 0.8)); }
+.hud-nivel-selo small { font-size: 10px; opacity: 0.85; }
+.hud-nivel-selo b { font-size: 17px; line-height: 1; }
+.hud-nivel.subiu .hud-nivel-selo { animation: nivelSobe 0.7s ease-out; }
+@keyframes nivelSobe { 0% { transform: scale(1); } 30% { transform: scale(1.4); filter: brightness(1.8) drop-shadow(0 0 12px #c79bff); } 100% { transform: scale(1); } }
+/* XP: barra grossa na largura toda, no lugar da linha de brilho embaixo do HUD */
+.hud-top::after { display: none; }
+.hud-top > .barra-xp { position: absolute; left: 12px; right: 12px; bottom: -9px; width: auto; height: 9px; border-radius: 5px; overflow: hidden;
+  background: rgba(12, 6, 32, 0.9); border: 1px solid rgba(199, 155, 255, 0.75); box-shadow: 0 0 10px rgba(164, 107, 255, 0.55); }
+.hud-top > .barra-xp b { position: relative; display: block; height: 100%; transition: width 0.25s ease-out;
+  background: linear-gradient(90deg, #6a2cff, #b07cff 75%, #f0e2ff); box-shadow: 0 0 10px #a46bff; }
+.hud-top > .barra-xp b::after { content: ""; position: absolute; left: 0; right: 0; top: 1px; height: 2px; background: rgba(255, 255, 255, 0.45); border-radius: 2px; }
+/* perfil (Progresso): barra de patente mais grossa com a porcentagem dentro */
+.perfil-grande .perfil-barra { position: relative; height: 14px; border-radius: 7px; margin-top: 6px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 194, 61, 0.6); }
+.perfil-grande .perfil-barra i { border-radius: 7px; background: linear-gradient(180deg, #ffe39a, #ffb31f 55%, #d98200); box-shadow: 0 0 10px #ffc23d; }
+.perfil-grande .perfil-barra span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; color: #fff; text-shadow: 0 1px 2px #000; }
+/* =================== Telas da batalha v4 (arte pronta) =================== */
+/* fundo de tela atrás do overlay, escurecido no centro para o painel ler bem */
+.overlay.ov-fundo { background: radial-gradient(circle at 50% 50%, rgba(3, 6, 14, 0.55), rgba(3, 6, 14, 0.25) 70%), var(--fundo) center / cover no-repeat, #03060e !important; }
+.overlay.resultado.ov-fundo { background: linear-gradient(180deg, rgba(3, 6, 14, 0.2), rgba(3, 6, 14, 0.72) 45%, rgba(3, 6, 14, 0.85)), var(--fundo) center top / cover no-repeat, #03060e !important; }
+/* faixa de título com arte: o texto fica na placa do meio */
+.faixa4 { position: relative; display: grid; place-items: center; width: min(96vw, 460px); aspect-ratio: 900 / 188; background: center / contain no-repeat; flex: none; }
+.faixa4.nivel { aspect-ratio: 900 / 256; }
+.faixa4-txt { display: flex; align-items: center; gap: 8px; max-width: 54%; justify-content: center; }
+.faixa4-txt > b { font-size: clamp(15px, 4.6vw, 22px); font-weight: 900; font-style: italic; letter-spacing: 0.04em; color: #eaf7ff; white-space: nowrap;
+  text-shadow: 0 2px 0 #0a2a50, 0 0 12px rgba(160, 230, 255, 0.7); }
+.faixa4.nivel .faixa4-txt > b { color: #f6eaff; text-shadow: 0 2px 0 #2a0a50, 0 0 12px rgba(210, 160, 255, 0.8); }
+.faixa4 .lv-nv { font-size: 12px; padding: 2px 6px; }
+.lv-emblema { width: 74px; height: auto; margin-bottom: -26px; position: relative; z-index: 1; filter: drop-shadow(0 0 14px rgba(170, 100, 255, 0.7)); animation: lvEmblema 1.6s ease-in-out infinite; }
+@keyframes lvEmblema { 50% { transform: translateY(-4px); } }
+/* cartas com moldura de arte (9 fatias: os cantos ficam intactos e as bordas esticam) */
+.carta-lv.com-moldura { clip-path: none !important; border-radius: 0 !important; border-style: solid !important; border-color: transparent !important;
+  border-image-source: var(--moldura) !important; border-image-repeat: stretch !important; background-clip: padding-box !important; box-shadow: none !important; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--cor) 45%, transparent)); }
+.carta-lv.com-moldura .cl-gema { display: none; }
+.carta-lv.com-moldura .cl-titulo { background: none !important; border-bottom: 0; padding-top: 2px; }
+.carta-lv.com-moldura .cl-arte { margin: 0 2px; }
+.carta-lv.m-comum { border-width: 23px 10px 13px !important; border-image-slice: 55 24 31 24 fill !important; }
+.carta-lv.m-rara { border-width: 24px 14px 16px !important; border-image-slice: 58 33 39 33 fill !important; }
+.carta-lv.m-epica { border-width: 30px 15px 30px !important; border-image-slice: 71 36 73 36 fill !important; }
+.carta-lv.m-lendaria { border-width: 38px 14px 32px !important; border-image-slice: 92 33 76 33 fill !important; }
+.carta-lv.m-suprema { border-width: 41px 16px 44px !important; border-image-slice: 99 39 106 39 fill !important; }
+/* estrelas com arte */
+.est3 .ic-estrela.arte { width: 58px; height: auto; color: inherit; }
+.est3:nth-child(2) .ic-estrela.arte { width: 72px; height: auto; }
+.est3.vazia .ic-estrela.arte { filter: none !important; opacity: 0.9; }
+.est3.ganhou .ic-estrela.arte { filter: drop-shadow(0 0 12px rgba(255, 200, 60, 0.9)); }
+/* resultado: emblema, título e estatísticas em cartões */
+.res-emblema { width: min(62vw, 260px); height: auto; margin-bottom: -10px; filter: drop-shadow(0 0 18px rgba(79, 214, 255, 0.45)); animation: entrar 0.5s backwards; }
+.res-titulo { font-size: clamp(26px, 8vw, 36px); font-style: italic; letter-spacing: 0.04em; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.6), 0 0 16px currentColor; }
+.res-estats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: min(94vw, 420px); }
+.res-est { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 7px; min-width: 0;
+  background: linear-gradient(180deg, rgba(20, 44, 84, 0.9), rgba(8, 18, 40, 0.9)); border: 1px solid rgba(110, 210, 255, 0.45); border-radius: 6px; }
+.res-est .res-ic, .res-est .ic { width: 34px; height: 34px; object-fit: contain; }
+.res-est b { font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.res-est small { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto2); }
+.res-destaque { color: var(--ouro) !important; font-weight: 900; }
+/* build: % de dano com barrinha e selo MVP */
+.sent-dano { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 52px; font-size: 12px; }
+.sent-dano b { font-weight: 900; }
+.sent-dano-barra { display: block; width: 52px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.sent-dano-barra i { display: block; height: 100%; background: linear-gradient(90deg, #2fa8ff, #7df9ff); }
+.sent-linha.mvp { background: linear-gradient(90deg, rgba(255, 194, 61, 0.16), transparent); border-radius: 6px; }
+.sent-linha.mvp .sent-dano-barra i { background: linear-gradient(90deg, #ffb31f, #ffe07a); }
+.tag-mvp { padding: 1px 6px; font-size: 10px; font-weight: 900; font-style: italic; color: #2a1500; background: linear-gradient(180deg, #ffe39a, #ffb31f); border-radius: 3px; }
+/* missões: selo de XP do passe e resumo do passe no topo */
+.selo-xp { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 5px; margin-right: 4px; border-radius: 10px; font-size: 11px; font-weight: 900; font-style: italic;
+  color: #f3e6ff; background: linear-gradient(180deg, #8a4bff, #5a1fc0); box-shadow: 0 0 6px rgba(164, 107, 255, 0.6); vertical-align: 1px; }
+.selo-xp .ic { width: 12px; height: 12px; }
+.missoes-passe { display: flex; flex-direction: column; gap: 6px; width: 100%; text-align: left; }
+.missoes-passe .nome { display: flex; align-items: center; gap: 6px; }
+.missoes-passe .perfil-barra { height: 10px; border-radius: 5px; }
+.missoes-passe .perfil-barra i { background: linear-gradient(90deg, #8a4bff, #c79bff 70%, #f0e2ff); box-shadow: 0 0 8px #a46bff; }

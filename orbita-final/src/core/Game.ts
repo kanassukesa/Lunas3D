@@ -403,6 +403,7 @@ export class Game implements Nav {
     this.abrir(
       telaPausa({
         continuar: () => this.fechar(),
+        build: () => this.abrir(telaBuild(run.b, () => this.pausar()), "build"),
         config: () => this.abrirConfigJogo(),
         desistir: run.onb ? null : () => this.confirmarDesistencia(),
       }),
@@ -511,7 +512,7 @@ export class Game implements Nav {
     if (!run.recompensa) {
       const antes = patenteDe(this.save).indice;
       run.recompensa = calcularRecompensas(this.save, b, run.modo);
-      run.recompensa.pontos = registrarPartida(this.save, b, run.modo);
+      run.recompensa.pontos = registrarPartida(this.save, b, run.modo, !run.onb && !run.tutorial);
       if (b.desistiu) run.recompensa.perdaPontos = Math.round(run.recompensa.pontos / BALANCE.recompensas.fatorDesistencia - run.recompensa.pontos);
       const depois = patenteDe(this.save);
       if (depois.indice > antes) { run.recompensa.novaPatente = depois.atual.nome; run.promocao = { de: antes, para: depois.indice }; }

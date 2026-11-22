@@ -25,17 +25,21 @@ function painelBuild(b: Battle): HTMLElement {
   const p = h("div", { class: "painel" });
   p.append(h("h3", { text: `Sentinelas (${b.sentinels.length}/${b.slots()})` }));
   const total = b.sentinels.reduce((a, s) => a + s.danoCausado, 0) || 1;
+  const mvp = b.sentinels.length > 1 ? b.sentinels.reduce((m, s) => (s.danoCausado > m.danoCausado ? s : m)) : null;
   for (const s of b.sentinels) {
+    const destaque = mvp === s && s.danoCausado > 0;
     const pips = h("span", { class: "pips" });
     for (let k = 1; k <= 5; k++) pips.append(h("i", { class: k <= s.nivel ? "on" : "" }));
     p.append(
-      h("div", { class: "sent-linha" },
+      h("div", { class: "sent-linha" + (destaque ? " mvp" : "") },
         h("i", { class: "dot", style: `background:${hex(s.def.cor)}` }),
         h("div", { style: "flex:1" },
           h("div", { style: "font-weight:800", html: s.evoluido ? `${ic("coroa", "ic ic-ouro")} ${s.def.evolucao.nome}` : s.def.nome }, pips),
           h("div", { style: "font-size:12px;color:var(--texto2)", text: `Dano ${fmtInt(s.stats.dano)} · ${s.stats.cadencia.toFixed(2)}/s · crít ${(s.stats.critChance * 100).toFixed(0)}%` }),
           evolucaoTexto(b, s.def.id)),
-        h("div", { style: "font-size:12px;text-align:right;color:var(--texto2)", text: `${Math.round((s.danoCausado / total) * 100)}%` })),
+        h("div", { class: "sent-dano" }, destaque ? h("span", { class: "tag-mvp", text: "MVP" }) : null,
+          h("b", { text: `${Math.round((s.danoCausado / total) * 100)}%` }),
+          h("i", { class: "sent-dano-barra" }, h("i", { style: `width:${Math.round((s.danoCausado / total) * 100)}%` })))),
     );
   }
   p.append(h("h3", { text: "Cartas" }));
@@ -53,8 +57,23 @@ function painelBuild(b: Battle): HTMLElement {
 }
 
 /** Faixa de título com asas douradas (padrão das telas de batalha). */
-export function faixaTitulo(texto: string, extra?: HTMLElement | null): HTMLElement {
+export function faixaTitulo(texto: string, extra?: HTMLElement | null, variante: "titulo" | "nivel" = "titulo"): HTMLElement {
+  const arte = urlArte(`faixa_${variante}`);
+  if (arte) {
+    // arte pronta: placa com asas (o texto vai por cima da placa do meio)
+    return h("div", { class: `faixa4 ${variante}`, style: `background-image:url('${arte}')` }, h("div", { class: "faixa4-txt" }, h("b", { text: texto }), extra ?? null));
+  }
   return h("div", { class: "faixa3" }, h("span", { class: "faixa3-asa e" }), h("div", { class: "faixa3-placa" }, h("b", { text: texto }), extra ?? null), h("span", { class: "faixa3-asa d" }));
+}
+
+/** Fundo de tela (arte) atrás de um overlay, com escurecimento para o painel ler bem. */
+export function comFundo(el: HTMLElement, nome: string): HTMLElement {
+  const u = urlArte(nome);
+  if (u) {
+    el.classList.add("ov-fundo");
+    el.style.setProperty("--fundo", `url('${u}')`);
+  }
+  return el;
 }
 
 /** Botão chanfrado grande (laranja / azul / vermelho / ouro). */
@@ -63,23 +82,24 @@ export function botao3(cor: "laranja" | "azul" | "vermelho" | "ouro", icone: str
 }
 
 export function telaBuild(b: Battle, fechar: () => void): HTMLElement {
-  return h("div", { class: "overlay ov3" },
+  return comFundo(h("div", { class: "overlay ov3" },
     faixaTitulo("BUILD"),
     h("div", { class: "moldura3 build3" }, painelBuild(b)),
-    botao3("azul", "voltar", "Voltar", fechar));
+    botao3("azul", "voltar", "Voltar", fechar)), "fundo_build");
 }
 
-export function telaPausa(acoes: { continuar(): void; config(): void; desistir: (() => void) | null }): HTMLElement {
+export function telaPausa(acoes: { continuar(): void; build(): void; config(): void; desistir: (() => void) | null }): HTMLElement {
   const planeta = urlArte("emblema_pausa") ?? urlArte("planeta");
-  return h("div", { class: "overlay ov3" },
+  return comFundo(h("div", { class: "overlay ov3" },
     h("div", { class: "pausa3-wrap" },
       h("div", { class: "pausa3-emblema" + (urlArte("emblema_pausa") ? " arte" : "") },
         h("span", { class: "pausa3-asa e" }), planeta ? h("img", { src: planeta, alt: "" }) : h("i"), h("span", { class: "pausa3-asa d" })),
       h("div", { class: "moldura3 pausa3" },
         h("div", { class: "pausa3-titulo" }, h("b", { text: "PAUSADO" })),
         botao3("laranja", "play", "Continuar", acoes.continuar),
+        botao3("azul", "cartas", "Ver build", acoes.build),
         botao3("azul", "config", "Configurações", acoes.config),
-        acoes.desistir ? botao3("vermelho", "fechar", "Desistir", acoes.desistir) : h("small", { class: "pausa3-nota", text: "Tutorial: não dá para desistir desta partida." }))));
+        acoes.desistir ? botao3("vermelho", "fechar", "Desistir", acoes.desistir) : h("small", { class: "pausa3-nota", text: "Tutorial: não dá para desistir desta partida." })))), "fundo_pausa");
 }
 
 export function telaResultado(
@@ -96,17 +116,30 @@ export function telaResultado(
   // estrelas: as conquistadas acendem uma por vez (com som); as que faltaram ficam apagadas
   for (let i = 1; i <= 3; i++) {
     const ganhou = i <= f.estrelas;
-    const el = h("span", { class: "est3" + (ganhou ? " ganhou" : " vazia"), style: `animation-delay:${0.35 + (i - 1) * 0.38}s`, html: ic("estrela", "ic-estrela" + (ganhou ? "" : " off")) });
+    const arteEst = urlArte(ganhou ? "estrela_cheia" : "estrela_vazia");
+    const el = h("span", { class: "est3" + (ganhou ? " ganhou" : " vazia"), style: `animation-delay:${0.35 + (i - 1) * 0.38}s`,
+      html: arteEst ? `<img class="ic-estrela arte" src="${arteEst}" alt="">` : ic("estrela", "ic-estrela" + (ganhou ? "" : " off")) });
     est.append(el);
     if (ganhou) setTimeout(() => audio.sfx("nivel"), 350 + (i - 1) * 380);
   }
   const jornada = b.cfg.modo === "jornada";
   const titulo = inf ? "FIM DA LINHA" : jornada ? (f.vitoria ? "JORNADA COMPLETA" : `JORNADA: ${f.etapas}/${b.cfg.etapas?.length ?? 5} ETAPAS`) : f.vitoria ? "VITÓRIA" : "PLANETA PERDIDO";
-  const linhas: HTMLElement[] = [
-    h("div", { class: "titulo", style: `color:${f.vitoria ? "var(--ouro)" : inf ? "var(--ciano)" : "var(--vermelho)"}`, text: titulo }),
-  ];
+  const emblema = urlArte(f.vitoria || inf ? "emblema_vitoria" : "emblema_derrota");
+  const linhas: HTMLElement[] = [];
+  if (emblema) linhas.push(h("img", { class: "res-emblema", src: emblema, alt: "" }));
+  linhas.push(h("div", { class: "titulo res-titulo", style: `color:${f.vitoria ? "var(--ouro)" : inf ? "var(--ciano)" : "var(--vermelho)"}`, text: titulo }));
   if (!inf && !jornada) linhas.push(est);
-  linhas.push(h("div", { class: "subtitulo", text: `${fmtTempo(f.tempo)} · ${fmtInt(f.abates)} abates · nível ${f.nivel}${rec.recorde ? " · NOVO RECORDE!" : ""}${rec.primeiraVez ? " · 1ª vitória!" : ""}` }));
+  const dano = b.sentinels.reduce((a, s) => a + s.danoCausado, 0);
+  const estat = (icone: string, reserva: string, valor: string, rotulo: string) =>
+    h("div", { class: "res-est" }, h("span", { class: "res-est-ic", html: iconeImg(icone, ic(reserva), "res-ic") }), h("b", { text: valor }), h("small", { text: rotulo }));
+  linhas.push(h("div", { class: "res-estats" },
+    estat("icone_tempo", "relogio", fmtTempo(f.tempo), "Tempo"),
+    estat("icone_abates", "mira", fmtInt(f.abates), "Abates"),
+    estat("icone_nivel", "evoluir", String(f.nivel), "Nível"),
+    estat("icone_dano", "bomba", fmtInt(Math.round(dano)), "Dano")));
+  if (rec.recorde || rec.primeiraVez) {
+    linhas.push(h("div", { class: "subtitulo res-destaque", text: [rec.recorde ? "NOVO RECORDE!" : "", rec.primeiraVez ? "1ª vitória!" : ""].filter(Boolean).join(" · ") }));
+  }
   if (!f.vitoria && !inf && b.boss === null && !f.chefeDerrotado) {
     linhas.push(h("div", { class: "subtitulo", text: `Chegou a ${Math.min(100, Math.round((f.tempo / 280) * 100))}% da fase` }));
   }
@@ -144,5 +177,5 @@ export function telaResultado(
   if (acoes.repetir) bts.append(h("button", { class: "btn", html: icT("repetir", "Repetir"), onclick: acoes.repetir }));
   bts.append(h("button", { class: "btn ciano", html: acoes.repetir ? icT("casa", "Base") : icT("play", "Continuar"), onclick: acoes.hub }));
   linhas.push(bts);
-  return h("div", { class: "overlay", style: "justify-content:flex-start;overflow-y:auto" }, ...linhas);
+  return comFundo(h("div", { class: "overlay resultado", style: "justify-content:flex-start;overflow-y:auto" }, ...linhas), f.vitoria || inf ? "fundo_vitoria" : "fundo_derrota");
 }

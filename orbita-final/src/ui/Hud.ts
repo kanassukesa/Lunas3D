@@ -3,6 +3,8 @@ import { CAMPOS } from "../data/journey";
 import { BOSSES } from "../data/bosses";
 import { audio } from "../core/Audio";
 import { BALANCE } from "../data/balance";
+import { aparencia } from "../render/Aparencia";
+import { urlArte } from "../render/Sprites";
 import { fmtInt, fmtTempo, h, iconeImg } from "./dom";
 import { ic } from "./Icones";
 
@@ -16,6 +18,12 @@ export interface HudAcoes {
 }
 
 const SEGMENTOS = 10;
+/** Mapa (textura) do planeta da skin equipada: o ícone do HUD gira igual ao planeta da batalha. */
+function mapaDaSkin(): string | null {
+  const id = aparencia.planeta;
+  return urlArte(id === "planeta_terra" ? "planeta_mapa" : `planeta_mapa_${id.replace("planeta_", "")}`) ?? urlArte("planeta_mapa");
+}
+
 const CAMPO_ICONE: Record<string, string> = Object.fromEntries(CAMPOS.map((c) => [c.id, c.icone]));
 
 /** HUD da batalha (DOM por cima do canvas), atualizado só quando os valores mudam. */
@@ -25,6 +33,9 @@ export class Hud {
   private segWrap: HTMLElement;
   private hpNum: HTMLElement;
   private escudo: HTMLElement;
+  private escNum: HTMLElement;
+  private planeta: HTMLElement;
+  private nivelBox: HTMLElement;
   private tempo: HTMLElement;
   private nivel: HTMLElement;
   private xp: HTMLElement;
@@ -51,11 +62,16 @@ export class Hud {
       this.segWrap.append(h("i", null, b));
       this.segs.push(b);
     }
-    this.hpNum = h("div", { class: "hud-num" });
+    this.hpNum = h("span", { class: "hud-num" });
     this.escudo = h("b");
+    this.escNum = h("span", { class: "hud-esc-num" });
+    const mapa = mapaDaSkin();
+    this.planeta = h("div", { class: "hud-planeta" },
+      h("span", { class: "hud-planeta-mapa", style: mapa ? `background-image:url('${mapa}')` : "" }));
     this.tempo = h("div", { class: "hud-tempo", text: "00:00" });
-    this.nivel = h("span", { text: "Lv.1" });
+    this.nivel = h("b", { text: "1" });
     this.xp = h("b");
+    this.nivelBox = h("div", { class: "hud-nivel" }, h("span", { class: "hud-nivel-selo" }, h("small", { text: "LV" }), this.nivel));
     this.vel = h("button", { class: "btn icone", text: "x1", onclick: () => acoes.velocidade() });
     this.ult = h("button", { class: "hud-ult", onclick: () => acoes.ultimate() }, h("span", { html: iconeImg("icone_ultimate", ic("raio", "ic-ult"), "ic-ult") }), h("small", { text: "ULTIMATE" }));
     this.chefeNome = h("div");
@@ -79,7 +95,10 @@ export class Hud {
       h(
         "div",
         { class: "hud-top" },
-        h("div", { class: "hud-hp" }, h("div", { class: "hud-planeta" }), h("div", { class: "hud-barras" }, this.segWrap, h("div", { class: "barra-escudo" }, this.escudo), this.hpNum)),
+        h("div", { class: "hud-hp" }, this.planeta,
+          h("div", { class: "hud-barras" },
+            h("div", { class: "hud-linha-hp" }, h("span", { class: "hud-rotulo", html: ic("coracao") }), h("div", { class: "hud-hp-barra" }, this.segWrap, this.hpNum)),
+            h("div", { class: "hud-linha-esc" }, h("span", { class: "hud-rotulo esc", html: ic("escudo") }), h("div", { class: "barra-escudo" }, this.escudo, this.escNum)))),
         h(
           "div",
           { class: "hud-centro" },
@@ -92,7 +111,9 @@ export class Hud {
             h("button", { class: "btn icone", html: ic("cartas"), "aria-label": "Cartas", onclick: () => acoes.cartas() }),
           ),
         ),
-        h("div", { class: "hud-dir" }, this.tempo, h("div", { class: "hud-nivel" }, this.nivel, h("div", { class: "barra-xp" }, this.xp))),
+        h("div", { class: "hud-dir" }, this.tempo, this.nivelBox),
+        // barra de experiência na largura toda, colada embaixo do HUD: dá para ver o progresso a cada inimigo
+        h("div", { class: "barra-xp" }, this.xp),
       ),
       this.chefe,
       this.campos,
@@ -158,7 +179,11 @@ export class Hud {
     }
     if (this.set("hpn", Math.ceil(p.hp))) this.hpNum.textContent = fmtInt(Math.ceil(p.hp));
     const ef = p.escudoMax ? Math.round((p.escudo / p.escudoMax) * 100) : 0;
-    if (this.set("esc", ef)) this.escudo.style.width = ef + "%";
+    if (this.set("esc", ef)) {
+      this.escudo.style.width = ef + "%";
+      this.planeta.style.setProperty("--esc", String(ef));
+    }
+    if (this.set("escn", Math.ceil(p.escudo))) this.escNum.textContent = p.escudoMax ? fmtInt(Math.ceil(p.escudo)) : "";
 
     const modoInf = b.cfg.modo === "sobrevivencia";
     const tShow = modoInf ? b.t : b.boss ? b.t : Math.max(0, b.entradaChefe() - b.t);
@@ -167,7 +192,14 @@ export class Hud {
       this.campos.innerHTML = [...b.campo.ativos].map((id) => ic(CAMPO_ICONE[id] ?? "alerta")).join("");
     }
     if (this.set("t", Math.floor(tShow))) this.tempo.textContent = fmtTempo(tShow);
-    if (this.set("lv", b.nivel)) this.nivel.textContent = `Lv.${b.nivel}`;
+    if (this.set("lv", b.nivel)) {
+      this.nivel.textContent = String(b.nivel);
+      if (b.nivel > 1) {
+        this.nivelBox.classList.remove("subiu");
+        void this.nivelBox.offsetWidth;
+        this.nivelBox.classList.add("subiu");
+      }
+    }
     const xpf = Math.round((b.xp / b.xpNext) * 100);
     if (this.set("xp", xpf)) this.xp.style.width = xpf + "%";
     if (this.set("vel", velocidade)) this.vel.textContent = `x${velocidade}`;

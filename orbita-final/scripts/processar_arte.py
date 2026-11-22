@@ -59,6 +59,11 @@ CONFIG = {
     "chefe_": ("fundo", 512),
     "missil": ("fundo", 256),
     "drone": ("fundo", 128),
+    # telas da batalha
+    "faixa_": ("recorte", 900),
+    "moldura_": ("moldura", 480),
+    "estrela_": ("recorte", 160),
+    "icone_": ("recorte", 128),  # depois de icone_app / icone_ultimate (a ordem importa)
 }
 
 
@@ -68,10 +73,13 @@ def dilatar(m):
     return d
 
 
-def ligado_as_bordas(cand):
-    """Flood fill: pixels candidatos conectados à borda da imagem."""
+def ligado_as_bordas(cand, miolo=False):
+    """Flood fill: pixels candidatos conectados à borda da imagem (e ao centro, com miolo=True)."""
     sel = np.zeros_like(cand)
     sel[0, :] = cand[0, :]; sel[-1, :] = cand[-1, :]; sel[:, 0] = cand[:, 0]; sel[:, -1] = cand[:, -1]
+    if miolo:
+        hh, ww = cand.shape
+        sel[hh // 2, ww // 2] = cand[hh // 2, ww // 2]
     while True:
         novo = dilatar(sel) & cand
         if novo.sum() == sel.sum():
@@ -79,7 +87,7 @@ def ligado_as_bordas(cand):
         sel = novo
 
 
-def remover_fundo(rgb):
+def remover_fundo(rgb, miolo=False):
     r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
     mx = rgb.max(axis=2); mn = rgb.min(axis=2)
     canto = rgb[2:12, 2:12].reshape(-1, 3).mean(axis=0)
@@ -93,7 +101,7 @@ def remover_fundo(rgb):
         alfa = np.asarray(alfa_img).astype(np.float32) / 255
     else:
         cand = mx < 30
-        fundo = ligado_as_bordas(cand)
+        fundo = ligado_as_bordas(cand, miolo)
         alfa = np.where(fundo, 0.0, 1.0)
         # faixa de transição perto do fundo: alfa proporcional ao brilho (brilho some sem halo preto)
         faixa = fundo.copy()
@@ -214,6 +222,17 @@ def processar(arq):
         img = img.resize((tam, round(tam * img.height / img.width)), Image.LANCZOS)
         img.save(os.path.join(SAIDA, nome + ".png"), optimize=True)
         return print(f"{nome}.png  {img.width}x{img.height}  (quadro)")
+    if modo == "moldura":
+        # moldura de carta: o preto de fora E o miolo viram transparência (a arte da carta aparece por dentro)
+        rgb = np.asarray(Image.open(os.path.join(ORIG, arq)).convert("RGB")).astype(np.float32)
+        img = Image.fromarray(remover_fundo(rgb, miolo=True), "RGBA")
+        bbox = img.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
+        if bbox:
+            img = img.crop(bbox)
+        k = tam / max(img.size)
+        img = img.resize((max(1, round(img.width * k)), max(1, round(img.height * k))), Image.LANCZOS)
+        img.save(os.path.join(SAIDA, nome + ".png"), optimize=True)
+        return print(f"{nome}.png  {img.width}x{img.height}  (moldura, miolo vazado)")
     if modo == "recorte":
         # interface: tira o fundo e corta no contorno, mantendo a proporção (lado maior = tam)
         rgb = np.asarray(Image.open(os.path.join(ORIG, arq)).convert("RGB")).astype(np.float32)

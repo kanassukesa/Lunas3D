@@ -48,7 +48,10 @@ export interface SaveData {
   login: { ultimoDia: string; dias: number };
   correio: { lidas: string[]; resgatadas: string[] };
   skins: { possui: string[]; planeta: string; escudo: string };
-  passe: { temporada: string; pontos: number; resgatados: number[] };
+  /** `pontos` = XP do passe (vem só de missões); `v` = versão das regras do passe. */
+  passe: { temporada: string; pontos: number; resgatados: number[]; v: number };
+  /** Missões semanais: contadores da semana (ISO, muda na segunda). */
+  semana: { id: string; stats: Record<string, number>; resgatadas: string[] };
   /** Passos do tutorial guiado já mostrados. */
   tutorialPassos: string[];
   /** Compras com dinheiro real e anúncios. */
@@ -94,7 +97,8 @@ export function saveNovo(): SaveData {
     login: { ultimoDia: "", dias: 0 },
     correio: { lidas: [], resgatadas: [] },
     skins: { possui: ["escudo_azul", "planeta_terra"], planeta: "planeta_terra", escudo: "escudo_azul" },
-    passe: { temporada: "", pontos: 0, resgatados: [] },
+    passe: { temporada: "", pontos: 0, resgatados: [], v: 0 },
+    semana: { id: "", stats: {}, resgatadas: [] },
     tutorialPassos: [],
     monet: { passePremium: "", premiumResgatados: [], semAnuncios: false, unicosComprados: [], comprasAplicadas: [], partidasDesdeAnuncio: 0, ultimoAnuncio: 0, primeiroDia: "" },
   };

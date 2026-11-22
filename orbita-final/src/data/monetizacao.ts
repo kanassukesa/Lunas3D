@@ -39,15 +39,15 @@ export function precoBRL(centavos: number): string {
 }
 
 /** Trilha premium do passe (índice 0 = nível 1). */
-export const PASSE_PREMIUM: (Premio & { skin?: string })[] = Array.from({ length: 30 }, (_, i) => {
+export const PASSE_PREMIUM: (Premio & { skin?: string })[] = Array.from({ length: 60 }, (_, i) => {
   const n = i + 1;
   if (n === 1) return { cristais: 30 };
-  if (n === 10) return { skin: "escudo_premium" };
-  if (n === 20) return { skin: "planeta_premium_lava", cristais: 30 };
-  if (n === 30) return { skin: "escudo_supernova", cristais: 60, chip: 3 };
-  if (n % 5 === 0) return { chip: 2 };
-  if (n % 2 === 0) return { cristais: 10 };
-  return { creditos: 600 + n * 40, nucleos: 4 };
+  if (n === 20) return { skin: "escudo_premium" };
+  if (n === 40) return { skin: "planeta_premium_lava", cristais: 30 };
+  if (n === 60) return { skin: "escudo_supernova", cristais: 60, chip: 3 };
+  if (n % 10 === 0) return { chip: 2 };
+  if (n % 2 === 0) return { cristais: 6 };
+  return { creditos: 400 + n * 25, nucleos: 3 };
 });
 
 /** Anúncios com recompensa: onde aparecem e o limite diário de cada um. */

@@ -14,15 +14,16 @@ export interface Patente {
  */
 export const PATENTES: Patente[] = [
   { nome: "Recruta", pontos: 0, fase: 0 },
-  { nome: "Cadete", pontos: 20_000, fase: 1 },
-  { nome: "Sargento", pontos: 60_000, fase: 2 },
-  { nome: "Tenente", pontos: 140_000, fase: 3 },
-  { nome: "Capitão", pontos: 280_000, fase: 5 },
-  { nome: "Major", pontos: 500_000, fase: 8 },
-  { nome: "Coronel", pontos: 850_000, fase: 11 },
-  { nome: "General", pontos: 1_400_000, fase: 14 },
-  { nome: "Almirante", pontos: 2_200_000, fase: 17 },
-  { nome: "Lenda da Órbita", pontos: 3_500_000, fase: 20 },
+  // ~2,5x mais pontos que antes: uma partida boa dá ~10 mil, então Cadete pede umas 5 partidas
+  { nome: "Cadete", pontos: 50_000, fase: 1 },
+  { nome: "Sargento", pontos: 150_000, fase: 2 },
+  { nome: "Tenente", pontos: 350_000, fase: 3 },
+  { nome: "Capitão", pontos: 700_000, fase: 5 },
+  { nome: "Major", pontos: 1_250_000, fase: 8 },
+  { nome: "Coronel", pontos: 2_100_000, fase: 11 },
+  { nome: "General", pontos: 3_500_000, fase: 14 },
+  { nome: "Almirante", pontos: 5_500_000, fase: 17 },
+  { nome: "Lenda da Órbita", pontos: 8_750_000, fase: 20 },
 ];
 
 /** Avatares (arte final `avatar_1..6`; sem ela, um capacete desenhado na cor). */
@@ -88,21 +89,45 @@ export interface MissaoDiariaDef {
   stat: string;
   meta: number;
   premio: Premio;
+  /** XP do passe de batalha ao resgatar (o passe só sobe com missões). */
+  xp: number;
 }
 
-/** Sorteio de 3 por dia (seed = data). */
+/*
+ * Conta do passe: 60 níveis × 1.000 XP = 60.000 XP.
+ * Por dia: 4 diárias × 500 + bônus 500 = 2.500 XP  -> 20 dias = 50.000
+ * Por semana: 6 semanais ≈ 3.500 XP                 -> ~3 semanas = ~10.500
+ * Total em ~20 dias fazendo tudo: ~60.500 XP = passe completo.
+ */
+export const DIARIAS_POR_DIA = 4;
+export const SEMANAIS_POR_SEMANA = 6;
+
+/** Sorteio de 4 por dia (seed = data). */
 export const MISSOES_DIARIAS: MissaoDiariaDef[] = [
-  { id: "d_partidas", texto: "Jogue 2 partidas", stat: "partidas", meta: 2, premio: { creditos: 250 } },
-  { id: "d_vitoria", texto: "Vença 1 fase", stat: "vitorias", meta: 1, premio: { nucleos: 4 } },
-  { id: "d_abates", texto: "Destrua 400 inimigos", stat: "abates", meta: 400, premio: { creditos: 350 } },
-  { id: "d_abates2", texto: "Destrua 1.000 inimigos", stat: "abates", meta: 1000, premio: { cristais: 3 } },
-  { id: "d_chefe", texto: "Derrote 1 chefe", stat: "chefes", meta: 1, premio: { nucleos: 5 } },
-  { id: "d_ult", texto: "Use o ultimate 4 vezes", stat: "ultimates", meta: 4, premio: { creditos: 300 } },
-  { id: "d_evo", texto: "Evolua 1 sentinela", stat: "evolucoes", meta: 1, premio: { cristais: 3 } },
-  { id: "d_pontos", texto: "Faça 2.000 pontos", stat: "pontos", meta: 2000, premio: { nucleos: 4 } },
+  { id: "d_partidas", texto: "Jogue 2 partidas", stat: "partidas", meta: 2, premio: { creditos: 250 }, xp: 500 },
+  { id: "d_vitoria", texto: "Vença 1 fase", stat: "vitorias", meta: 1, premio: { nucleos: 4 }, xp: 500 },
+  { id: "d_abates", texto: "Destrua 400 inimigos", stat: "abates", meta: 400, premio: { creditos: 350 }, xp: 500 },
+  { id: "d_abates2", texto: "Destrua 1.000 inimigos", stat: "abates", meta: 1000, premio: { cristais: 3 }, xp: 500 },
+  { id: "d_chefe", texto: "Derrote 1 chefe", stat: "chefes", meta: 1, premio: { nucleos: 5 }, xp: 500 },
+  { id: "d_ult", texto: "Use o ultimate 4 vezes", stat: "ultimates", meta: 4, premio: { creditos: 300 }, xp: 500 },
+  { id: "d_evo", texto: "Evolua 1 sentinela", stat: "evolucoes", meta: 1, premio: { cristais: 3 }, xp: 500 },
+  { id: "d_pontos", texto: "Faça 8.000 pontos", stat: "pontos", meta: 8000, premio: { nucleos: 4 }, xp: 500 },
 ];
-/** Bônus por completar as 3 do dia. */
+/** Bônus por completar as 4 do dia. */
 export const BONUS_DIARIAS: Premio = { cristais: 5 };
+export const BONUS_DIARIAS_XP = 500;
+
+/** Sorteio de 6 por semana (seed = semana; renovam toda segunda-feira). */
+export const MISSOES_SEMANAIS: MissaoDiariaDef[] = [
+  { id: "s_partidas", texto: "Jogue 15 partidas", stat: "partidas", meta: 15, premio: { creditos: 1500 }, xp: 500 },
+  { id: "s_vitorias", texto: "Vença 8 fases", stat: "vitorias", meta: 8, premio: { nucleos: 15 }, xp: 600 },
+  { id: "s_abates", texto: "Destrua 8.000 inimigos", stat: "abates", meta: 8000, premio: { creditos: 2000 }, xp: 600 },
+  { id: "s_chefes", texto: "Derrote 6 chefes", stat: "chefes", meta: 6, premio: { nucleos: 15 }, xp: 600 },
+  { id: "s_ult", texto: "Use o ultimate 25 vezes", stat: "ultimates", meta: 25, premio: { creditos: 1500 }, xp: 500 },
+  { id: "s_evo", texto: "Evolua 5 sentinelas", stat: "evolucoes", meta: 5, premio: { cristais: 10 }, xp: 600 },
+  { id: "s_pontos", texto: "Faça 60.000 pontos", stat: "pontos", meta: 60000, premio: { cristais: 8 }, xp: 600 },
+  { id: "s_diarias", texto: "Complete 20 missões diárias", stat: "diarias", meta: 20, premio: { cristais: 15 }, xp: 700 },
+];
 
 export interface ItemLoja {
   id: string;
@@ -169,19 +194,21 @@ export const SKINS: SkinDef[] = [
 // ------------------------------------------------------------- passe de batalha (gratuito)
 
 export const PASSE = {
-  niveis: 30,
-  /** Pontos de comandante por nível do passe. */
-  pontosPorNivel: 1200,
+  niveis: 60,
+  /** XP de missões por nível do passe (partidas não dão XP de passe: só as missões diárias e semanais). */
+  xpPorNivel: 1000,
+  /** Versão das regras: mudar zera o passe de quem tinha progresso da regra antiga. */
+  versao: 2,
 };
 
 /** Recompensa de cada nível (índice 0 = nível 1). */
-export const PASSE_PREMIOS: (Premio & { skin?: string })[] = Array.from({ length: 30 }, (_, i) => {
+export const PASSE_PREMIOS: (Premio & { skin?: string })[] = Array.from({ length: 60 }, (_, i) => {
   const n = i + 1;
-  if (n === 15) return { skin: "escudo_roxo" };
-  if (n === 30) return { skin: "escudo_dourado", cristais: 20 };
-  if (n === 25) return { skin: "planeta_alien" };
+  if (n === 30) return { skin: "escudo_roxo" };
+  if (n === 50) return { skin: "planeta_alien" };
+  if (n === 60) return { skin: "escudo_dourado", cristais: 20 };
   if (n % 10 === 0) return { chip: 2 };
-  if (n % 5 === 0) return { cristais: 8 };
-  if (n % 3 === 0) return { nucleos: 6 };
-  return { creditos: 250 + n * 25 };
+  if (n % 5 === 0) return { cristais: 5 };
+  if (n % 3 === 0) return { nucleos: 4 };
+  return { creditos: 200 + n * 15 };
 });
