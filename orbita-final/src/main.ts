@@ -2,8 +2,11 @@ import { Application } from "pixi.js";
 import "./style.css";
 import { Game } from "./core/Game";
 import { carregarSprites } from "./render/Sprites";
+import { prebaixarArtes, retentarImagens } from "./core/Atualizacao";
+import { noApk } from "./core/Nuvem";
 
 async function main(): Promise<void> {
+  retentarImagens();
   const app = new Application();
   await app.init({
     background: "#05070f",
@@ -34,6 +37,8 @@ async function main(): Promise<void> {
   if ("serviceWorker" in navigator && import.meta.env.PROD) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   }
+  // imagens no aparelho com antecedência: no APK todas; no site só as cartas (as do menu já carregaram)
+  window.setTimeout(() => void prebaixarArtes(noApk()), 6000);
 }
 
 void main();

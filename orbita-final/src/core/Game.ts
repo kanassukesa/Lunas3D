@@ -15,6 +15,7 @@ import { Hud } from "../ui/Hud";
 import { telaLevelUp } from "../ui/LevelUpScreen";
 import { botao3, faixaTitulo, telaBuild, telaNovidades, telaPausa, telaResultado } from "../ui/Panels";
 import { NOVIDADES, VERSAO_ATUAL } from "../data/novidades";
+import { vigiarAtualizacao } from "./Atualizacao";
 import { telaCla } from "../ui/meta/Cla";
 import { telaAmigos, telaConversa } from "../ui/meta/Amigos";
 import { telaBau } from "../ui/Bau";
@@ -159,10 +160,29 @@ export class Game implements Nav {
     this.ir(this.save.perfil.nome ? "hub" : nuvem.configurada ? "entrada" : "login");
     this.resize();
     void this.conectarNuvem();
+    // versão nova publicada: aviso no topo (funciona no site e no APK, que carrega o site)
+    vigiarAtualizacao(() => this.avisarAtualizacao());
     // "online agora" para os amigos + selo de pedidos/mensagens novas (a cada minuto, com o app aberto)
     window.setInterval(() => { if (!document.hidden) void nuvem.pingOnline(); }, 60_000);
     this.cerimoniaPendente();
     this.novidadesPendentes();
+  }
+
+  /** Faixa no topo: "Nova atualização disponível". Na batalha, sugere terminar a partida antes. */
+  private avisarAtualizacao(): void {
+    if (document.querySelector(".aviso-atualizacao")) return;
+    const emBatalha = !!this.run && !this.run.b.fim;
+    const el = h("div", { class: "aviso-atualizacao" },
+      h("span", { class: "aa-ic", html: ic("estrela") }),
+      h("div", { class: "aa-txt" }, h("b", { text: "Nova atualização disponível!" }),
+        h("small", { text: emBatalha ? "Termine a partida e reinicie para atualizar." : "Reinicie para ver as novidades." })),
+      h("button", { class: "btn ouro pequeno", text: "Reiniciar", onclick: () => {
+        if (this.run && !this.run.b.fim && !el.dataset.confirma) { el.dataset.confirma = "1"; toast(this.root, "Toque de novo: a partida atual será perdida."); return; }
+        location.reload();
+      } }),
+      h("button", { class: "aa-fechar", "aria-label": "Fechar", html: ic("fechar"), onclick: () => el.remove() }));
+    this.root.append(el);
+    audio.sfx("nivel");
   }
 
   /** "Teve atualização": mostra uma vez o resumo da versão nova (quem está começando agora não vê). */

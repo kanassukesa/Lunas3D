@@ -11,6 +11,16 @@ export interface Novidade {
 
 export const NOVIDADES: Novidade[] = [
   {
+    versao: "3.8",
+    titulo: "Jogo mais leve e rápido",
+    itens: [
+      "Imagens até 3x mais leves: o jogo baixa 13 MB em vez de 31 MB.",
+      "As fotos das cartas já ficam salvas no aparelho; no app, todas as imagens.",
+      "Se uma imagem falhar, o jogo tenta de novo sozinho.",
+      "Aviso no topo quando sair uma atualização nova.",
+    ],
+  },
+  {
     versao: "3.7",
     titulo: "Balanceamento",
     itens: [

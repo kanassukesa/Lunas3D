@@ -268,6 +268,11 @@ def processar(arq):
 if __name__ == "__main__":
     os.makedirs(SAIDA, exist_ok=True)
     alvos = sys.argv[1:] or sorted(os.listdir(ORIG))
+    from otimizar_sprites import otimizar  # deixa leve para o celular (WebP)
     for a in alvos:
         if a.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
             processar(a)
+            nome = os.path.splitext(a)[0]
+            for ext in (".png", ".jpg"):
+                if os.path.exists(os.path.join(SAIDA, nome + ext)):
+                    otimizar(nome + ext)
