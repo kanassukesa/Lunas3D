@@ -2,10 +2,16 @@
  "canhao": 0.5058,
  "colmeia": 0.9635,
  "domo": 0.9705,
+ "espelho": 0.5158,
+ "fornalha": 0.4545,
  "gelo": 0.8489,
  "gravidade": 0.9213,
  "laser": 0.4625,
  "missil": 0.8945,
+ "nano": 0.466,
+ "plasma": 0.4288,
+ "portal": 0.5179,
  "prisma": 0.7529,
+ "serra": 0.4869,
  "trilho": 0.3464
 }
