@@ -11,6 +11,17 @@ export interface Novidade {
 
 export const NOVIDADES: Novidade[] = [
   {
+    versao: "3.6",
+    titulo: "Amigos, chat e Chefe do Clã",
+    itens: [
+      "Amigos: procure pelo nome do comandante, adicione e veja quem está online.",
+      "Chat global para falar com todo mundo, e chat privado com os seus amigos.",
+      "Chefe do Clã: um chefe gigante por semana; o dano de todo o clã soma e todo mundo ganha prêmio.",
+      "Clã: criar custa 50 diamantes e os membros entram por convite.",
+      "Conta: entre com e-mail e senha, crie uma conta ou jogue como convidado.",
+    ],
+  },
+  {
     versao: "3.5",
     titulo: "Clã, missões e visual novo",
     itens: [

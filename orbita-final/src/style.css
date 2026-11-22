@@ -1734,3 +1734,41 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 .g-logo { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 8px; border-radius: 50%; font: 900 15px system-ui, sans-serif;
   color: #fff; background: conic-gradient(#ea4335 0 25%, #fbbc05 0 50%, #34a853 0 75%, #4285f4 0); }
 .btn-link { align-self: center; padding: 6px; background: none; border: 0; color: #8fd8ff; font-weight: 800; text-decoration: underline; font-size: 14px; }
+/* amigos e conversa */
+.amigos-corpo { display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px; }
+.amigos-lista { display: flex; flex-direction: column; gap: 6px; }
+.amigo-linha { width: 100%; text-align: left; }
+.amigo-ponto { width: 9px; height: 9px; flex: none; border-radius: 50%; background: #56627a; }
+.amigo-ponto.on { background: #49e07a; box-shadow: 0 0 6px #49e07a; }
+.amigo-linha.online { border-color: rgba(73, 224, 122, 0.45) !important; }
+.amigo-chat { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: rgba(79, 214, 255, 0.15); color: #8fd8ff; }
+.amigo-chat .ic { width: 16px; height: 16px; }
+.amigo-badge { position: static !important; display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; font-style: normal; font-size: 11px; font-weight: 900; background: var(--vermelho); color: #fff; }
+.amigo-pedido { border-color: rgba(255, 194, 61, 0.6) !important; }
+.conversa-topo { margin-bottom: 8px; }
+.conversa-lista { max-height: calc(100vh - 260px); min-height: 200px; }
+.conversa-remover { color: var(--vermelho) !important; margin-top: 10px; }
+/* chefe do clã */
+.raid-cartao { display: flex; flex-direction: column; gap: 10px; border-color: #ff7a4a !important; }
+.raid-cartao.derrotado { border-color: var(--ouro) !important; }
+.raid-topo { display: flex; gap: 12px; align-items: center; }
+.raid-arte { width: 84px; height: 84px; flex: none; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255, 90, 60, 0.6)); display: grid; place-items: center; }
+.raid-cartao.derrotado .raid-arte { filter: grayscale(0.8) brightness(0.7); }
+.raid-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.raid-txt small { font-size: 10px; font-weight: 900; letter-spacing: 0.08em; color: #ffb08a; }
+.raid-txt b { font-size: 20px; font-weight: 900; font-style: italic; }
+.raid-barra { position: relative; height: 18px; border-radius: 9px; overflow: hidden; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 120, 80, 0.6); }
+.raid-barra i { display: block; height: 100%; background: linear-gradient(180deg, #ff9a6a, #e0313e 60%, #9a1020); box-shadow: 0 0 10px #ff5a3c; transition: width 0.4s; }
+.raid-barra span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; font-weight: 900; text-shadow: 0 1px 2px #000; }
+.raid-premio { font-size: 13px; color: #ffe08a; }
+.raid-premio small { color: var(--texto2); }
+.raid-premio .ic-moeda { width: 16px; height: 16px; vertical-align: -3px; }
+/* chat global */
+.global-regras { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.global-regras .ic { width: 14px; height: 14px; color: var(--ouro); flex: none; }
+.global-lista { max-height: calc(100vh - 300px); }
+.global-msg small { display: flex; align-items: center; gap: 4px; }
+.global-msg small b { color: #bfe9ff; }
+.global-msg small b.nome-elite { color: var(--ouro); }
+.global-denunciar { margin-left: auto; display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; background: none; color: rgba(255, 140, 140, 0.6); }
+.global-denunciar .ic { width: 12px; height: 12px; }

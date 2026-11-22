@@ -5,7 +5,7 @@ import type { Oferta } from "../battle/CardSystem";
 import type { Modo } from "../battle/types";
 import { BALANCE, DIFICULDADES } from "../data/balance";
 import { STAGES } from "../data/stages";
-import { calcularRecompensas, creditosParciais, gerarChip, podeMelhorar, CUSTO_REVIVER, desafioDoDia, faseLiberada, hojeStr, jornadaDaSemana, snapshot, type Recompensa } from "../meta/Meta";
+import { calcularRecompensas, creditosParciais, gerarChip, podeMelhorar, CUSTO_REVIVER, desafioDoDia, faseLiberada, hojeStr, jornadaDaSemana, semanaStr, snapshot, type Recompensa } from "../meta/Meta";
 import { Background } from "../render/Background";
 import { BattleRenderer } from "../render/BattleRenderer";
 import { HubScene } from "../render/HubScene";
@@ -16,6 +16,7 @@ import { telaLevelUp } from "../ui/LevelUpScreen";
 import { botao3, faixaTitulo, telaBuild, telaNovidades, telaPausa, telaResultado } from "../ui/Panels";
 import { NOVIDADES, VERSAO_ATUAL } from "../data/novidades";
 import { telaCla } from "../ui/meta/Cla";
+import { telaAmigos, telaConversa } from "../ui/meta/Amigos";
 import { telaBau } from "../ui/Bau";
 import { criarCoach, type PassoCoach } from "../ui/Tutorial";
 import { Rng } from "./Rng";
@@ -158,6 +159,8 @@ export class Game implements Nav {
     this.ir(this.save.perfil.nome ? "hub" : nuvem.configurada ? "entrada" : "login");
     this.resize();
     void this.conectarNuvem();
+    // "online agora" para os amigos + selo de pedidos/mensagens novas (a cada minuto, com o app aberto)
+    window.setInterval(() => { if (!document.hidden) void nuvem.pingOnline(); }, 60_000);
     this.cerimoniaPendente();
     this.novidadesPendentes();
   }
@@ -220,6 +223,7 @@ export class Game implements Nav {
     }
     const remoto = await nuvem.carregar().catch(() => null);
     if (remoto && (remoto.pontos ?? 0) >= this.save.pontos) Object.assign(this.save, carregarDe(remoto));
+    void nuvem.pingOnline().then(() => { if (!this.run && this.telaAtual() === "hub" && nuvem.avisosAmigos) this.ir("hub"); });
     const n = await sincronizarCompras(this.save).catch(() => 0);
     this.persistir();
     if (n) toast(this.root, `${n} compra${n > 1 ? "s" : ""} entregue${n > 1 ? "s" : ""}!`);
@@ -275,6 +279,8 @@ export class Game implements Nav {
       skins: () => telaSkins(this),
       ranking: () => telaRanking(this),
       cla: () => telaCla(this),
+      amigos: () => telaAmigos(this),
+      conversa: () => telaConversa(this),
       comandantes: () => telaComandantes(this),
       briefing: () => telaBriefing(this),
       config: () => telaConfig(this),
@@ -538,6 +544,11 @@ export class Game implements Nav {
       const antes = patenteDe(this.save).indice;
       run.recompensa = calcularRecompensas(this.save, b, run.modo);
       run.recompensa.pontos = registrarPartida(this.save, b, run.modo, !run.onb && !run.tutorial);
+      // Chefe do Clã: o dano da partida soma contra o chefe da semana (o servidor ignora quem não tem clã)
+      if (nuvem.logado() && !run.onb && !run.tutorial) {
+        const dano = b.sentinels.reduce((a, x) => a + x.danoCausado, 0);
+        if (dano > 0) void nuvem.danoRaid(semanaStr(), dano).catch(() => {});
+      }
       if (b.desistiu) run.recompensa.perdaPontos = Math.round(run.recompensa.pontos / BALANCE.recompensas.fatorDesistencia - run.recompensa.pontos);
       const depois = patenteDe(this.save);
       if (depois.indice > antes) { run.recompensa.novaPatente = depois.atual.nome; run.promocao = { de: antes, para: depois.indice }; }

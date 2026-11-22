@@ -1,4 +1,10 @@
-import { PATENTES } from "../../data/comandante";
+import { PATENTES, type Premio } from "../../data/comandante";
+import { BOSSES } from "../../data/bosses";
+import { hashString } from "../../core/Rng";
+import { semanaStr } from "../../meta/Meta";
+import { darPremio } from "../../meta/Comandante";
+import { urlArte } from "../../render/Sprites";
+import { celebrar } from "../Premio";
 import { nuvem, type Cla, type ConviteCla, type JogadorBusca, type MembroCla, type MensagemCla } from "../../core/Nuvem";
 import { audio } from "../../core/Audio";
 import { fmtInt, h, ICONE_MOEDA, toast } from "../dom";
@@ -28,7 +34,7 @@ const MAX_MEMBROS = 30;
 /** Preço para fundar um clã (diamantes = cristais do jogo). */
 export const CUSTO_CLA = 50;
 
-let aba: "membros" | "chat" | "ranking" = "membros";
+let aba: "membros" | "chat" | "chefe" | "ranking" = "membros";
 let busca = "";
 let chatTimer = 0;
 
@@ -185,11 +191,12 @@ function meuClaView(nav: Nav, c: Cla, posicao: number): HTMLElement[] {
         h("span", { html: `${ic("estrela", "ic ic-ouro")} <b>${fmtInt(c.pontos)}</b> pts` }),
         h("span", { html: `${ic("ranking")} <b>#${posicao}</b>` }),
         h("span", { class: "cla-estado", html: c.aberto ? `${ic("grupo")} Aberto` : `${ic("cadeado")} Só convite` }))));
-  const abas = h("div", { class: "abas-rank cla-abas" }, ...([["membros", "grupo", "Membros"], ["chat", "correio", "Chat"], ["ranking", "ranking", "Clãs"]] as const).map(([id, icone, nome]) =>
+  const abas = h("div", { class: "abas-rank cla-abas" }, ...([["membros", "grupo", "Membros"], ["chat", "correio", "Chat"], ["chefe", "espadas", "Chefe"], ["ranking", "ranking", "Clãs"]] as const).map(([id, icone, nome]) =>
     h("button", { class: "aba-rank" + (aba === id ? " ativa" : ""), onclick: () => { aba = id; nav.ir("cla"); } }, h("span", { html: ic(icone) }), h("small", { text: nome }))));
   const conteudo = h("div", { class: "cla-conteudo" }, h("div", { class: "rank-carregando", text: "Carregando…" }));
   if (aba === "membros") abaMembros(nav, conteudo, c);
   else if (aba === "chat") abaChat(nav, conteudo);
+  else if (aba === "chefe") abaChefe(nav, conteudo);
   else abaRanking(nav, conteudo);
   const sair = h("button", { class: "btn pequeno cla-sair", html: icT("sair", "Sair do clã"), onclick: () => {
     if (sair.dataset.confirma) { void acao(nav, () => nuvem.sairCla(), "Você saiu do clã."); return; }
@@ -289,6 +296,78 @@ function abaChat(nav: Nav, alvo: HTMLElement): void {
     if (nav.telaAtual() !== "cla" || aba !== "chat" || !alvo.isConnected) { clearInterval(chatTimer); return; }
     void atualizar();
   }, 5000);
+}
+
+// ------------------------------------------------------------------ Chefe do Clã (raid semanal)
+
+/** Prêmio de quem ajudou a derrubar o chefe (top 3 de dano ganha diamantes extras). */
+export function premioRaid(posicao: number): Premio {
+  const extra = posicao === 1 ? 20 : posicao <= 3 ? 10 : 0;
+  return { creditos: 2000, nucleos: 10, cristais: 20 + extra };
+}
+
+/** Chefe da semana: um dos chefes da campanha, sorteado pela semana (igual para todos os clãs). */
+export function chefeDaSemana(semana = semanaStr()): { id: string; nome: string } {
+  const ids = Object.keys(BOSSES);
+  const id = ids[hashString("raid-" + semana) % ids.length];
+  return { id, nome: BOSSES[id].nome };
+}
+
+function abaChefe(nav: Nav, alvo: HTMLElement): void {
+  const semana = semanaStr();
+  const chefe = chefeDaSemana(semana);
+  const segunda = new Date();
+  segunda.setHours(0, 0, 0, 0);
+  segunda.setDate(segunda.getDate() + (((8 - segunda.getDay()) % 7) || 7));
+  const dias = Math.max(0, Math.ceil((segunda.getTime() - Date.now()) / 864e5));
+  nuvem.raidDoCla(semana).then((ls) => {
+    const base = ls[0];
+    const vida = Number(base?.vida ?? 0);
+    const dano = Math.min(vida, Number(base?.dano ?? 0));
+    const derrotado = !!base?.derrotado;
+    const membros = ls.filter((l) => l.membro && Number(l.dano_membro) > 0);
+    const eu = membros.find((l) => l.eu);
+    const arte = urlArte(`chefe_${chefe.id}`);
+    const frac = vida ? 1 - dano / vida : 1;
+    const premio = premioRaid(99);  // prêmio base (sem o bônus de top 3)
+    const cartao = h("div", { class: "cartao neon raid-cartao" + (derrotado ? " derrotado" : "") },
+      h("div", { class: "raid-topo" },
+        arte ? h("img", { class: "raid-arte", src: arte, alt: chefe.nome }) : h("span", { class: "raid-arte", html: ic("espadas") }),
+        h("div", { class: "raid-txt" },
+          h("small", { text: `CHEFE DA SEMANA · termina em ${dias} dia${dias === 1 ? "" : "s"}` }),
+          h("b", { text: chefe.nome }),
+          h("div", { class: "raid-barra" }, h("i", { style: `width:${Math.max(0, frac * 100).toFixed(1)}%` }),
+            h("span", { text: derrotado ? "DERROTADO!" : `${fmtInt(vida - dano)} / ${fmtInt(vida)}` })))),
+      h("p", { class: "desc", text: derrotado
+        ? "O clã derrubou o chefe desta semana! Quem causou dano ganha o prêmio."
+        : "Todo dano que as suas sentinelas causam nas partidas soma contra o chefe. Derrubem juntos até segunda-feira!" }),
+      h("div", { class: "raid-premio", html: `Prêmio: ${ICONE_MOEDA.cristais} ${premio.cristais} · ${ICONE_MOEDA.creditos} ${fmtInt(premio.creditos!)} · ${ICONE_MOEDA.nucleos} ${premio.nucleos} <small>(top 1: +20 💎, top 3: +10 💎)</small>` }));
+    if (derrotado && eu && !eu.premio_pego) {
+      cartao.append(h("button", { class: "btn ouro", html: icT("presente", "Resgatar prêmio"), onclick: async (ev: MouseEvent) => {
+        const o = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+        try {
+          const pos = await nuvem.resgatarRaid(semana);
+          const p = premioRaid(pos);
+          darPremio(nav.save, p);
+          nav.persistir();
+          nav.ir("cla");
+          celebrar(nav.root, o, p, null, `CHEFE DO CLÃ · ${pos}º EM DANO`);
+        } catch (e) { toast(nav.root, (e as Error).message); }
+      } }));
+    } else if (derrotado && eu?.premio_pego) {
+      cartao.append(h("div", { class: "desc", html: icT("check", "Prêmio resgatado. Volte na segunda para o próximo chefe!") }));
+    } else if (derrotado && !eu) {
+      cartao.append(h("div", { class: "desc", text: "Você não causou dano neste chefe, então ficou sem o prêmio desta vez." }));
+    }
+    const lista = h("div", { class: "rank-lista" }, ...(membros.length ? membros.map((l, i) =>
+      h("div", { class: "rank-linha" + (l.eu ? " eu" : "") + (i < 3 ? ` top${i + 1}` : "") },
+        h("span", { class: "rank-pos", text: String(i + 1) }),
+        avatarComMoldura(l.avatar, false),
+        h("div", { class: "rank-nome" }, nomeComandante(l.nome, false), h("small", { text: `${(Number(l.dano_membro) / Math.max(1, dano) * 100).toFixed(0)}% do dano` })),
+        h("b", { class: "rank-val", text: fmtInt(Number(l.dano_membro)) })))
+      : [aviso("Ninguém atacou ainda. Jogue uma partida para causar o primeiro dano!", "espadas")]));
+    alvo.replaceChildren(cartao, h("div", { class: "secao-titulo", text: "Dano dos membros" }), lista);
+  }).catch(() => alvo.replaceChildren(aviso("Não foi possível carregar o chefe do clã agora.")));
 }
 
 function abaRanking(nav: Nav, alvo: HTMLElement): void {

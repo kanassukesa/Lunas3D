@@ -261,6 +261,38 @@ class Nuvem {
   editarCla(descricao: string, aberto: boolean): Promise<unknown> { return this.rpc("editar_cla", { p_descricao: descricao, p_aberto: aberto }); }
   enviarChat(texto: string): Promise<unknown> { return this.rpc("enviar_chat", { p_texto: texto }); }
 
+  // ---------------------------------------------------------------- amigos e chat privado
+
+  /** Pedidos de amizade recebidos + mensagens não lidas (o número do selo em "Amigos"). Atualizado a cada minuto. */
+  avisosAmigos = 0;
+
+  /** "Estou online" + atualiza o número de avisos dos amigos. */
+  async pingOnline(): Promise<void> {
+    if (!this.userId) return;
+    await this.rpc("marcar_online").catch(() => {});
+    const amigos = await this.meusAmigos().catch(() => [] as Amigo[]);
+    this.avisosAmigos = amigos.filter((a) => a.situacao === "recebido").length + amigos.reduce((n, a) => n + (a.nao_lidas || 0), 0);
+  }
+  async meusAmigos(): Promise<Amigo[]> { return ((await this.rpc("meus_amigos")) ?? []) as Amigo[]; }
+  async buscarComandantes(nome: string): Promise<ComandanteBusca[]> { return ((await this.rpc("buscar_comandantes", { p_nome: nome })) ?? []) as ComandanteBusca[]; }
+  async pedirAmizade(jogador: string): Promise<string> { return String(await this.rpc("pedir_amizade", { p_jogador: jogador })); }
+  responderAmizade(pedido: number, aceitar: boolean): Promise<unknown> { return this.rpc("responder_amizade", { p_pedido: pedido, p_aceitar: aceitar }); }
+  removerAmigo(amigo: string): Promise<unknown> { return this.rpc("remover_amigo", { p_amigo: amigo }); }
+  enviarMensagem(amigo: string, texto: string): Promise<unknown> { return this.rpc("enviar_mensagem", { p_amigo: amigo, p_texto: texto }); }
+  async lerConversa(amigo: string): Promise<MensagemPrivada[]> { return ((await this.rpc("ler_conversa", { p_amigo: amigo })) ?? []) as MensagemPrivada[]; }
+
+  // ---------------------------------------------------------------- chat global
+  async lerGlobal(): Promise<MensagemGlobal[]> { return ((await this.rpc("ler_global")) ?? []) as MensagemGlobal[]; }
+  enviarGlobal(texto: string): Promise<unknown> { return this.rpc("enviar_global", { p_texto: texto }); }
+  denunciarGlobal(id: number): Promise<unknown> { return this.rpc("denunciar_global", { p_msg: id }); }
+
+  // ---------------------------------------------------------------- Chefe do Clã
+
+  /** Soma o dano de uma partida no chefe da semana (o servidor ignora se não estiver em clã). */
+  danoRaid(semana: string, dano: number): Promise<unknown> { return this.rpc("dano_raid", { p_semana: semana, p_dano: Math.round(dano) }); }
+  async raidDoCla(semana: string): Promise<LinhaRaid[]> { return ((await this.rpc("raid_do_cla", { p_semana: semana })) ?? []) as LinhaRaid[]; }
+  async resgatarRaid(semana: string): Promise<number> { return Number(await this.rpc("resgatar_raid", { p_semana: semana })); }
+
   /** Procura jogadores pelo nome do comandante (para convidar ao clã). */
   async buscarJogadores(nome: string): Promise<JogadorBusca[]> {
     return ((await this.rpc("buscar_jogadores", { p_nome: nome })) ?? []) as JogadorBusca[];
@@ -304,3 +336,8 @@ export interface MembroCla { id: string; eu: boolean; cargo: "lider" | "oficial"
 export interface MensagemCla { id: number; autor: string; eu: boolean; nome: string; texto: string; criado_em: string }
 export interface JogadorBusca { id: string; nome: string; avatar: number; patente: number; pontos: number; tem_cla: boolean; convidado: boolean }
 export interface ConviteCla { id: number; cla_id: string; nome: string; tag: string; emblema: number; membros: number; de_nome: string; criado_em: string }
+export interface Amigo { id: string; pedido: number; situacao: "amigo" | "recebido" | "enviado"; nome: string; avatar: number; patente: number; pontos: number; visto_em: string; nao_lidas: number }
+export interface ComandanteBusca { id: string; nome: string; avatar: number; patente: number; pontos: number; amizade: "" | "amigo" | "enviado" | "recebido" }
+export interface MensagemPrivada { id: number; eu: boolean; texto: string; criado_em: string }
+export interface LinhaRaid { vida: number; dano: number; derrotado: boolean; membro: string | null; nome: string; avatar: number; dano_membro: number; eu: boolean | null; premio_pego: boolean | null }
+export interface MensagemGlobal { id: number; autor: string; eu: boolean; nome: string; avatar: number; patente: number; elite: boolean; texto: string; criado_em: string }
