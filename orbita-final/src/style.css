@@ -1470,3 +1470,7 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
   background: linear-gradient(180deg, transparent, rgba(4, 8, 20, 0.95) 35%); display: flex; justify-content: center; }
 .brief-rodape .bt3 { width: min(86vw, 360px); }
 .brief-rodape .bt3-txt { font-size: 24px; letter-spacing: 0.06em; }
+/* briefing: capa mais alta para o texto não subir por baixo do título do topo */
+.brief-capa { height: 215px; margin-top: -10px; }
+.brief-capa-txt { bottom: 30px; gap: 4px; }
+.brief-dif { margin-bottom: 2px; }
