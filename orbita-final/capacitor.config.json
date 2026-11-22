@@ -1,9 +1,11 @@
 {
   "appId": "com.orbitafinal.jogo",
   "appName": "Órbita Final",
-  "webDir": "dist",
+  "webDir": "apk-web",
   "backgroundColor": "#05070f",
-  "android": { "allowMixedContent": false },
+  "android": {
+    "allowMixedContent": false
+  },
   "server": {
     "url": "https://orbita-final.vercel.app",
     "errorPath": "offline.html"
