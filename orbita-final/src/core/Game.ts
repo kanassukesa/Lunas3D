@@ -29,7 +29,7 @@ import {
   telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaPasse, telaProgresso, telaRanking, telaComandantes, telaRecompensas, telaSkins,
 } from "../ui/meta/Hub";
 import { linhaRanking, patenteDe, registrarPartida, ultDoComandante } from "../meta/Comandante";
-import { telaChipsV2, telaFases, telaHangarV2, telaModosV2, telaPlanetaV2 } from "../ui/meta/Paineis";
+import { telaBriefing, telaChipsV2, telaFases, telaHangarV2, telaModosV2, telaPlanetaV2 } from "../ui/meta/Paineis";
 import { audio } from "./Audio";
 import { FixedLoop } from "./Loop";
 import { carregar, carregarDe, salvar, type SaveData } from "./Save";
@@ -202,6 +202,7 @@ export class Game implements Nav {
       skins: () => telaSkins(this),
       ranking: () => telaRanking(this),
       comandantes: () => telaComandantes(this),
+      briefing: () => telaBriefing(this),
       config: () => telaConfig(this),
     };
     const el = (mapa[tela] ?? mapa.hub)();

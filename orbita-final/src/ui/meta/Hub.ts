@@ -21,6 +21,7 @@ import { criarPreviaUlt } from "../PreviaUlt";
 import { nuvem, type LinhaRanking, type ModoRanking } from "../../core/Nuvem";
 const ret = (ev: MouseEvent) => (ev.currentTarget as HTMLElement).getBoundingClientRect();
 import { moedas, proximaFase, tela, type Nav } from "./Screens";
+import { abrirBriefing } from "./Paineis";
 
 // ------------------------------------------------------------------ peças
 
@@ -168,7 +169,7 @@ export function telaHub(nav: Nav): HTMLElement {
         lateral("presente", "Recompensas", () => nav.ir("recompensas"), loginDisponivel(s) ? 1 : 0),
         lateral("passe", "Passe de Batalha", () => nav.ir("passe"), passeProntos(s) + premiumProntos(s)),
         lateral("carrinho", "Loja", () => nav.ir("loja"), s.dia.lojaGratis ? 0 : 1, "lat-ouro"))),
-    h("button", { class: "btn-batalha" + (urlArte("botao_batalha") ? " com-arte" : ""), style: urlArte("botao_batalha") ? `--arte:url("${urlArte("botao_batalha")}")` : "", onclick: () => nav.jogarCampanha(idx, 0) },
+    h("button", { class: "btn-batalha" + (urlArte("botao_batalha") ? " com-arte" : ""), style: urlArte("botao_batalha") ? `--arte:url("${urlArte("botao_batalha")}")` : "", onclick: () => abrirBriefing(nav, idx, 0, "hub") },
       h("span", { class: "bb-play", html: ic("play") }),
       h("span", { class: "bb-corpo" },
         h("span", { class: "bb-seta", html: "&#10095;&#10095;" }),

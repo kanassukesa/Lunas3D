@@ -9,6 +9,8 @@ import { CHIP_RARIDADE_COR, CHIP_RARIDADES, CHIP_SET_MAP, CHIP_SETS, CHIP_SLOT_N
 import { SENTINELS, SENTINEL_IDS } from "../../data/sentinels";
 import { SETORES, STAGES } from "../../data/stages";
 import { CAMPOS } from "../../data/journey";
+import { ENEMIES } from "../../data/enemies";
+import { botao3 } from "../Panels";
 import { TALENTS } from "../../data/talents";
 import type { Chip, ChipSlot, SentinelId } from "../../data/types";
 import { audio } from "../../core/Audio";
@@ -76,7 +78,7 @@ export function telaFases(nav: Nav, difPedida: number): HTMLElement {
     const propria = urlArte(`fase_${st.id}`);
     const fundo = propria ?? arte(`fase_${((st.id - 1) % 10) + 1}`, ARTE_FASE[i % ARTE_FASE.length]);
     const campos = (st.campos ?? []).map((c) => CAMPOS.find((x) => x.id === c)).filter(Boolean) as typeof CAMPOS;
-    const linha = h("button", { class: "fase-v2" + (lib ? "" : " bloq") + (ehAtual ? " atual" : "") + ((st.setor ?? 1) === 2 ? " setor2" : ""), disabled: !lib, onclick: () => nav.jogarCampanha(i, dif) },
+    const linha = h("button", { class: "fase-v2" + (lib ? "" : " bloq") + (ehAtual ? " atual" : "") + ((st.setor ?? 1) === 2 ? " setor2" : ""), disabled: !lib, onclick: () => abrirBriefing(nav, i, dif) },
       fundo ? h("img", { class: "fase-arte" + (!propria && (st.setor ?? 1) === 2 ? " tingida" : ""), src: fundo, alt: "" }) : null,
       h("span", { class: "fase-num" + (est > 0 ? " feita" : ""), html: lib ? `<b>${st.id}</b>` : ic("cadeado") }),
       h("span", { class: "fase-txt" },
@@ -310,4 +312,88 @@ export function telaHangarV2(nav: Nav): HTMLElement {
     h("div", { class: "cartao neon deck-info" }, h("span", { class: "deck-ic", html: ic("cartas") }),
       h("div", { class: "desc", html: `<b>Deck:</b> 1 sentinela <b style="color:var(--ciano)">base</b> (começa a partida e define o ultimate) + até ${BALANCE.maxSlots - 1} que podem aparecer como carta. Os slots da partida são as sentinelas do deck: hoje <b style="color:var(--ouro)">${nDeck}/${BALANCE.maxSlots}</b>.` })),
     ...cards);
+}
+
+// ------------------------------------------------------------------ BRIEFING (antes de começar a fase)
+
+/** Fase escolhida para o briefing. */
+let briefing = { idx: 0, dif: 0, volta: "mapa" };
+
+/** Abre o briefing da fase em vez de começar direto. */
+export function abrirBriefing(nav: Nav, idx: number, dif: number, volta = "mapa"): void {
+  briefing = { idx, dif, volta };
+  nav.ir("briefing");
+}
+
+/** Descrição curta de cada inimigo (o que ele faz). */
+const DESC_INIMIGO: Record<string, string> = {
+  batedor: "Rápido e frágil, vem em linha reta.",
+  tanque: "Lento e muito resistente.",
+  enxame: "Grupos grandes de inimigos pequenos.",
+  atirador: "Para longe e atira no planeta.",
+  kamikaze: "Acelera perto do planeta e explode.",
+  divisor: "Ao morrer, se divide em fragmentos.",
+  escudeiro: "Dá escudo aos inimigos em volta.",
+  meteoro: "Cruza a tela na diagonal.",
+  espectro: "Fica invisível e reaparece mais perto.",
+  medico: "Cura os inimigos em volta. Mate primeiro!",
+  bombardeiro: "Solta minas pelo caminho.",
+};
+
+export function telaBriefing(nav: Nav): HTMLElement {
+  const s = nav.save;
+  const { idx, dif } = briefing;
+  const st = STAGES[idx];
+  const D = DIFICULDADES[dif];
+  const chefe = BOSSES[st.chefe];
+  const melhor = estrelasDe(s, dif)[idx] ?? 0;
+  const tipos = [...new Set(st.ondas.map((o) => o.tipo))].filter((t) => ENEMIES[t] && t !== "mitose_mini" && t !== "mina" && t !== "muro");
+  const campos = (st.campos ?? []).map((c) => CAMPOS.find((x) => x.id === c)).filter(Boolean) as typeof CAMPOS;
+  const E = BALANCE.estrelas;
+  const criterios = [
+    { n: 1, txt: "Vencer a fase (derrotar o chefe)" },
+    { n: 2, txt: `Terminar com mais de ${Math.round(E.hp2 * 100)}% da vida do planeta` },
+    { n: 3, txt: `Terminar com mais de ${Math.round(E.hp3 * 100)}% da vida do planeta` },
+  ];
+  const arteFase = urlArte(`fase_${st.id}`) ?? urlArte(`fase_${((st.id - 1) % 10) + 1}`);
+  const el = h("div", { class: "tela tela-v2 brief" },
+    h("div", { class: "topo topo-v2" },
+      h("button", { class: "btn icone btn-voltar", html: ic("voltar"), "aria-label": "Voltar", onclick: () => nav.ir(briefing.volta) }),
+      h("div", { class: "titulo-tela", text: `FASE ${st.id}` }),
+      moedas(nav)),
+    h("div", { class: "tela-conteudo" },
+      h("div", { class: "brief-capa", style: arteFase ? `background-image:url('${arteFase}')` : "" },
+        h("div", { class: "brief-capa-txt" },
+          h("span", { class: "brief-dif", style: `--cor:${D.cor}`, html: icT(D.icone, D.nome) }),
+          h("b", { text: st.nome }),
+          h("small", { text: `${(st.setor ?? 1) === 2 ? "Setor 2 · Fronteira Sombria" : "Setor 1 · Órbita Próxima"}` }))),
+      // estrelas
+      h("div", { class: "cartao neon ouro brief-est" },
+        h("div", { class: "brief-tit", html: `${ic("estrela", "ic-estrela")}<span>Como ganhar as 3 estrelas</span>` }),
+        ...criterios.map((c) => h("div", { class: "brief-crit" + (melhor >= c.n ? " ok" : "") },
+          h("span", { class: "brief-crit-est", html: Array.from({ length: c.n }, () => ic("estrela", "ic-estrela")).join("") }),
+          h("span", { class: "brief-crit-txt", text: c.txt }),
+          melhor >= c.n ? h("span", { class: "brief-ok", html: ic("check") }) : null)),
+        h("small", { class: "brief-melhor", text: melhor ? `Seu melhor: ${melhor} estrela${melhor > 1 ? "s" : ""}` : "Ainda não vencida nesta dificuldade" })),
+      // chefe
+      h("div", { class: "cartao neon brief-chefe", style: `--cor:${hex(chefe.cor)}` },
+        urlArte(`chefe_${chefe.id}`) ? h("img", { class: "brief-chefe-img", src: urlArte(`chefe_${chefe.id}`)!, alt: "" }) : h("span", { class: "brief-chefe-img", html: ic("coroa2") }),
+        h("div", null, h("small", { class: "brief-rotulo", text: "CHEFE DA FASE" }), h("b", { text: chefe.nome }), h("p", { text: chefe.desc }))),
+      // efeitos de campo
+      campos.length ? h("div", { class: "cartao neon brief-campos" },
+        h("div", { class: "brief-tit", html: `${ic("alerta")}<span>Efeitos de campo</span>` }),
+        ...campos.map((c) => h("div", { class: "brief-campo" }, h("span", { html: ic(c.icone) }), h("div", null, h("b", { text: c.nome }), h("small", { text: c.desc }))))) : null,
+      // inimigos
+      h("div", { class: "cartao neon brief-inim" },
+        h("div", { class: "brief-tit", html: `${ic("mira")}<span>Inimigos (${tipos.length})</span>` }),
+        h("div", { class: "brief-inim-grade" }, ...tipos.map((t) => {
+          const d = ENEMIES[t];
+          const img = urlArte(`inimigo_${t}`);
+          return h("div", { class: "brief-inimigo" },
+            img ? h("img", { src: img, alt: "" }) : h("span", { class: "brief-inim-ic", style: `background:${hex(d.cor)}` }),
+            h("div", null, h("b", { text: d.nome }), h("small", { text: DESC_INIMIGO[t] ?? "" })));
+        }))),
+      h("div", { class: "brief-premio desc", html: `${ICONE_MOEDA.creditos} Créditos e pontos · ${ICONE_MOEDA.nucleos} núcleos e um chip ao vencer${D.premio > 1 ? ` · <b style="color:${D.cor}">prêmios ×${String(D.premio).replace(".", ",")}</b>` : ""}` })),
+    h("div", { class: "brief-rodape" }, botao3("laranja", "play", "INICIAR", () => nav.jogarCampanha(idx, dif))));
+  return el;
 }
