@@ -74,6 +74,11 @@ export function updateSentinels(b: Battle, dt: number): void {
       continue;
     }
     if (s.def.id === "drone") continue; // drones agem sozinhos
+    if (s.def.id === "serra") {
+      serras(b, s, dt);
+      continue;
+    }
+    if (s.def.id === "espelho") refletir(b, s);
 
     s.cd -= dt;
     if (s.cd > 0) continue;
@@ -105,6 +110,21 @@ export function updateSentinels(b: Battle, dt: number): void {
         break;
       case "gravidade":
         poco(b, s, alvo);
+        break;
+      case "fornalha":
+        chamas(b, s, alvo);
+        break;
+      case "plasma":
+        plasma(b, s, alvo);
+        break;
+      case "nano":
+        nuvem(b, s, alvo);
+        break;
+      case "espelho":
+        prisma(b, s, alvo);
+        break;
+      case "portal":
+        portal(b, s, alvo);
         break;
     }
   }
@@ -201,6 +221,145 @@ function misseis(b: Battle, s: SentinelRun): void {
     }
   }
   b.fx.push({ t: "som", id: "missil" });
+}
+
+// ---------------------------------------------------------------- armas da progressão
+
+/** Fornalha: cone de fogo (dano direto + queimadura). Evoluída: anel de fogo em volta do planeta. */
+function chamas(b: Battle, s: SentinelRun, alvo: Enemy): void {
+  const st = s.stats;
+  const base = Math.atan2(alvo.y - s.y, alvo.x - s.x);
+  const meia = Math.min(1.2, st.area);
+  for (const k of [-1, 0, 1]) {
+    const a = base + k * meia * 0.6;
+    b.beam("linha", s.x, s.y, s.x + Math.cos(a) * st.alcance, s.y + Math.sin(a) * st.alcance, k ? 0xffb04a : s.def.cor, 0.1, k ? 10 : 16);
+  }
+  const queimar = (e: Enemy) => {
+    b.hitEnemy(e, st.dano, s);
+    if (e.alive) {
+      e.burnDps = Math.max(e.burnDps, st.dano * 1.6);
+      e.burnT = Math.max(e.burnT, st.duracao);
+    }
+  };
+  for (const e of b.grid.query(s.x, s.y, st.alcance, b.tmp).slice()) {
+    if (!e.alive) continue;
+    const a = Math.atan2(e.y - s.y, e.x - s.x);
+    if (Math.abs(angDiff(base, a)) <= meia) queimar(e);
+  }
+  if (s.evoluido) {
+    const pl = b.planet;
+    const raio = 300;
+    if (b.rng.chance(0.25)) b.beam("pulso", pl.x, pl.y, raio, 0, 0xff7a2e, 0.25, 12);
+    for (const e of b.grid.query(pl.x, pl.y, raio, b.tmp).slice()) if (e.alive) queimar(e);
+  }
+}
+
+/** Serra Orbital: lâminas girando em volta do planeta; cada uma corta quem encosta (a cada 1/cadência por inimigo). */
+function serras(b: Battle, s: SentinelRun, dt: number): void {
+  const st = s.stats;
+  const pl = b.planet;
+  const aneis = s.evoluido ? [{ r: st.alcance, v: 1.6 }, { r: st.alcance * 0.72, v: -2.1 }] : [{ r: st.alcance, v: 1.6 }];
+  const n = Math.max(1, Math.round(st.projeteis));
+  s.cd -= dt;
+  const corta = s.cd <= 0;
+  if (corta) s.cd = 1 / st.cadencia;
+  for (const an of aneis) {
+    for (let i = 0; i < n; i++) {
+      const a = b.t * an.v + (i / n) * Math.PI * 2;
+      const x = pl.x + Math.cos(a) * an.r;
+      const y = pl.y + Math.sin(a) * an.r;
+      b.beam("pulso", x, y, st.area, 0, s.def.cor, dt * 1.6, 5);
+      if (!corta) continue;
+      for (const e of b.grid.query(x, y, st.area + 20, b.tmp).slice()) if (e.alive) b.hitEnemy(e, st.dano, s);
+    }
+  }
+}
+
+/** Plasma: esfera lenta e grande que atravessa tudo. Evoluída: explode em ondas no fim do trajeto. */
+function plasma(b: Battle, s: SentinelRun, alvo: Enemy): void {
+  const st = s.stats;
+  const n = st.projeteis;
+  const base = Math.atan2(alvo.y - s.y, alvo.x - s.x);
+  for (let i = 0; i < n; i++) {
+    const a = base + (n === 1 ? 0 : (i - (n - 1) / 2) * 0.18);
+    const p = b.spawnProj("bala", s.x, s.y, a, st.velProj, st.dano, s, s.def.cor);
+    p.pierce = 999;
+    p.r = st.area;
+    p.life = st.alcance / st.velProj;
+    if (s.evoluido) p.area = st.area * 4;
+  }
+  b.fx.push({ t: "som", id: "trilho" });
+}
+
+/** Nuvem Nano: zona que corrói (sem puxar). Evoluída: maior e no inimigo mais forte. */
+function nuvem(b: Battle, s: SentinelRun, alvo: Enemy): void {
+  const st = s.stats;
+  const t = s.evoluido ? acharAlvo(b, s.x, s.y, st.alcance, "maisHp") ?? alvo : alvo;
+  const k = s.evoluido ? 1.5 : 1;
+  b.zones.push({
+    alive: true, x: t.x, y: t.y, r: st.area * k, life: st.duracao * k, maxLife: st.duracao * k,
+    dano: st.dano * k, tick: 0, lentidao: st.lentidao, puxao: 0, buracoNegro: false, src: s,
+  });
+  b.fx.push({ t: "som", id: "gravidade" });
+}
+
+/** Espelho: a cada quadro destrói tiros inimigos no alcance e devolve o dano num raio. */
+function refletir(b: Battle, s: SentinelRun): void {
+  const st = s.stats;
+  const raio = s.evoluido ? 5000 : st.alcance;
+  for (const sh of b.shots) {
+    if (!sh.alive || Math.hypot(sh.x - s.x, sh.y - s.y) > raio) continue;
+    sh.alive = false;
+    const e = acharAlvo(b, sh.x, sh.y, 900, "proximo");
+    if (!e) continue;
+    b.beam("raio", sh.x, sh.y, e.x, e.y, 0xf4f0ff, 0.18, 4);
+    b.hitEnemy(e, st.dano + sh.dano * 2, s);
+  }
+}
+
+/** Espelho (disparo normal): raio prismático que salta `cadeia` vezes (evoluído: muito mais saltos). */
+function prisma(b: Battle, s: SentinelRun, alvo: Enemy): void {
+  const st = s.stats;
+  const saltos = s.evoluido ? st.cadeia + 4 : st.cadeia;
+  const atingidos: Enemy[] = [];
+  let x = s.x;
+  let y = s.y;
+  let atual: Enemy | null = alvo;
+  const cores = [0xff6b6b, 0xffd24a, 0x6bff9b, 0x6bd6ff, 0xb36bff];
+  for (let i = 0; i <= saltos && atual; i++) {
+    b.beam("raio", x, y, atual.x, atual.y, cores[i % cores.length], 0.16, 4);
+    atingidos.push(atual);
+    x = atual.x;
+    y = atual.y;
+    b.hitEnemy(atual, st.dano, s);
+    atual = proximoNaoAtingido(b, x, y, 260, atingidos);
+  }
+  b.fx.push({ t: "som", id: "raio" });
+}
+
+/** Portal: fere e joga de volta ao topo os inimigos (não chefes) perto do alvo. */
+function portal(b: Battle, s: SentinelRun, alvo: Enemy): void {
+  const st = s.stats;
+  const portais = s.evoluido ? 3 : 1;
+  const dano = st.dano * (s.evoluido ? 2 : 1);
+  const usados: Enemy[] = [];
+  for (let k = 0; k < portais; k++) {
+    const c = k === 0 ? alvo : acharAlvo(b, s.x, s.y, st.alcance, "aleatorio", usados);
+    if (!c) break;
+    b.beam("pulso", c.x, c.y, st.area, 0, s.def.cor, 0.45, 14);
+    let enviados = 0;
+    for (const e of b.grid.query(c.x, c.y, st.area, b.tmp).slice()) {
+      if (!e.alive) continue;
+      usados.push(e);
+      b.hitEnemy(e, dano, s);
+      if (!e.alive || e.boss || enviados >= st.projeteis) continue;
+      enviados++;
+      e.x = b.vis.left + b.rng.range(0.1, 0.9) * (b.vis.right - b.vis.left);
+      e.y = b.vis.top - 40;
+      b.beam("pulso", e.x, e.y + 60, 50, 0, s.def.cor, 0.4, 8);
+    }
+  }
+  b.fx.push({ t: "som", id: "gravidade" });
 }
 
 function poco(b: Battle, s: SentinelRun, alvo: Enemy): void {

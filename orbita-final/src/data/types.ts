@@ -20,7 +20,13 @@ export type SentinelId =
   | "gravidade"
   | "campo"
   | "drone"
-  | "gelo";
+  | "gelo"
+  | "fornalha"
+  | "serra"
+  | "plasma"
+  | "nano"
+  | "espelho"
+  | "portal";
 
 export type ModoAlvo = "proximo" | "maisHp" | "chefe" | "aleatorio";
 
@@ -59,6 +65,8 @@ export interface SentinelDef {
   tracos: Traco[];
   /** Custo em núcleos para desbloquear (0 = inicial). */
   desbloqueio: number;
+  /** Armas da progressão: liberam de graça ao cumprir o marco, ou antes pagando `cristais`. */
+  libera?: { fase?: number; patente?: number; texto: string; cristais: number };
   ultimate: { nome: string; desc: string };
   evolucao: { passiva: string; nome: string; desc: string };
 }

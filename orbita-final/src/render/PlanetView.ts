@@ -43,7 +43,7 @@ export class PlanetView {
     this.escudo2.scale.set(escala * 1.035);
     this.escudo2.blendMode = "add";
     this.escudo2.rotation = 0.5;
-    this.escudo.tint = this.escudo2.tint = corEscudo();
+    this.aplicarEscudo();
     this.layer.addChild(this.escudo2, this.escudo);
 
     for (let i = 0; i < 8; i++) {
@@ -83,7 +83,20 @@ export class PlanetView {
     }
     if (this.skinEscudo !== aparencia.escudo) {
       this.skinEscudo = aparencia.escudo;
-      this.escudo.tint = this.escudo2.tint = corEscudo();
+      this.aplicarEscudo();
+    }
+  }
+
+  /** Skin com arte própria (`escudo_<cor>`) usa a textura dela sem tingir; senão, o escudo padrão tingido. */
+  private aplicarEscudo(): void {
+    const id = aparencia.escudo;
+    const propria = id !== "escudo_azul" && temArte(id);
+    const t = tex(propria ? id : "escudo");
+    const escala = temArte("escudo") || propria ? (P.raioEscudo * 2) / (t.width * 0.96) : 1;
+    for (const [sp, k] of [[this.escudo, 1], [this.escudo2, 1.035]] as const) {
+      sp.texture = t;
+      sp.scale.set(escala * k);
+      sp.tint = propria ? 0xffffff : corEscudo();
     }
   }
 

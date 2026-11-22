@@ -492,7 +492,8 @@ export class BattleRenderer {
             v.halo.alpha = 0.55;
             v.halo.visible = this.brilho && !this.leve;
           }
-          const sc = p.kind === "trilho" ? (p.r > 30 ? 2.6 : 1.7) : p.kind === "estilhaco" ? 0.4 : p.kind === "drone" ? 0.5 : 0.8;
+          const plasmaR = p.src?.def.id === "plasma" ? p.r / 14 : 0;
+          const sc = plasmaR || (p.kind === "trilho" ? (p.r > 30 ? 2.6 : 1.7) : p.kind === "estilhaco" ? 0.4 : p.kind === "drone" ? 0.5 : 0.8);
           v.s.scale.set(sc, p.kind === "trilho" ? sc * 1.1 : sc);
           if (v.halo) v.halo.scale.set(p.kind === "trilho" ? 2.2 : 1);
         }

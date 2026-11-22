@@ -1,11 +1,11 @@
-import { AVATARES, CORREIO, LOGIN_DIAS, LOJA, BONUS_DIARIAS, PASSE, PASSE_PREMIOS, PATENTES, SKINS, type SkinDef } from "../../data/comandante";
+import { AVATARES, CORREIO, ULTIMATES, LOGIN_DIAS, LOJA, BONUS_DIARIAS, PASSE, PASSE_PREMIOS, PATENTES, SKINS, type SkinDef } from "../../data/comandante";
 import { CHIP_RARIDADE_COR, CHIP_RARIDADES, CHIP_SET_MAP, CHIP_SLOTS, CHIP_SLOT_NOME } from "../../data/chips";
 import { SENTINEL_IDS } from "../../data/sentinels";
 import { STAGES } from "../../data/stages";
 import { audio } from "../../core/Audio";
 import type { Chip } from "../../data/types";
 import {
-  atualizarDia, comprar, comprarSkin, diariasProntas, loginDisponivel, mensagensNovas, missoesDoDia, nivelPasse, passeProntos, patenteDe, linhaRanking,
+  atualizarDia, comprar, comprarSkin, diariasProntas, loginDisponivel, mensagensNovas, missoesDoDia, nivelPasse, passeProntos, patenteDe, linhaRanking, comandanteLiberado, ultDoComandante,
   resgatarBonusDiario, resgatarDiaria, resgatarLogin, resgatarMensagem, resgatarPasse, temporadaAtual, textoPremio, usarSkin,
 } from "../../meta/Comandante";
 import { desafioDoDia, formatStat, hojeStr, missoesProntas, semanaStr } from "../../meta/Meta";
@@ -198,13 +198,13 @@ export function telaLogin(nav: Nav): HTMLElement {
   const grade = h("div", { class: "avatares" });
   const desenhar = () => {
     grade.replaceChildren(...AVATARES.map((a) => {
-      const travado = !!a.elite && !temPremium(s) && s.perfil.avatar !== a.id;
+      const travado = !comandanteLiberado(s, a) && s.perfil.avatar !== a.id;
       const b = h("button", { class: "av-op" + (a.id === escolhido ? " sel" : "") + (travado ? " travado" : ""), "aria-label": a.nome ?? `Avatar ${a.id}`,
         onclick: () => {
-          if (travado) { toast(nav.root, `${a.nome}: exclusivo do Passe Premium`); return; }
+          if (travado) { toast(nav.root, a.elite ? `${a.nome}: exclusivo do Passe Premium` : `${a.nome}: ${a.libera?.texto ?? ""}`); return; }
           escolhido = a.id; desenhar();
         } },
-        avatar(a.id, "avatar grande"), a.elite ? h("i", { class: "av-tag", html: travado ? ic("cadeado") : ic("coroa") }) : null);
+        avatar(a.id, "avatar grande"), a.elite || travado ? h("i", { class: "av-tag" + (a.elite ? "" : " cinza"), html: travado ? ic("cadeado") : ic("coroa") }) : null);
       return b;
     }));
   };
@@ -429,6 +429,11 @@ export function telaProgresso(nav: Nav): HTMLElement {
         h("div", { class: "desc", text: pt.prox ? `${fmtInt(s.pontos)} / ${fmtInt(pt.prox.pontos)} pontos para ${pt.prox.nome}` : `${fmtInt(s.pontos)} pontos · patente máxima` }),
         pt.trava ? h("div", { class: "pat-trava", html: `${ic("cadeado")} ${pt.trava}` }) : null),
       h("button", { class: "btn icone", html: ic("usuario"), "aria-label": "Editar perfil", onclick: () => nav.ir("login") })),
+    h("button", { class: "cartao neon ouro skins-atalho", onclick: () => nav.ir("comandantes") },
+      h("span", { class: "skins-atalho-ic" }, avatar(s.perfil.avatar)),
+      h("div", { style: "flex:1;text-align:left" }, h("div", { class: "nome", text: "Comandantes" }),
+        h("div", { class: "desc", text: `Ultimate atual: ${ULTIMATES[ultDoComandante(s)].nome} · ${AVATARES.filter((a) => comandanteLiberado(s, a)).length}/${AVATARES.length} liberados` })),
+      h("span", { html: ic("play") })),
     h("button", { class: "cartao neon roxo skins-atalho", onclick: () => nav.ir("skins") },
       h("span", { class: "skins-atalho-ic", html: previaSkin(SKINS.find((k) => k.id === s.skins.planeta) ?? SKINS[0]) }),
       h("div", { style: "flex:1;text-align:left" }, h("div", { class: "nome", text: "Skins" }),
@@ -481,10 +486,14 @@ export function skinDisponivel(k: SkinDef): boolean {
 
 export function previaSkin(k: SkinDef): string {
   if (k.tipo === "escudo") {
+    const propria = k.id !== "escudo_azul" ? urlArte(k.id) : null;
     const u = urlArte("escudo");
     const cor = k.cor === 0xffffff ? "#6fd6ff" : "#" + (k.cor ?? 0xffffff).toString(16).padStart(6, "0");
-    // a grade hexagonal do escudo vira máscara pintada na cor da skin
-    return `<span class="previa-escudo" style="--cor:${cor}"><i style="${u ? `-webkit-mask-image:url('${u}');mask-image:url('${u}')` : ""}"></i></span>`;
+    const mapa = urlArte("planeta_mapa");
+    // mini planeta girando com a bolha do escudo por cima (arte própria da skin, ou a grade padrão pintada na cor)
+    const casca = propria ? `<img class="pe-arte" src="${propria}" alt="">`
+      : `<i class="pe-grade" style="${u ? `-webkit-mask-image:url('${u}');mask-image:url('${u}')` : ""}"></i>`;
+    return `<span class="previa-escudo v2" style="--cor:${cor}"><b class="pe-planeta" style="${mapa ? `background-image:url('${mapa}')` : ""}"></b>${casca}</span>`;
   }
   const u = urlArte(k.id === "planeta_terra" ? "planeta_mapa" : `planeta_mapa_${k.id.replace("planeta_", "")}`);
   return `<span class="previa-planeta" style="${u ? `background-image:url('${u}')` : ""}"></span>`;
@@ -626,7 +635,7 @@ function vitrineElite(nav: Nav, premium: boolean): HTMLElement {
     h("ul", { class: "ve-lista" },
       h("li", { html: `${ic("check")} Moldura dourada animada no avatar` }),
       h("li", { html: `${ic("check")} Nome dourado com o selo <b>ELITE</b> no perfil e no ranking` }),
-      h("li", { html: `${ic("check")} ${elites.length} comandantes exclusivos` }),
+      h("li", { html: `${ic("check")} ${elites.length} comandantes exclusivos com <b>ultimates próprias e mais fortes</b>` }),
       h("li", { html: `${ic("check")} Skins premium de escudo e planeta` })),
     h("div", { class: "ve-avatares" }, ...elites.map((a) => h("button", { class: "ve-av", onclick: () => (premium ? nav.ir("login") : toast(nav.root, `${a.nome}: exclusivo do Passe Premium`)) },
       avatar(a.id, "avatar grande"), h("small", { text: a.nome ?? "" })))));
@@ -691,5 +700,37 @@ export function telaRanking(nav: Nav): HTMLElement {
   }
   const el = tela(nav, "RANKING", abas, h("div", { class: "rank-desc", text: modo.desc }), meuCard, lista);
   el.append(barraInferior(nav, "ranking"));
+  return el;
+}
+
+// ------------------------------------------------------------------ COMANDANTES (cada um com a sua ultimate)
+
+export function telaComandantes(nav: Nav): HTMLElement {
+  const s = nav.save;
+  const cards = AVATARES.map((a) => {
+    const lib = comandanteLiberado(s, a);
+    const sel = s.perfil.avatar === a.id;
+    const u = ULTIMATES[a.ult];
+    const botao = sel ? h("span", { class: "skin-tag uso", html: icT("check", "Em campo") })
+      : lib ? h("button", { class: "btn ciano pequeno", text: "Escolher", onclick: () => {
+        s.perfil.avatar = a.id; nav.persistir(); audio.sfx("nivel"); toast(nav.root, `${a.nome} no comando! Ultimate: ${u.nome}`); nav.ir("comandantes");
+      } })
+      : a.elite ? h("button", { class: "btn ouro pequeno", html: icT("coroa", "Passe Premium"), onclick: () => nav.ir("passe") })
+      : h("span", { class: "skin-tag", html: icT("cadeado", a.libera?.texto ?? "Bloqueado") });
+    return h("div", { class: "cmd-card neon" + (a.elite ? " ouro elite" : "") + (sel ? " sel" : "") + (lib ? "" : " bloq"), style: `--cor:${a.cor}` },
+      a.elite ? h("span", { class: "cmd-selo", html: `${ic("coroa")}ELITE` }) : null,
+      h("span", { class: "cmd-av" }, avatarComMoldura(a.id, !!a.elite, "avatar grande")),
+      h("b", { class: "cmd-nome", text: a.nome }),
+      h("div", { class: "cmd-ult" + (u.elite ? " elite" : "") }, h("span", { html: ic(u.icone) }), h("div", null, h("b", { text: u.nome }), h("small", { text: u.desc }))),
+      botao);
+  });
+  const el = tela(nav, "COMANDANTES",
+    h("div", { class: "cartao neon cmd-topo" },
+      h("span", { class: "cmd-av" }, avatarComMoldura(s.perfil.avatar, temPremium(s), "avatar grande")),
+      h("div", null, nomeComandante(s.perfil.nome, temPremium(s), "div"),
+        h("small", { text: `Ultimate em campo: ${ULTIMATES[ultDoComandante(s)].nome}` }),
+        h("small", { class: "cmd-dica", text: "Cada comandante leva a própria ultimate para a batalha. Novos comandantes liberam com a campanha e a patente." }))),
+    h("div", { class: "cmd-grade" }, ...cards));
+  el.append(barraInferior(nav, "progresso"));
   return el;
 }

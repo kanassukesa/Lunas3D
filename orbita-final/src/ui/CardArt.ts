@@ -168,7 +168,24 @@ export function desenharMissil(c: Ctx, x: number, y: number, ang: number, s: num
 
 // ---------------------------------------------------------------- cenas das sentinelas
 
+/** Cena genérica para as armas novas enquanto a arte final não chega. */
+const cenaGenerica = (raios: number) => (c: Ctx, cor: number) => {
+  torre(c, 80, 170, -0.7, cor);
+  for (let i = 0; i < raios; i++) {
+    const a = -0.9 + i * (0.5 / Math.max(1, raios - 1));
+    linhaBrilho(c, [[110, 150], [110 + Math.cos(a) * 190, 150 + Math.sin(a) * 190]], cor, 5);
+  }
+  inimigo(c, 250, 50, 18, 2.4);
+  brilho(c, 245, 55, 36, cor, 0.9);
+};
+
 const CENAS: Record<SentinelId, (c: Ctx, cor: number) => void> = {
+  fornalha: cenaGenerica(5),
+  serra: cenaGenerica(3),
+  plasma: cenaGenerica(1),
+  nano: cenaGenerica(4),
+  espelho: cenaGenerica(2),
+  portal: cenaGenerica(3),
   canhao: (c, cor) => {
     torre(c, 80, 170, -0.75, cor);
     for (let i = 0; i < 4; i++) {

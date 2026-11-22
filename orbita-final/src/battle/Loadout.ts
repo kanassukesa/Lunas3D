@@ -1,3 +1,4 @@
+import { ULTIMATES, type UltId } from "../data/comandante";
 import { BALANCE } from "../data/balance";
 import { CHIP_SET_MAP } from "../data/chips";
 import { SENTINELS } from "../data/sentinels";
@@ -51,6 +52,8 @@ export function montarRun(opts: {
   dif: number;
   seed: number;
   meta: MetaSnapshot;
+  /** Ultimate do comandante (padrão: a clássica da sentinela base). */
+  ult?: UltId;
   daily?: DailyMod;
   tutorial?: boolean;
   campos?: string[];
@@ -72,7 +75,7 @@ export function montarRun(opts: {
   const perm: RunConfig["perm"] = {};
   for (const id of pool) perm[id] = modsPermanentes(id, meta.niveis[id] ?? 1);
   return {
-    modo: opts.modo, stage: opts.stage, dif: opts.dif, seed: opts.seed, base, pool, globais, perm, daily,
+    modo: opts.modo, stage: opts.stage, dif: opts.dif, seed: opts.seed, base, ult: opts.ult ?? (base in ULTIMATES ? (base as UltId) : "canhao"), pool, globais, perm, daily,
     tutorial: opts.tutorial ?? false,
     campos: opts.campos,
     etapas: opts.etapas,

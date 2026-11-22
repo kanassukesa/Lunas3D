@@ -8,6 +8,7 @@ import { tex } from "./Textures";
 const CABECA: Record<SentinelId, string> = {
   canhao: "canhao", laser: "laser", trilho: "trilho", feixe: "prisma", missil: "missil",
   gravidade: "gravidade", campo: "domo", drone: "colmeia", gelo: "gelo",
+  fornalha: "fornalha", serra: "serra", plasma: "plasma", nano: "nano", espelho: "espelho", portal: "portal",
 };
 
 /** Raio da base no mundo e raio do "corpo" da cabeça (o cano pode passar da base). */

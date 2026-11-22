@@ -606,6 +606,8 @@ export class Battle {
       p.life -= dt;
       if (p.life <= 0) {
         p.alive = false;
+        // Sol de Plasma: a esfera explode ao fim do trajeto
+        if (p.kind === "bala" && p.area > 0 && p.src?.def.id === "plasma") this.explodir(p.x, p.y, p.area, p.dano * 1.5, p.src, 0x8dff3c, true);
         continue;
       }
       if (p.kind === "missil") this.guiarMissil(p, dt);

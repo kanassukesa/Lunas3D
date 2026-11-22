@@ -26,9 +26,9 @@ import {
   painelConfig, telaConfig, telaMissoes, type Nav,
 } from "../ui/meta/Screens";
 import {
-  telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaPasse, telaProgresso, telaRanking, telaRecompensas, telaSkins,
+  telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaPasse, telaProgresso, telaRanking, telaComandantes, telaRecompensas, telaSkins,
 } from "../ui/meta/Hub";
-import { linhaRanking, patenteDe, registrarPartida } from "../meta/Comandante";
+import { linhaRanking, patenteDe, registrarPartida, ultDoComandante } from "../meta/Comandante";
 import { telaChipsV2, telaFases, telaHangarV2, telaModosV2, telaPlanetaV2 } from "../ui/meta/Paineis";
 import { audio } from "./Audio";
 import { FixedLoop } from "./Loop";
@@ -200,6 +200,7 @@ export class Game implements Nav {
       modos: () => telaModosV2(this),
       skins: () => telaSkins(this),
       ranking: () => telaRanking(this),
+      comandantes: () => telaComandantes(this),
       config: () => telaConfig(this),
     };
     const el = (mapa[tela] ?? mapa.hub)();
@@ -276,7 +277,7 @@ export class Game implements Nav {
     aparencia.planeta = this.save.skins.planeta;
     aparencia.escudo = this.save.skins.escudo;
     const tutorial = modo === "campanha" && idx === 0 && !this.save.tutorialVisto;
-    const cfg = montarRun({ modo, stage, dif, seed, meta: snapshot(this.save), daily, tutorial, campos, etapas: etapas?.map((e) => ({ ...e })) });
+    const cfg = montarRun({ modo, stage, dif, seed, meta: snapshot(this.save), ult: ultDoComandante(this.save), daily, tutorial, campos, etapas: etapas?.map((e) => ({ ...e })) });
     const b = new Battle(cfg);
     const r = new BattleRenderer(b);
     const loop = new FixedLoop((dt) => {

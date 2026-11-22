@@ -2,7 +2,7 @@ import type { LinhaRankingEnvio } from "../core/Nuvem";
 import { BALANCE, DIFICULDADES } from "../data/balance";
 import type { Battle } from "../battle/Battle";
 import type { Modo } from "../battle/types";
-import { BONUS_DIARIAS, CORREIO, LOGIN_DIAS, LOJA, MISSOES_DIARIAS, PASSE, PASSE_PREMIOS, PATENTES, SKINS, type MissaoDiariaDef, type Patente, type Premio } from "../data/comandante";
+import { AVATARES, BONUS_DIARIAS, CORREIO, type ComandanteDef, type UltId, LOGIN_DIAS, LOJA, MISSOES_DIARIAS, PASSE, PASSE_PREMIOS, PATENTES, SKINS, type MissaoDiariaDef, type Patente, type Premio } from "../data/comandante";
 import { Rng, hashString } from "../core/Rng";
 import type { SaveData } from "../core/Save";
 import { gerarChip, hojeStr } from "./Meta";
@@ -230,4 +230,24 @@ export function linhaRanking(s: SaveData): LinhaRankingEnvio {
     estrelas: s.estatisticas.estrelas ?? 0, sobrevivencia: Math.floor(s.sobrevivenciaMelhor),
     jornada_semana: s.jornada.semana, jornada: s.jornada.melhor, diario_dia: s.diario.data, diario: Math.floor(s.diario.melhor),
   };
+}
+
+/** O marco que libera uma arma da progressão foi cumprido? */
+export function marcoCumprido(s: SaveData, libera: { fase?: number; patente?: number }): boolean {
+  if (libera.fase && !((s.campanha.normal[libera.fase - 1] ?? 0) > 0)) return false;
+  if (libera.patente && patenteDe(s).indice < libera.patente) return false;
+  return true;
+}
+
+/** O comandante pode ser escolhido? (Elite = Passe Premium ativo; normais = marco cumprido.) */
+export function comandanteLiberado(s: SaveData, def: ComandanteDef): boolean {
+  if (def.elite) return s.monet.passePremium === temporadaAtual();
+  return !def.libera || marcoCumprido(s, def.libera);
+}
+
+/** Ultimate que o comandante escolhido leva para a partida. */
+export function ultDoComandante(s: SaveData): UltId {
+  const def = AVATARES.find((a) => a.id === s.perfil.avatar);
+  if (!def || !comandanteLiberado(s, def)) return "canhao";
+  return def.ult;
 }

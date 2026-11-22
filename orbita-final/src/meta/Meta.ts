@@ -38,10 +38,19 @@ export function melhorar(s: SaveData, id: SentinelId): boolean {
   return true;
 }
 
-export function desbloquear(s: SaveData, id: SentinelId): boolean {
-  const custo = SENTINELS[id].desbloqueio;
-  if (s.sentinelas[id].desbloqueada || s.nucleos < custo) return false;
-  s.nucleos -= custo;
+/** Desbloqueia a sentinela. Armas da progressão: grátis se `marcoOk`, senão pagando os cristais do atalho. */
+export function desbloquear(s: SaveData, id: SentinelId, marcoOk = false): boolean {
+  const def = SENTINELS[id];
+  if (s.sentinelas[id].desbloqueada) return false;
+  if (def.libera) {
+    if (!marcoOk) {
+      if (s.cristais < def.libera.cristais) return false;
+      s.cristais -= def.libera.cristais;
+    }
+  } else {
+    if (s.nucleos < def.desbloqueio) return false;
+    s.nucleos -= def.desbloqueio;
+  }
   s.sentinelas[id].desbloqueada = true;
   if (s.deck.pool.length < BALANCE.maxSlots - 1 && !s.deck.pool.includes(id) && s.deck.base !== id) s.deck.pool.push(id);
   return true;

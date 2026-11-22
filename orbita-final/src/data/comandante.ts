@@ -26,17 +26,47 @@ export const PATENTES: Patente[] = [
 ];
 
 /** Avatares (arte final `avatar_1..6`; sem ela, um capacete desenhado na cor). */
-export const AVATARES: { id: number; cor: string; elite?: boolean; nome?: string }[] = [
-  { id: 1, cor: "#4fd6ff" },
-  { id: 2, cor: "#ff9a3c" },
-  { id: 3, cor: "#b36bff" },
-  { id: 4, cor: "#49e07a" },
-  { id: 5, cor: "#5aa8ff" },
-  { id: 6, cor: "#a9dcff" },
-  // comandantes Elite: só com o Passe Premium (arte `avatar_7..9`)
-  { id: 7, cor: "#ffc23d", elite: true, nome: "Comandante Solar" },
-  { id: 8, cor: "#ff5ec8", elite: true, nome: "Comandante Nebulosa" },
-  { id: 9, cor: "#b36bff", elite: true, nome: "Comandante do Vazio" },
+/** Ultimates: as 9 clássicas (ids das sentinelas) + 3 exclusivas dos comandantes Elite. */
+export type UltId = "canhao" | "laser" | "trilho" | "feixe" | "missil" | "gravidade" | "campo" | "drone" | "gelo" | "supernova" | "cristal" | "vazio";
+export const ULTIMATES: Record<UltId, { nome: string; desc: string; icone: string; elite?: boolean }> = {
+  canhao: { nome: "Bombardeio Orbital", desc: "3 s de explosões em toda a tela.", icone: "bomba" },
+  laser: { nome: "Varredura Laser", desc: "Um laser gigante varre a tela de cima a baixo.", icone: "mira" },
+  trilho: { nome: "Lança Cruzada", desc: "12 trilhos atravessam a tela pelos lados.", icone: "avancar" },
+  feixe: { nome: "Tempestade Elétrica", desc: "Raios caem em todos os inimigos por 3 s.", icone: "raio" },
+  missil: { nome: "Chuva de Mísseis", desc: "40 mísseis teleguiados saem das sentinelas.", icone: "bomba" },
+  gravidade: { nome: "Colapso", desc: "Um poço gigante no centro puxa a tela toda.", icone: "espiral" },
+  campo: { nome: "Sobretensão", desc: "Pulso gigante, recupera metade do escudo e cura.", icone: "escudo" },
+  drone: { nome: "Revoada", desc: "12 drones extras por 10 s.", icone: "grupo" },
+  gelo: { nome: "Zero Absoluto", desc: "Congela todos os inimigos por 4 s.", icone: "nevoa" },
+  supernova: { nome: "Supernova", desc: "Três ondas solares queimam a tela toda e curam 20% do planeta.", icone: "sol", elite: true },
+  cristal: { nome: "Chuva de Cristal", desc: "Escudo cheio na hora e 4 s de cristais perfurantes que congelam.", icone: "diamante", elite: true },
+  vazio: { nome: "Colapso do Vazio", desc: "Um buraco negro devora a tela por 5 s e implode no fim.", icone: "espiral", elite: true },
+};
+
+/** Comandantes (avatar + ultimate). Arte `avatar_N`; sem ela, um capacete desenhado na cor. */
+export interface ComandanteDef {
+  id: number;
+  cor: string;
+  nome: string;
+  ult: UltId;
+  elite?: boolean;
+  /** Marco que libera (fase normal vencida ou patente). Sem `libera` = inicial. */
+  libera?: { fase?: number; patente?: number; texto: string };
+}
+export const AVATARES: ComandanteDef[] = [
+  { id: 1, cor: "#4fd6ff", nome: "Comandante Atlas", ult: "canhao" },
+  { id: 2, cor: "#ff9a3c", nome: "Comandante Brasa", ult: "feixe" },
+  { id: 5, cor: "#5aa8ff", nome: "Comandante Vega", ult: "laser", libera: { fase: 2, texto: "Vença a Fase 2" } },
+  { id: 4, cor: "#49e07a", nome: "Comandante Selva", ult: "campo", libera: { fase: 3, texto: "Vença a Fase 3" } },
+  { id: 3, cor: "#b36bff", nome: "Comandante Órion", ult: "gravidade", libera: { fase: 4, texto: "Vença a Fase 4" } },
+  { id: 6, cor: "#a9dcff", nome: "Comandante Cometa", ult: "trilho", libera: { fase: 6, texto: "Vença a Fase 6" } },
+  { id: 12, cor: "#ff8a3c", nome: "Comandante Fagulha", ult: "missil", libera: { fase: 8, texto: "Vença a Fase 8" } },
+  { id: 10, cor: "#9fe8ff", nome: "Comandante Geada", ult: "gelo", libera: { fase: 10, texto: "Vença a Fase 10" } },
+  { id: 11, cor: "#7dbf5a", nome: "Comandante Enxame", ult: "drone", libera: { patente: 4, texto: "Chegue a Capitão" } },
+  // Elite: só com o Passe Premium, com ultimates exclusivas
+  { id: 7, cor: "#ffc23d", nome: "Comandante Solar", ult: "supernova", elite: true },
+  { id: 8, cor: "#ff5ec8", nome: "Comandante Nebulosa", ult: "cristal", elite: true },
+  { id: 9, cor: "#b36bff", nome: "Comandante do Vazio", ult: "vazio", elite: true },
 ];
 
 export type Premio = { creditos?: number; nucleos?: number; cristais?: number; chip?: number };

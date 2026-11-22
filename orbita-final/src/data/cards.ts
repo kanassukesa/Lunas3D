@@ -65,6 +65,12 @@ const MANUAIS: CardDef[] = [
   { id: "massa_critica", nome: "Massa Crítica", raridade: "rara", tipo: "passiva", texto: "+10% de dano (evolui o Poço Gravitacional)", efeito: { danoPct: 0.1 }, maxPilhas: 1, requisitos: { sentinela: "gravidade" } },
   { id: "sobrecarga", nome: "Sobrecarga", raridade: "rara", tipo: "passiva", texto: "+20% de carga do ultimate (evolui o Domo)", efeito: { ultCargaPct: 0.2 }, maxPilhas: 1, requisitos: { sentinela: "campo" } },
   { id: "enxame_autonomo", nome: "Enxame Autônomo", raridade: "rara", tipo: "passiva", texto: "+10% de cadência (evolui a Colmeia)", efeito: { cadenciaPct: 0.1 }, maxPilhas: 1, requisitos: { sentinela: "drone" } },
+  { id: "combustivel_estelar", nome: "Combustível Estelar", raridade: "rara", tipo: "passiva", texto: "+15% de dano (evolui a Fornalha Solar)", efeito: { danoPct: 0.15 }, maxPilhas: 1, requisitos: { sentinela: "fornalha" } },
+  { id: "liga_orbital", nome: "Liga Orbital", raridade: "rara", tipo: "passiva", texto: "+10% de cadência (evolui a Serra Orbital)", efeito: { cadenciaPct: 0.1 }, maxPilhas: 1, requisitos: { sentinela: "serra" } },
+  { id: "nucleo_instavel", nome: "Núcleo Instável", raridade: "rara", tipo: "passiva", texto: "+15% de área (evolui o Canhão de Plasma)", efeito: { areaPct: 0.15 }, maxPilhas: 1, requisitos: { sentinela: "plasma" } },
+  { id: "replicacao", nome: "Replicação", raridade: "rara", tipo: "passiva", texto: "+10% de dano (evolui a Nuvem Nano)", efeito: { danoPct: 0.1 }, maxPilhas: 1, requisitos: { sentinela: "nano" } },
+  { id: "cristal_puro", nome: "Cristal Puro", raridade: "rara", tipo: "passiva", texto: "+5% de crítico (evolui o Espelho Prismático)", efeito: { critChance: 0.05 }, maxPilhas: 1, requisitos: { sentinela: "espelho" } },
+  { id: "dobra_espacial", nome: "Dobra Espacial", raridade: "rara", tipo: "passiva", texto: "+10% de cadência (evolui o Portal de Dobra)", efeito: { cadenciaPct: 0.1 }, maxPilhas: 1, requisitos: { sentinela: "portal" } },
   { id: "zero_absoluto", nome: "Zero Absoluto", raridade: "rara", tipo: "passiva", texto: "+10% de lentidão (evolui a Criostase)", efeito: { lentidao: 0.1 }, maxPilhas: 1, requisitos: { sentinela: "gelo" } },
 ];
 

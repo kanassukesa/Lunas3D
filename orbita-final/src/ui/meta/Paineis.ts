@@ -16,6 +16,7 @@ import {
   comprarTalento, desafioDoDia, desbloquear, difLiberada, estrelasDe, faseLiberada, formatStat, fundir, hojeStr, jornadaDaSemana, melhorar, podeMelhorar, semanaStr,
 } from "../../meta/Meta";
 import { urlArte } from "../../render/Sprites";
+import { marcoCumprido } from "../../meta/Comandante";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg, toast } from "../dom";
 import { ic, icT } from "../Icones";
 import { moedas, type Nav } from "./Screens";
@@ -256,7 +257,15 @@ export function telaHangarV2(nav: Nav): HTMLElement {
     const bonus = Math.round(BALANCE.hangar.danoPorNivel * (st.nivel - 1) * 100);
     const img = arte(`hangar_${id}`, `sentinela_${id}`);
     const acoes = h("div", { class: "hg2-acoes" });
-    if (!st.desbloqueada) {
+    if (!st.desbloqueada && def.libera) {
+      const ok = marcoCumprido(s, def.libera);
+      acoes.append(ok
+        ? h("button", { class: "btn ouro", html: icT("presente", "Liberar grátis"),
+          onclick: (e: MouseEvent) => { e.stopPropagation(); if (desbloquear(s, id, true)) { audio.sfx("vitoria"); toast(nav.root, `${def.nome} liberada!`); nav.persistir(); nav.ir("hangar"); } } })
+        : h("button", { class: "btn roxo", disabled: s.cristais < def.libera.cristais, html: `Liberar agora ${ICONE_MOEDA.cristais} ${def.libera.cristais}`,
+          onclick: (e: MouseEvent) => { e.stopPropagation(); if (desbloquear(s, id)) { audio.sfx("vitoria"); toast(nav.root, `${def.nome} liberada!`); nav.persistir(); nav.ir("hangar"); } } }));
+      if (!ok) acoes.prepend(h("span", { class: "hg2-marco", html: `${ic("cadeado")} ${def.libera.texto} para liberar de graça` }));
+    } else if (!st.desbloqueada) {
       acoes.append(h("button", { class: "btn ciano", disabled: s.nucleos < def.desbloqueio, html: `Desbloquear ${ICONE_MOEDA.nucleos} ${def.desbloqueio}`,
         onclick: (e: MouseEvent) => { e.stopPropagation(); if (desbloquear(s, id)) { audio.sfx("vitoria"); nav.persistir(); nav.ir("hangar"); } } }));
     } else {
@@ -292,8 +301,8 @@ export function telaHangarV2(nav: Nav): HTMLElement {
         img ? h("img", { class: "hg2-img", src: img, alt: "" }) : h("span", { class: "hg2-img", html: ic("hangar") }),
         h("div", { class: "hg2-txt" },
           h("b", { text: def.nome }),
-          h("small", { text: `${def.papel} · ${st.desbloqueada ? `Nível ${st.nivel}/${BALANCE.hangar.nivelMax}${bonus ? ` · +${bonus}% dano` : ""}` : "Bloqueada"}` }),
-          h("p", { text: `${def.desc} Ultimate: ${def.ultimate.nome} — ${def.ultimate.desc} Evolução: ${def.evolucao.nome}.` }))),
+          h("small", { text: `${def.papel} · ${st.desbloqueada ? `Nível ${st.nivel}/${BALANCE.hangar.nivelMax}${bonus ? ` · +${bonus}% dano` : ""}` : def.libera ? `Bloqueada · ${def.libera.texto}` : "Bloqueada"}` }),
+          h("p", { text: `${def.desc} Supremo: ${def.evolucao.nome} — ${def.evolucao.desc}` }))),
       aberto ? h("div", { class: "tracos" }, ...def.tracos.map((t) => h("span", { class: "traco" + (st.nivel >= t.nivel ? " on" : ""), html: `<b>Nv${t.nivel}:</b> ${t.texto}` }))) : null,
       aberto ? acoes : null);
   });

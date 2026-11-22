@@ -1,6 +1,6 @@
 import { BALANCE, DIFICULDADES } from "../data/balance";
 const P = BALANCE.planeta;
-import type { SentinelId } from "../data/types";
+import type { UltId } from "../data/comandante";
 import type { Battle } from "./Battle";
 import { novoDrone } from "./Sentinel";
 
@@ -12,10 +12,10 @@ export class Ultimate {
   usos = 0;
   private timer = 0;
   private conta = 0;
-  readonly base: SentinelId;
+  readonly base: UltId;
 
   constructor(private b: Battle) {
-    this.base = b.cfg.base;
+    this.base = b.cfg.ult;
     this.energia = Math.min(100, b.gAdd("ultInicio"));
   }
 
@@ -99,6 +99,27 @@ export class Ultimate {
         this.ativo = d;
         break;
       }
+      case "supernova": {
+        // 3 ondas solares (agora, +0,9 s, +1,8 s): dano em todos + queimadura; cura 20%
+        this.ativo = this.dur(2.2);
+        b.curar(pl.hpMax * 0.2);
+        this.ondaSolar(pw);
+        break;
+      }
+      case "cristal": {
+        pl.escudo = pl.escudoMax;
+        this.ativo = this.dur(4);
+        break;
+      }
+      case "vazio": {
+        const d = this.dur(5);
+        b.zones.push({
+          alive: true, x: pl.x, y: (b.vis.top + pl.y) / 2 - 60, r: 1150, life: d, maxLife: d, dano: 26 * pw,
+          tick: 0, lentidao: 0.75, puxao: 420, buracoNegro: true, src: null,
+        });
+        this.ativo = d;
+        break;
+      }
       case "gelo": {
         this.congelado = this.dur(4);
         for (const e of b.enemies) {
@@ -113,6 +134,19 @@ export class Ultimate {
       }
     }
     return true;
+  }
+
+  /** Onda da Supernova: dano em todos os inimigos e queimadura. */
+  private ondaSolar(pw: number): void {
+    const b = this.b;
+    const pl = b.planet;
+    b.beam("pulso", pl.x, pl.y, 2400, 0, 0xffc23d, 0.7, 34);
+    b.fx.push({ t: "flash", força: 0.5 });
+    for (const e of b.enemies) {
+      if (!e.alive || !e.alvoavel) continue;
+      b.hitEnemy(e, 120 * pw, null, { semMods: true, ult: true });
+      if (e.alive) { e.burnDps = Math.max(e.burnDps, 14 * pw); e.burnT = Math.max(e.burnT, 4); }
+    }
   }
 
   /** Ponto de lançamento: as sentinelas em rodízio, ou a borda do planeta se não houver nenhuma. */
@@ -186,6 +220,38 @@ export class Ultimate {
             b.beam("raio", e.x + b.rng.range(-80, 80), v.top - 20, e.x, e.y, 0x7df9ff, 0.25, 4);
             b.hitEnemy(e, 50 * pw, null, { semMods: true, ult: true });
           }
+        }
+        break;
+      case "supernova": {
+        const total = this.dur(2.2);
+        const feitas = Math.floor((total - this.ativo) / 0.9);
+        while (this.conta < Math.min(2, feitas)) {
+          this.conta++;
+          this.ondaSolar(pw);
+        }
+        break;
+      }
+      case "cristal":
+        while (this.timer <= 0) {
+          this.timer += 0.06;
+          const e = b.inimigoAleatorio(pl.x, pl.y, 5000);
+          if (!e) break;
+          const o = this.origem(this.conta++);
+          const p = b.spawnProj("gelo", o.x, o.y, Math.atan2(e.y - o.y, e.x - o.x), 1500, 55 * pw, null, 0xff9ee8);
+          p.pierce = 6;
+          p.life = 1.4;
+          p.ult = true;
+          e.slowAmt = Math.max(e.slowAmt, 0.6);
+          e.slowT = Math.max(e.slowT, 1.5);
+        }
+        break;
+      case "vazio":
+        if (this.ativo <= dt && this.conta === 0) {
+          this.conta = 1;
+          // implosão final
+          b.fx.push({ t: "flash", força: 0.9 });
+          b.fx.push({ t: "explosao", x: pl.x, y: (b.vis.top + pl.y) / 2 - 60, r: 900, cor: 0xb36bff });
+          for (const e of b.enemies) if (e.alive && e.alvoavel) b.hitEnemy(e, 260 * pw, null, { semMods: true, ult: true });
         }
         break;
       case "missil":

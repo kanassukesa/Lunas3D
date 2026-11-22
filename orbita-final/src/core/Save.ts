@@ -62,7 +62,7 @@ export interface SaveData {
 
 export function saveNovo(): SaveData {
   const sentinelas = {} as SaveData["sentinelas"];
-  for (const id of SENTINEL_IDS) sentinelas[id] = { desbloqueada: SENTINELS[id].desbloqueio === 0, nivel: 1 };
+  for (const id of SENTINEL_IDS) sentinelas[id] = { desbloqueada: SENTINELS[id].desbloqueio === 0 && !SENTINELS[id].libera, nivel: 1 };
   return {
     v: SAVE_VERSAO,
     creditos: 0,

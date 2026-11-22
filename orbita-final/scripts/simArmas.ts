@@ -2,7 +2,7 @@
  * Compara as sentinelas: cada uma sozinha no deck (base + só ela), mesma fase e hangar.
  * Uso: npx tsx scripts/simArmas.ts [fase=4] [runs=4] [hangar=8]
  */
-declare const process: { argv: string[] };
+declare const process: { argv: string[]; env: Record<string, string | undefined> };
 import { Battle } from "../src/battle/Battle";
 import { montarRun } from "../src/battle/Loadout";
 import { STAGES } from "../src/data/stages";
@@ -10,7 +10,7 @@ import { SENTINEL_IDS } from "../src/data/sentinels";
 import { Rng } from "../src/core/Rng";
 const [faseA = "4", runsA = "4", nvA = "8"] = process.argv.slice(2);
 const linhas: string[] = [];
-for (const id of SENTINEL_IDS) {
+for (const id of (process.env.SO ? process.env.SO.split(",") : SENTINEL_IDS) as typeof SENTINEL_IDS) {
   let vit = 0, tempo = 0, hp = 0, dps = 0, nivel = 0, t5 = 0, tBoss = 0, nBoss = 0;
   const R = Number(runsA);
   for (let r = 0; r < R; r++) {

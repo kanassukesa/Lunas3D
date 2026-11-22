@@ -1,3 +1,4 @@
+import type { UltId } from "../data/comandante";
 import type { BossDef, EnemyDef, SentinelBase, SentinelDef, SentinelId, StageDef } from "../data/types";
 import type { DailyMod } from "../data/modes";
 import type { Mods } from "./StatSystem";
@@ -11,6 +12,8 @@ export interface RunConfig {
   dif: number;
   seed: number;
   base: SentinelId;
+  /** Ultimate do comandante escolhido. */
+  ult: UltId;
   pool: SentinelId[];
   /** Modificadores permanentes globais (talentos, chips, desafio). */
   globais: Mods;
