@@ -63,7 +63,7 @@ function voar(root: HTMLElement, origem: DOMRect | null, p: Premio): void {
         void alvo.offsetWidth;
         alvo.classList.add("pulso");
         if (num) num.textContent = fmtInt(final - v + Math.round((v * (i + 1)) / n));
-        if (i % 2 === 0) audio.sfx("carta");
+        if (i % 2 === 0) audio.sfx("moeda");
       };
     }
   });

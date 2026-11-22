@@ -1,8 +1,31 @@
 /**
- * Áudio sintetizado com Web Audio API (sem arquivos): efeitos com pitch aleatório ±10%,
- * limite de 8 sons iguais simultâneos, música ambiente + faixa de chefe procedurais.
+ * Áudio com Web Audio API. Efeitos: arquivos MP3 de `assets/sons/<id>.mp3` (gerados no Voice Studio)
+ * tocados pelo buffer com pitch aleatório; sem o arquivo (ou antes de carregar), cai para a síntese.
+ * Limite de 8 sons iguais simultâneos. Música ambiente espacial + faixa de chefe procedurais.
  */
 type SfxDef = { tipo: OscillatorType | "ruido"; f0: number; f1: number; dur: number; vol: number; filtro?: number };
+
+/** Arquivos de som do jogo, por id (nome do arquivo sem extensão). */
+const ARQUIVOS: Record<string, string> = {};
+for (const [caminho, url] of Object.entries(
+  import.meta.glob("../assets/sons/*.mp3", { eager: true, query: "?url", import: "default" }) as Record<string, string>,
+)) {
+  ARQUIVOS[caminho.replace(/^.*\/(.+)\.mp3$/, "$1")] = url;
+}
+
+/**
+ * Volume de cada arquivo (eles vêm normalizados). Sons que repetem muito (tiros, mortes) ficam baixos
+ * para não cansar; eventos raros (chefe, vitória, ultimate) ficam fortes.
+ */
+const VOL_ARQUIVO: Record<string, number> = {
+  tiro: 0.22, gelo: 0.3, trilho: 0.45, raio: 0.3, missil: 0.35, gravidade: 0.5, pulso: 0.55,
+  explosao: 0.35, explosaoGrande: 0.8, morte: 0.25, escudo: 0.35, dano: 0.6, nivel: 0.7, carta: 0.55,
+  clique: 0.5, ultimate: 0.85, alerta: 0.6, chefe: 0.85, muro: 0.6, vitoria: 0.8, derrota: 0.8,
+  moeda: 0.6, bau: 0.75,
+};
+
+/** Variação de pitch por som: tiros variam mais, sons musicais (fanfarras) quase nada. */
+const VARIA_PITCH: Record<string, number> = { nivel: 0.02, vitoria: 0, derrota: 0, chefe: 0.02, alerta: 0, ultimate: 0.02, bau: 0.02 };
 
 const SFX: Record<string, SfxDef> = {
   tiro: { tipo: "square", f0: 880, f1: 420, dur: 0.06, vol: 0.05, filtro: 3000 },
@@ -26,6 +49,8 @@ const SFX: Record<string, SfxDef> = {
   muro: { tipo: "square", f0: 120, f1: 220, dur: 0.3, vol: 0.08, filtro: 800 },
   vitoria: { tipo: "triangle", f0: 523, f1: 1046, dur: 0.8, vol: 0.15 },
   derrota: { tipo: "sawtooth", f0: 300, f1: 70, dur: 1.2, vol: 0.15, filtro: 1000 },
+  moeda: { tipo: "triangle", f0: 1200, f1: 1900, dur: 0.1, vol: 0.08 },
+  bau: { tipo: "ruido", f0: 500, f1: 40, dur: 1.4, vol: 0.3 },
 };
 
 export class AudioSys {
@@ -34,6 +59,8 @@ export class AudioSys {
   private sfxBus!: GainNode;
   private musicBus!: GainNode;
   private ruido!: AudioBuffer;
+  /** Arquivos de som já decodificados. */
+  private buffers: Record<string, AudioBuffer> = {};
   private ativos: Record<string, number> = {};
   private ultimo: Record<string, number> = {};
   private musica: { stop: () => void } | null = null;
@@ -73,6 +100,7 @@ export class AudioSys {
     const d = this.ruido.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     this.aplicarVolumes();
+    this.carregarArquivos(ctx);
     if (this.faixa) {
       const f = this.faixa;
       this.faixa = "";
@@ -86,15 +114,44 @@ export class AudioSys {
     this.musicBus.gain.value = this.volMusica * 0.5;
   }
 
+  /** Baixa e decodifica os MP3 em segundo plano; cada som passa a usar o arquivo assim que fica pronto. */
+  private carregarArquivos(ctx: AudioContext): void {
+    for (const [id, url] of Object.entries(ARQUIVOS)) {
+      fetch(url)
+        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+        .then((dados) => new Promise<AudioBuffer>((ok, falha) => ctx.decodeAudioData(dados, ok, falha)))
+        .then((buf) => { this.buffers[id] = buf; })
+        .catch(() => { /* fica com a síntese */ });
+    }
+  }
+
   sfx(id: string): void {
     const ctx = this.ctx;
     const def = SFX[id];
-    if (!ctx || !def || this.volSom <= 0 || ctx.state !== "running") return;
+    const buf = this.buffers[id];
+    if (!ctx || (!def && !buf) || this.volSom <= 0 || ctx.state !== "running") return;
     if ((this.ativos[id] ?? 0) >= 8) return;
     const agora = ctx.currentTime;
     if (agora - (this.ultimo[id] ?? 0) < 0.03) return;
     this.ultimo[id] = agora;
     this.ativos[id] = (this.ativos[id] ?? 0) + 1;
+    if (buf) {
+      const varia = VARIA_PITCH[id] ?? 0.06;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = 1 - varia + Math.random() * varia * 2;
+      const g = ctx.createGain();
+      g.gain.value = VOL_ARQUIVO[id] ?? 0.5;
+      src.connect(g);
+      g.connect(this.sfxBus);
+      src.start(agora);
+      src.onended = () => {
+        this.ativos[id]--;
+        g.disconnect();
+      };
+      return;
+    }
+    if (!def) return; // inalcançável: sem buffer, `def` existe (checado acima)
     const pitch = 0.9 + Math.random() * 0.2;
     const g = ctx.createGain();
     g.gain.setValueAtTime(def.vol, agora);
@@ -186,54 +243,102 @@ export class AudioSys {
     };
   }
 
-  /** Ambiente: pad em progressão menor (i–VI–III–VII) + arpejo suave, 84 BPM. */
+  /** Reverb longo (resposta ao impulso gerada): o "espaço" da música ambiente. */
+  private reverb(ctx: AudioContext, seg: number): ConvolverNode {
+    const n = Math.floor(ctx.sampleRate * seg);
+    const ir = ctx.createBuffer(2, n, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = ir.getChannelData(c);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3.2);
+    }
+    const cv = ctx.createConvolver();
+    cv.buffer = ir;
+    return cv;
+  }
+
+  /**
+   * Ambiente espacial: pads suaves e largos (Cmaj7 – Am9 – Fmaj7(#11) – G6) que respiram com um
+   * filtro lento, um grave profundo, sinos cristalinos esparsos e brilhos agudos, tudo afogado num
+   * reverb longo. Só senoides/triângulos: nada de serra áspera. ~66 BPM, cada acorde dura 2 compassos.
+   */
   private faixaAmbiente(ctx: AudioContext): { stop: () => void } {
     const out = ctx.createGain();
     out.gain.value = 0;
-    out.gain.linearRampToValueAtTime(0.45, ctx.currentTime + 3);
+    out.gain.linearRampToValueAtTime(0.9, ctx.currentTime + 4);
     out.connect(this.musicBus);
-    // eco para dar profundidade espacial
-    const eco = ctx.createDelay(1);
-    eco.delayTime.value = 0.36;
-    const fb = ctx.createGain();
-    fb.gain.value = 0.35;
-    const ecoLp = ctx.createBiquadFilter();
-    ecoLp.type = "lowpass";
-    ecoLp.frequency.value = 1800;
-    eco.connect(ecoLp);
-    ecoLp.connect(fb);
-    fb.connect(eco);
-    ecoLp.connect(out);
+
+    const sala = this.reverb(ctx, 5);
+    const molhado = ctx.createGain();
+    molhado.gain.value = 0.9;
+    sala.connect(molhado);
+    molhado.connect(out);
+
+    // pads passam por um filtro que abre e fecha devagar (a "respiração" da nave)
     const padLp = ctx.createBiquadFilter();
     padLp.type = "lowpass";
-    padLp.frequency.value = 900;
+    padLp.frequency.value = 1100;
+    padLp.Q.value = 0.7;
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.05;
+    const lfoG = ctx.createGain();
+    lfoG.gain.value = 600;
+    lfo.connect(lfoG);
+    lfoG.connect(padLp.frequency);
+    lfo.start();
     padLp.connect(out);
-    const arpBus = ctx.createGain();
-    arpBus.gain.value = 1;
-    arpBus.connect(out);
-    arpBus.connect(eco);
+    padLp.connect(sala);
 
-    const A = 220;
-    const semi = (n: number) => A * Math.pow(2, n / 12);
-    // acordes em semitons a partir de A3: Am, F, C, G
-    const acordes = [[0, 3, 7], [-4, 0, 3], [3, 7, 10], [-2, 2, 5]];
-    const passoSeg = 60 / 84 / 2; // colcheias
+    const sinos = ctx.createGain();
+    sinos.gain.value = 0.55;
+    sinos.connect(out);
+    const sinosEnvio = ctx.createGain();
+    sinosEnvio.gain.value = 1.4;
+    sinos.connect(sinosEnvio);
+    sinosEnvio.connect(sala);
+
+    const C = 261.63;
+    const semi = (n: number) => C * Math.pow(2, n / 12);
+    // acordes (semitons a partir de C4) e as notas que os sinos podem tocar em cada um
+    const acordes = [
+      { pad: [-12, -5, 4, 11], baixo: -24, mel: [12, 16, 19, 23, 26] }, // Cmaj7
+      { pad: [-15, -8, 0, 7, 11], baixo: -27, mel: [12, 14, 16, 19, 21] }, // Am9
+      { pad: [-19, -12, -3, 4, 6], baixo: -31, mel: [9, 12, 16, 18, 21] }, // Fmaj7(#11)
+      { pad: [-17, -10, -1, 4, 9], baixo: -29, mel: [11, 14, 16, 19, 23] }, // G6
+    ];
+    // pseudoaleatório fixo por passo: a melodia varia, mas sem ficar caótica
+    const sorte = (p: number, k: number) => {
+      const x = Math.sin(p * 12.9898 + k * 78.233) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    const passoSeg = 60 / 66 / 2; // colcheias
+    const porAcorde = 16;
     const seq = this.sequenciador(ctx, passoSeg, (p, t) => {
-      const compasso = Math.floor(p / 16) % acordes.length;
-      const ac = acordes[compasso];
-      if (p % 16 === 0) {
-        for (const n of ac) {
-          this.nota(ctx, padLp, semi(n - 12), t, passoSeg * 17, 0.045, "sawtooth", 1.2);
-          this.nota(ctx, padLp, semi(n - 12) * 1.004, t, passoSeg * 17, 0.035, "sawtooth", 1.2);
+      const ac = acordes[Math.floor(p / porAcorde) % acordes.length];
+      const durAc = passoSeg * porAcorde;
+      if (p % porAcorde === 0) {
+        for (const n of ac.pad) {
+          const f = semi(n);
+          this.nota(ctx, padLp, f, t, durAc + 2.5, 0.03, "sine", 2.2);
+          this.nota(ctx, padLp, f * 1.003, t, durAc + 2.5, 0.022, "triangle", 2.6);
         }
-        this.nota(ctx, padLp, semi(ac[0] - 24), t, passoSeg * 16, 0.09, "triangle", 0.4);
+        this.nota(ctx, out, semi(ac.baixo), t, durAc + 1.5, 0.12, "sine", 1.5);
       }
-      // arpejo: sobe e desce pelas notas do acorde, com pausas
-      const padrao = [0, 1, 2, 1, 0, 2, 1, -1];
-      const i = padrao[p % padrao.length];
-      if (i >= 0 && (p >> 3) % 2 === 0) this.nota(ctx, arpBus, semi(ac[i] + 12), t, 0.5, 0.05, "triangle");
+      // sinos: notas esparsas nos tempos pares, com pan aleatório
+      if (p % 2 === 0 && sorte(p, 1) < 0.32) {
+        const f = semi(ac.mel[Math.floor(sorte(p, 2) * ac.mel.length)]);
+        const pan = ctx.createStereoPanner();
+        pan.pan.value = sorte(p, 3) * 1.2 - 0.6;
+        pan.connect(sinos);
+        this.nota(ctx, pan, f, t, 2.8, 0.05, "sine", 0.005);
+        this.nota(ctx, pan, f * 2.76, t, 0.9, 0.012, "sine", 0.003); // parcial inarmônico: timbre de sino/vidro
+      }
+      // brilho agudo bem raro, como uma estrela piscando
+      if (sorte(p, 4) < 0.06) {
+        const f = semi(ac.mel[Math.floor(sorte(p, 5) * ac.mel.length)] + 24);
+        this.nota(ctx, sinos, f, t + passoSeg * 0.5, 1.6, 0.012, "sine", 0.01);
+      }
     });
-    return this.fim(ctx, out, seq);
+    return this.fim(ctx, out, seq, () => lfo.stop());
   }
 
   /** Chefe: baixo pulsante + bumbo + chimbal + stabs, 140 BPM. */

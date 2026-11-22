@@ -93,7 +93,7 @@ export function telaBau(rec: ConteudoBau, aoTerminar: () => void): HTMLElement {
     el.classList.remove("tremendo");
     el.classList.add("aberto");
     dica.classList.add("oculto");
-    audio.sfx("explosaoGrande");
+    audio.sfx("bau");
     // moedas e faíscas saindo da boca do baú
     for (let i = 0; i < 22; i++) {
       const moeda = i % 3 !== 0;
@@ -108,7 +108,7 @@ export function telaBau(rec: ConteudoBau, aoTerminar: () => void): HTMLElement {
         const valor = h("b", { text: "+0" });
         premios.append(h("div", { class: "bau3-item" }, h("span", { class: "bau3-item-ic", html: it.html }), valor, h("small", { text: it.rot })));
         contar(valor, it.valor);
-        audio.sfx("carta");
+        audio.sfx("moeda");
       }, 500 + i * 300);
     });
     const depois = 500 + itens.length * 300;

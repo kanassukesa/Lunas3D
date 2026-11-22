@@ -46,3 +46,4 @@ supabase/.branches/
 
 # env: apenas o exemplo vai para o Git
 !.env.example
+orbita-final/arte/sons_original/
