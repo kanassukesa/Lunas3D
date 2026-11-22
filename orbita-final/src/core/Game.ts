@@ -5,7 +5,7 @@ import type { Oferta } from "../battle/CardSystem";
 import type { Modo } from "../battle/types";
 import { BALANCE, DIFICULDADES } from "../data/balance";
 import { STAGES } from "../data/stages";
-import { calcularRecompensas, creditosParciais, CUSTO_REVIVER, desafioDoDia, faseLiberada, hojeStr, jornadaDaSemana, snapshot, type Recompensa } from "../meta/Meta";
+import { calcularRecompensas, creditosParciais, gerarChip, podeMelhorar, CUSTO_REVIVER, desafioDoDia, faseLiberada, hojeStr, jornadaDaSemana, snapshot, type Recompensa } from "../meta/Meta";
 import { Background } from "../render/Background";
 import { BattleRenderer } from "../render/BattleRenderer";
 import { HubScene } from "../render/HubScene";
@@ -15,9 +15,11 @@ import { Hud } from "../ui/Hud";
 import { telaLevelUp } from "../ui/LevelUpScreen";
 import { botao3, faixaTitulo, telaBuild, telaPausa, telaResultado } from "../ui/Panels";
 import { telaBau } from "../ui/Bau";
+import { criarCoach, type PassoCoach } from "../ui/Tutorial";
+import { Rng } from "./Rng";
 import { telaPromocao } from "../ui/Promocao";
 import { anuncioRecompensado, anunciosRestantes, talvezIntersticial } from "../meta/Anuncios";
-import { sincronizarCompras } from "../meta/Pagamentos";
+import { sincronizarCompras, temPremium } from "../meta/Pagamentos";
 import { nuvem } from "./Nuvem";
 import { toast } from "../ui/dom";
 import { h, ICONE_MOEDA } from "../ui/dom";
@@ -51,6 +53,43 @@ const PASSOS: { id: string; alvo: string; texto: string; quando: (b: Battle) => 
   { id: "velocidade", alvo: ".hud-botoes .btn:nth-child(2)", texto: "Toque para acelerar a partida (x2).", quando: (b) => b.t > 50 },
 ];
 
+/** Tutorial obrigatório nas 2 primeiras batalhas: o jogo pausa e o coach explica/aponta o botão. */
+const ONB_BATALHA: Record<1 | 2, { id: string; quando: (b: Battle) => boolean; p: PassoCoach }[]> = {
+  1: [
+    { id: "boas", quando: (b) => b.t > 0.6, p: { titulo: "Primeira missão", texto: "Invasores estão vindo para o seu planeta! As sentinelas em órbita atiram sozinhas nos inimigos. Você comanda as melhorias e os poderes." } },
+    { id: "vida", quando: (b) => b.t > 3, p: { alvo: ".hud-hp", texto: "Esta é a vida do planeta (verde) e o escudo (azul). O escudo recarrega sozinho quando você para de tomar dano. Se a vida zerar, você perde." } },
+    { id: "tempo", quando: (b) => b.t > 9, p: { alvo: ".hud-tempo", texto: "Aguente até o tempo acabar: no final chega o CHEFE da fase. Derrote-o para vencer." } },
+    { id: "xp", quando: (b) => b.t > 14, p: { alvo: ".hud-nivel", texto: "Cada inimigo destruído dá XP. Quando a barra roxa enche, você sobe de nível e escolhe uma carta de melhoria." } },
+    { id: "choque", quando: (b) => b.habilidadePronta() && b.t > 20, p: { alvo: ".hud-hab", tocar: true, texto: "O CHOQUE está pronto! Ele empurra e fere os inimigos perto do planeta e recarrega parte do escudo. Toque nele." } },
+    { id: "ult", quando: (b) => b.ult.pronto(), p: { alvo: ".hud-ult", tocar: true, texto: "Ultimate carregado! É o poder especial do seu comandante. Toque para soltar." } },
+    { id: "chefe", quando: (b) => !!b.avisoChefe, p: { titulo: "Chefe chegando!", texto: "Concentre tudo nele. Quando ele aparecer, o botão MIRA NO CHEFE faz todas as sentinelas focarem só nele." } },
+  ],
+  2: [
+    { id: "boas2", quando: (b) => b.t > 0.6, p: { titulo: "Segunda missão", texto: "Agora sua sentinela está mais forte (hangar) e com um chip equipado. Vamos ver mais alguns comandos." } },
+    { id: "vel", quando: (b) => b.t > 6, p: { alvo: ".hud-botoes .btn:nth-child(2)", tocar: true, texto: "Este botão acelera a partida (x2). Toque para experimentar." } },
+    { id: "build", quando: (b) => b.nivel >= 3, p: { alvo: ".hud-botoes .btn:nth-child(3)", tocar: true, texto: "Aqui você vê a sua BUILD: sentinelas, níveis, cartas e o que falta para o SUPREMO de cada uma. Toque." } },
+    { id: "supremo", quando: (b) => b.nivel >= 4 && !b.fim, p: { titulo: "Supremo", texto: "Cada sentinela no nível 5 + a carta passiva certa evolui para o SUPREMO, uma versão muito mais forte. As cartas mostram o que falta." } },
+    { id: "pause", quando: (b) => b.t > 40, p: { alvo: ".hud-botoes .btn:nth-child(1)", texto: "Precisa parar? O botão de pausa abre as configurações. Depois do tutorial, ali também dá para desistir (com penalidade)." } },
+    { id: "fim2", quando: (b) => !!b.avisoChefe, p: { titulo: "Último desafio do tutorial", texto: "Derrote este chefe e o tutorial termina. Depois disso, as dicas ficam opcionais e você joga do seu jeito!" } },
+  ],
+};
+
+/** Tour obrigatório do menu entre as 2 batalhas do tutorial. */
+const ONB_MENU: { tela: string; p: PassoCoach }[] = [
+  { tela: "hub", p: { titulo: "Bem-vindo ao QG", texto: "Missão cumprida! Este é o seu quartel-general. Daqui você fortalece o planeta entre as batalhas." } },
+  { tela: "hub", p: { alvo: '[data-tile="hangar"]', tocar: true, texto: "No HANGAR você melhora as sentinelas com créditos. Toque nele." } },
+  { tela: "hangar", p: { alvo: ".hg2.base .btn.primario", tocar: true, texto: "Esta é a sua sentinela base. Toque em MELHORAR para subir o nível dela (ganhou créditos na batalha)." } },
+  { tela: "hangar", p: { alvo: ".hg2.base", texto: "Cada nível dá +6% de dano e, a cada 5 níveis, um bônus extra. Aqui você também escolhe a BASE e o DECK: até 5 sentinelas que podem aparecer na partida." } },
+  { tela: "hangar", p: { alvo: ".btn-voltar", tocar: true, texto: "Volte para o QG." } },
+  { tela: "hub", p: { alvo: '[data-tile="chips"]', tocar: true, texto: "Agora os CHIPS: você ganha ao vencer fases e abrir baús. Toque em Chips." } },
+  { tela: "chips", p: { alvo: ".chips-grade > *:first-child", tocar: true, texto: "Toque no chip para EQUIPAR. Cada um vai num encaixe (ataque, defesa, crítico...)." } },
+  { tela: "chips", p: { alvo: ".slots-v2", texto: "Chips equipados dão bônus permanentes. 2 ou 4 do mesmo conjunto dão bônus extra, e 3 chips iguais podem ser FUNDIDOS num melhor." } },
+  { tela: "chips", p: { alvo: ".btn-voltar", tocar: true, texto: "Volte para o QG." } },
+  { tela: "hub", p: { alvo: ".nav-inferior .nav-item:nth-child(2)", texto: "Em PROGRESSO ficam sua patente, os COMANDANTES (cada um com uma ultimate) e as skins. Explore depois do tutorial!" } },
+  { tela: "hub", p: { alvo: ".btn-batalha", tocar: true, texto: "Pronto para a segunda missão! Toque em BATALHA." } },
+  { tela: "briefing", p: { alvo: ".brief-rodape .bt3", tocar: true, texto: "Antes de cada fase você vê o chefe, os inimigos e como ganhar as 3 estrelas. Toque em INICIAR." } },
+];
+
 interface Run {
   b: Battle;
   r: BattleRenderer;
@@ -62,6 +101,9 @@ interface Run {
   idx: number;
   dif: number;
   tutorial: boolean;
+  /** Batalha do tutorial obrigatório (1 ou 2), 0 = normal. */
+  onb: 0 | 1 | 2;
+  onbFeitos: string[];
   recompensa: Recompensa | null;
   bauVisto?: boolean;
   promocao?: { de: number; para: number };
@@ -108,6 +150,8 @@ export class Game implements Nav {
       if ((e.target as HTMLElement).closest("button")) audio.sfx("clique");
     });
     this.app.ticker.add((t) => this.tick(t.deltaMS / 1000));
+    // quem já jogava antes do tutorial novo não precisa fazê-lo
+    if (this.save.onboarding === 0 && (this.save.tutorialVisto || this.save.campanha.normal[0] > 0)) this.save.onboarding = 3;
     this.ir(this.save.perfil.nome ? "hub" : "login");
     this.resize();
     void this.conectarNuvem();
@@ -169,6 +213,11 @@ export class Game implements Nav {
   }
 
   ir(tela: string): void {
+    // tutorial obrigatório: com o nick criado, a 1ª ida ao QG vira a 1ª batalha
+    if (tela === "hub" && this.save.perfil.nome && this.save.onboarding === 0) {
+      this.iniciar("campanha", STAGES[0], 0, 0, 12345);
+      return;
+    }
     this.sairDaBatalha();
     aparencia.planeta = this.save.skins.planeta;
     aparencia.escudo = this.save.skins.escudo;
@@ -220,6 +269,8 @@ export class Game implements Nav {
     requestAnimationFrame(() => this.posicionarVitrine());
     el.querySelector(".tela-conteudo")?.addEventListener("scroll", () => this.posicionarVitrine(), { passive: true });
     audio.tocarMusica("ambiente");
+    if (this.save.onboarding === 1) requestAnimationFrame(() => this.tourMenu(tela));
+    else if (this.save.onboarding === 2) requestAnimationFrame(() => this.retomarTutorial(tela));
   }
 
   /** Encaixa o planeta da vitrine no espaço reservado do menu (div .hub-vitrine). */
@@ -278,7 +329,8 @@ export class Game implements Nav {
     }
     aparencia.planeta = this.save.skins.planeta;
     aparencia.escudo = this.save.skins.escudo;
-    const tutorial = modo === "campanha" && idx === 0 && !this.save.tutorialVisto;
+    const onb: 0 | 1 | 2 = modo !== "campanha" || dif !== 0 ? 0 : this.save.onboarding === 0 && idx === 0 ? 1 : this.save.onboarding === 2 && idx === 1 ? 2 : 0;
+    const tutorial = onb > 0 || (modo === "campanha" && idx === 0 && !this.save.tutorialVisto);
     const cfg = montarRun({ modo, stage, dif, seed, meta: snapshot(this.save), ult: ultDoComandante(this.save), daily, tutorial, campos, etapas: etapas?.map((e) => ({ ...e })) });
     const b = new Battle(cfg);
     const r = new BattleRenderer(b);
@@ -287,10 +339,16 @@ export class Game implements Nav {
       b.step(dt);
     });
     const nome = modo === "campanha" ? `${DIFICULDADES[dif].nome} · Fase ${stage.id}` : stage.nome;
+    let avisouX3 = false;
     const hud = new Hud(nome, {
       pausar: () => this.pausar(),
       velocidade: () => {
-        loop.speed = loop.speed === 1 ? 2 : 1;
+        // x3 é exclusivo do Passe Premium
+        const max = temPremium(this.save) ? 3 : 2;
+        if (loop.speed >= max) {
+          if (max === 2 && !avisouX3) { avisouX3 = true; toast(this.root, "Velocidade x3: exclusiva do Passe Premium"); }
+          loop.speed = 1;
+        } else loop.speed++;
       },
       cartas: () => this.abrir(telaBuild(b, () => this.fechar()), "build"),
       ultimate: () => {
@@ -303,7 +361,7 @@ export class Game implements Nav {
         b.focoChefe = !b.focoChefe;
       },
     });
-    this.run = { b, r, loop, hud, overlay: null, overlayTipo: "", modo, idx, dif, tutorial, recompensa: null };
+    this.run = { b, r, loop, hud, overlay: null, overlayTipo: "", modo, idx, dif, tutorial, onb, onbFeitos: [], recompensa: null };
     this.cena.addChild(r.world);
     this.bg.setFundo(((stage.id - 1) % 3) + 1);
     this.root.append(hud.el);
@@ -346,7 +404,7 @@ export class Game implements Nav {
       telaPausa({
         continuar: () => this.fechar(),
         config: () => this.abrirConfigJogo(),
-        desistir: () => this.confirmarDesistencia(),
+        desistir: run.onb ? null : () => this.confirmarDesistencia(),
       }),
       "pausa",
     );
@@ -458,6 +516,8 @@ export class Game implements Nav {
       const depois = patenteDe(this.save);
       if (depois.indice > antes) { run.recompensa.novaPatente = depois.atual.nome; run.promocao = { de: antes, para: depois.indice }; }
       if (run.tutorial) this.save.tutorialVisto = true;
+      if (run.onb === 1 && b.fim?.vitoria) { this.save.onboarding = 1; this.save.onbPasso = 0; }
+      if (run.onb === 2 && b.fim?.vitoria) { this.save.onboarding = 3; setTimeout(() => toast(this.root, "Tutorial concluído! Agora o jogo é seu, comandante."), 600); }
       this.persistir();
     }
     // baú animado antes do resultado (uma vez por partida, só se houve prêmio)
@@ -486,8 +546,8 @@ export class Game implements Nav {
     this.abrir(
       telaResultado(b, run.recompensa, {
         hub: () => this.depoisDaPartida(() => this.ir("hub")),
-        repetir: () => this.depoisDaPartida(repetir),
-        proxima: temProxima ? () => this.depoisDaPartida(() => this.jogarCampanha(idx + 1, run.dif)) : null,
+        repetir: run.onb ? null : () => this.depoisDaPartida(repetir),
+        proxima: temProxima && !run.onb ? () => this.depoisDaPartida(() => this.jogarCampanha(idx + 1, run.dif)) : null,
         dobrar: run.dobrou || (run.recompensa.creditos <= 0 && run.recompensa.nucleos <= 0) || anunciosRestantes(this.save, "dobrar") <= 0 ? null : async () => {
           if (!(await anuncioRecompensado(this.save, this.root, "dobrar"))) return;
           run.dobrou = true;
@@ -535,11 +595,12 @@ export class Game implements Nav {
       else if (b.pendentes > 0) this.mostrarLevelUp();
     }
     run.hud.update(b, run.loop.speed, this.save.config.fps ? this.fps : null, run.r.flash);
-    if (run.tutorial) {
+    if (run.tutorial && !run.onb) {
       const d = DICAS.find(([a, z]) => b.t >= a && b.t < z);
       run.hud.mostrarDica(d ? d[2] : null);
     }
-    this.tutorialGuiado(run, dt);
+    if (run.onb) this.coachBatalha(run);
+    else this.tutorialGuiado(run, dt);
     audio.tocarMusica(b.boss && b.boss.alive ? "chefe" : "ambiente");
   }
 
@@ -549,6 +610,52 @@ export class Game implements Nav {
       this.persistir();
       seguir();
     });
+  }
+
+  /** Mostra o próximo passo do tutorial obrigatório da batalha (pausa o jogo enquanto aberto). */
+  private coachBatalha(run: Run): void {
+    const b = run.b;
+    if (run.overlay || b.fim || b.pendentes > 0) return;
+    // na 1ª batalha o ultimate enche mais cedo para dar tempo de ensinar
+    if (run.onb === 1 && b.t > 45 && !run.onbFeitos.includes("ult")) b.ult.energia = Math.max(b.ult.energia, 100);
+    const prox = ONB_BATALHA[run.onb as 1 | 2].find((x) => !run.onbFeitos.includes(x.id) && x.quando(b));
+    if (!prox) return;
+    run.onbFeitos.push(prox.id);
+    const el = criarCoach(prox.p, () => this.fechar());
+    this.abrir(el, "pausa");
+  }
+
+  /** Tour do menu (entre as batalhas do tutorial): mostra o passo da tela atual. */
+  private tourMenu(tela: string): void {
+    if (this.save.onboarding !== 1) return;
+    const passo = ONB_MENU[this.save.onbPasso];
+    if (!passo) return;
+    if (passo.tela !== tela) return;
+    document.querySelector(".coach")?.remove();
+    if (this.save.onbPasso === 0) {
+      // presentes para o tour funcionar: créditos para 1 melhoria e um chip para equipar
+      const custo = podeMelhorar(this.save, this.save.deck.base).custo;
+      if (this.save.creditos < custo) this.save.creditos = custo;
+      if (!this.save.chips.length) this.save.chips.push(gerarChip(this.save, new Rng(7), 1));
+    }
+    const el = criarCoach(passo.p, () => {
+      this.save.onbPasso++;
+      if (this.save.onbPasso >= ONB_MENU.length) this.save.onboarding = 2;
+      this.persistir();
+      // se o toque não trocou de tela, mostra o próximo passo aqui mesmo
+      setTimeout(() => { if (this.telaAtual() === tela && !this.run) this.tourMenu(tela); }, 60);
+    });
+    this.root.append(el);
+  }
+
+  /** Saiu no meio do tutorial: leva de volta para a 2ª batalha. */
+  private retomarTutorial(tela: string): void {
+    if (this.save.onboarding !== 2 || this.run) return;
+    const p: PassoCoach | null = tela === "hub" ? { titulo: "Tutorial", alvo: ".btn-batalha", tocar: true, texto: "Falta só a segunda missão do tutorial! Toque em BATALHA." }
+      : tela === "briefing" ? { alvo: ".brief-rodape .bt3", tocar: true, texto: "Toque em INICIAR." } : null;
+    if (!p) return;
+    document.querySelector(".coach")?.remove();
+    this.root.append(criarCoach(p, () => {}));
   }
 
   private tutoAtivo: { id: string; t: number } | null = null;

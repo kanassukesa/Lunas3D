@@ -143,7 +143,7 @@ export function telaHub(nav: Nav): HTMLElement {
 
   const tile = (icone: string, nome: string, info: string, alvo: string, cor: string, arte: string, badge = 0) => {
     const img = urlArte(`tile_${alvo}`) ?? urlArte(arte);
-    return h("button", { class: "tile", style: `--acc:${cor}`, onclick: () => nav.ir(alvo) },
+    return h("button", { class: "tile", "data-tile": alvo, style: `--acc:${cor}`, onclick: () => nav.ir(alvo) },
       h("span", { class: "tile-borda" }),
       img ? h("img", { class: "tile-arte", src: img, alt: "" }) : null,
       h("span", { class: "tile-ic", html: ic(icone) }),

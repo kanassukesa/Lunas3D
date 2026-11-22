@@ -453,6 +453,8 @@ export class Battle {
       p.espinhosCd = 0.4;
       this.explodir(p.x, p.y, 430, orig * p.espinhos, null, 0x5ec8ff);
     }
+    // nas batalhas do tutorial o planeta não cai (o jogador está aprendendo)
+    if (this.cfg.tutorial && p.hp < p.hpMax * 0.3) p.hp = p.hpMax * 0.3;
     if (p.hp <= 0) {
       p.hp = 0;
       this.terminar(false);

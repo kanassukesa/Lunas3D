@@ -33,6 +33,10 @@ export interface SaveData {
   diario: { data: string; melhor: number; concluido: boolean };
   sobrevivenciaMelhor: number;
   tutorialVisto: boolean;
+  /** Tutorial inicial obrigatório: 0 = 1ª batalha, 1 = tour do menu, 2 = 2ª batalha, 3 = concluído. */
+  onboarding: number;
+  /** Passo atual do tour do menu. */
+  onbPasso: number;
   jornada: { semana: string; melhor: number; concluida: boolean };
   /** Login local do comandante. */
   perfil: { nome: string; avatar: number };
@@ -81,6 +85,8 @@ export function saveNovo(): SaveData {
     diario: { data: "", melhor: 0, concluido: false },
     sobrevivenciaMelhor: 0,
     tutorialVisto: false,
+    onboarding: 0,
+    onbPasso: 0,
     jornada: { semana: "", melhor: 0, concluida: false },
     perfil: { nome: "", avatar: 1 },
     pontos: 0,
@@ -122,8 +128,15 @@ export function carregarDe(obj: unknown): SaveData {
   return s;
 }
 
+/** Reset único de teste (pedido para testar o tutorial do zero): roda uma vez por aparelho. */
+const RESET_TESTE = "orbita-reset-tutorial-3.3";
+
 export function carregar(): SaveData {
   try {
+    if (!localStorage.getItem(RESET_TESTE)) {
+      localStorage.setItem(RESET_TESTE, "1");
+      localStorage.removeItem(KEY);
+    }
     const raw = localStorage.getItem(KEY);
     if (!raw) return saveNovo();
     let obj = JSON.parse(raw) as Record<string, unknown>;

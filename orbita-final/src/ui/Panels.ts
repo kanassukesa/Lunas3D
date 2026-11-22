@@ -69,7 +69,7 @@ export function telaBuild(b: Battle, fechar: () => void): HTMLElement {
     botao3("azul", "voltar", "Voltar", fechar));
 }
 
-export function telaPausa(acoes: { continuar(): void; config(): void; desistir(): void }): HTMLElement {
+export function telaPausa(acoes: { continuar(): void; config(): void; desistir: (() => void) | null }): HTMLElement {
   const planeta = urlArte("emblema_pausa") ?? urlArte("planeta");
   return h("div", { class: "overlay ov3" },
     h("div", { class: "pausa3-wrap" },
@@ -79,14 +79,14 @@ export function telaPausa(acoes: { continuar(): void; config(): void; desistir()
         h("div", { class: "pausa3-titulo" }, h("b", { text: "PAUSADO" })),
         botao3("laranja", "play", "Continuar", acoes.continuar),
         botao3("azul", "config", "Configurações", acoes.config),
-        botao3("vermelho", "fechar", "Desistir", acoes.desistir))));
+        acoes.desistir ? botao3("vermelho", "fechar", "Desistir", acoes.desistir) : h("small", { class: "pausa3-nota", text: "Tutorial: não dá para desistir desta partida." }))));
 }
 
 export function telaResultado(
   b: Battle,
   rec: Recompensa,
   acoes: {
-    hub(): void; repetir(): void; proxima: (() => void) | null; reviver: (() => void) | null; cristais: number; custoReviver: number;
+    hub(): void; repetir: (() => void) | null; proxima: (() => void) | null; reviver: (() => void) | null; cristais: number; custoReviver: number;
     dobrar?: (() => void) | null; semAnuncios?: boolean;
   },
 ): HTMLElement {
@@ -141,8 +141,8 @@ export function telaResultado(
     bts.append(h("button", { class: "btn ouro", disabled: acoes.cristais < acoes.custoReviver, html: `${ICONE_MOEDA.cristais} ${acoes.custoReviver} Reviver`, onclick: acoes.reviver }));
   }
   if (acoes.proxima) bts.append(h("button", { class: "btn primario", html: `<span>Próxima fase</span>${ic("play")}`, onclick: acoes.proxima }));
-  bts.append(h("button", { class: "btn", html: icT("repetir", "Repetir"), onclick: acoes.repetir }));
-  bts.append(h("button", { class: "btn ciano", html: icT("casa", "Base"), onclick: acoes.hub }));
+  if (acoes.repetir) bts.append(h("button", { class: "btn", html: icT("repetir", "Repetir"), onclick: acoes.repetir }));
+  bts.append(h("button", { class: "btn ciano", html: acoes.repetir ? icT("casa", "Base") : icT("play", "Continuar"), onclick: acoes.hub }));
   linhas.push(bts);
   return h("div", { class: "overlay", style: "justify-content:flex-start;overflow-y:auto" }, ...linhas);
 }

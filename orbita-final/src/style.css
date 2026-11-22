@@ -1474,3 +1474,20 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 .brief-capa { height: 215px; margin-top: -10px; }
 .brief-capa-txt { bottom: 30px; gap: 4px; }
 .brief-dif { margin-bottom: 2px; }
+
+/* =================== COACH (tutorial guiado) =================== */
+.coach { position: fixed; inset: 0; z-index: 90; pointer-events: auto; }
+.coach.sem-alvo { background: rgba(2, 5, 14, 0.72); }
+.coach-furo { position: fixed; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(2, 5, 14, 0.72); pointer-events: none; transition: all 0.2s; }
+.coach-anel { position: fixed; border-radius: 8px; border: 2.5px solid #ffc23d; box-shadow: 0 0 18px rgba(255, 194, 61, 0.8), inset 0 0 12px rgba(255, 194, 61, 0.4); pointer-events: none; animation: coachAnel 1s ease-in-out infinite; }
+@keyframes coachAnel { 50% { transform: scale(1.06); opacity: 0.7; } }
+.coach-fantasma { position: fixed; background: transparent; border: 0; border-radius: 8px; cursor: pointer; }
+.coach-balao { position: fixed; left: 50%; width: min(90vw, 360px); padding: 14px 16px; border-radius: 6px; z-index: 2;
+  background: linear-gradient(180deg, #13305c, #081633); border: 2px solid #4fd6ff; box-shadow: 0 0 22px rgba(79, 214, 255, 0.5), 0 10px 30px rgba(0, 0, 0, 0.6);
+  animation: entrar 0.3s backwards; }
+.coach-tit { display: block; margin-bottom: 4px; font-size: 16px; font-weight: 900; font-style: italic; color: var(--ouro); letter-spacing: 0.04em; text-transform: uppercase; }
+.coach-balao p { margin: 0; font-size: 14.5px; line-height: 1.4; color: #eaf4ff; }
+.coach-ok { width: 100%; margin-top: 12px; }
+.coach-dica { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12.5px; font-weight: 800; color: var(--ouro); animation: piscar 0.8s steps(2, start) infinite; }
+.coach-dica .ic { width: 14px; height: 14px; }
+.pausa3-nota { text-align: center; color: var(--texto2); font-size: 12.5px; }
