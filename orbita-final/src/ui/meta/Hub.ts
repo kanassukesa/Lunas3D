@@ -210,11 +210,13 @@ export function telaLogin(nav: Nav): HTMLElement {
     }));
   };
   desenhar();
-  const entrar = () => {
+  const entrar = (pularTutorial = false) => {
     const nome = editando ? s.perfil.nome : input.value.trim().replace(/\s+/g, " ");
     if (nome.length < 3) { erro.textContent = "Use pelo menos 3 letras."; return; }
     if (!/^[\p{L}\p{N} _.-]+$/u.test(nome)) { erro.textContent = "Use só letras, números, espaço, ponto ou traço."; return; }
     s.perfil = { nome, avatar: escolhido };
+    // fase de testes: dá para criar o comandante e ir direto ao menu, sem as missões do tutorial
+    if (pularTutorial) { s.onboarding = 3; s.onbPasso = 0; s.tutorialVisto = true; }
     nav.persistir();
     audio.sfx("nivel");
     nav.ir("hub");
@@ -229,6 +231,7 @@ export function telaLogin(nav: Nav): HTMLElement {
       h("label", { text: "Avatar" }),
       grade,
       h("button", { class: "btn primario", type: "submit", html: icT("play", editando ? "Salvar" : "Entrar") }),
+      editando ? null : h("button", { class: "btn", type: "button", html: icT("avancar", "Entrar e pular tutorial"), onclick: () => entrar(true) }),
       editando ? h("button", { class: "btn", type: "button", html: icT("voltar", "Voltar"), onclick: () => nav.ir("hub") }) : null,
       h("p", { class: "login-nota", text: "Atenção: o nick não pode ser trocado depois. O comandante você troca quando quiser." })));
   tela.querySelector("form")!.addEventListener("submit", (e) => {

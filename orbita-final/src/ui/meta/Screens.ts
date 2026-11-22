@@ -174,6 +174,16 @@ export function painelConfig(nav: Nav, voltar: () => void, noJogo = false): HTML
         p.append(h("div", { class: "config-linha conta" }, blocoLogin(nav, () => nav.ir("config"))));
       }
     }
+    if (nav.save.perfil.nome && nav.save.onboarding < 3) {
+      p.append(h("div", { class: "config-linha" }, h("span", { text: "Tutorial em andamento" }),
+        h("button", { class: "btn pequeno", html: icT("avancar", "Pular tutorial"), onclick: () => {
+          nav.save.onboarding = 3; nav.save.onbPasso = 0; nav.save.tutorialVisto = true;
+          nav.persistir();
+          document.querySelectorAll(".coach").forEach((e) => e.remove());  // balão do tutorial que estava na tela
+          toast(nav.root, "Tutorial pulado. O jogo é seu, comandante!");
+          nav.ir("hub");
+        } })));
+    }
     p.append(h("div", { class: "config-linha" }, h("span", { text: `Comandante: ${nav.save.perfil.nome || "—"}` }),
       h("button", { class: "btn pequeno", html: icT("usuario", "Comandantes"), onclick: () => nav.ir("comandantes") })));
     p.append(h("div", { class: "config-linha" }, h("span", { text: "Apagar progresso" }),
