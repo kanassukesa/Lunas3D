@@ -26,13 +26,17 @@ export const PATENTES: Patente[] = [
 ];
 
 /** Avatares (arte final `avatar_1..6`; sem ela, um capacete desenhado na cor). */
-export const AVATARES = [
+export const AVATARES: { id: number; cor: string; elite?: boolean; nome?: string }[] = [
   { id: 1, cor: "#4fd6ff" },
   { id: 2, cor: "#ff9a3c" },
   { id: 3, cor: "#b36bff" },
   { id: 4, cor: "#49e07a" },
   { id: 5, cor: "#5aa8ff" },
   { id: 6, cor: "#a9dcff" },
+  // comandantes Elite: só com o Passe Premium (arte `avatar_7..9`)
+  { id: 7, cor: "#ffc23d", elite: true, nome: "Comandante Solar" },
+  { id: 8, cor: "#ff5ec8", elite: true, nome: "Comandante Nebulosa" },
+  { id: 9, cor: "#b36bff", elite: true, nome: "Comandante do Vazio" },
 ];
 
 export type Premio = { creditos?: number; nucleos?: number; cristais?: number; chip?: number };

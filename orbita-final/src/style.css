@@ -1119,3 +1119,70 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 /* nas dificuldades altas as fases liberadas ganham a cor do nível */
 .tela.dif-dificil .fase-v2:not(.atual):not(.bloq), .tela.dif-pesadelo .fase-v2:not(.atual):not(.bloq), .tela.dif-apocalipse .fase-v2:not(.atual):not(.bloq) {
   --borda-neon: color-mix(in srgb, var(--dif-cor) 80%, transparent); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--dif-cor) 40%, transparent)); }
+
+/* =================== ELITE (Passe Premium): moldura, selo e nome dourado =================== */
+.moldura-elite { position: relative; display: inline-grid; place-items: center; border-radius: 50%; padding: 3px; isolation: isolate; flex: none; }
+.moldura-elite::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: 50%;
+  background: conic-gradient(from 0deg, #fff3c0, #ffc23d, #ff7a1f, #ff5ec8, #b36bff, #ffc23d, #fff3c0); animation: eliteGira 3s linear infinite;
+  box-shadow: 0 0 12px rgba(255, 194, 61, 0.7); }
+.moldura-elite::after { content: ""; position: absolute; inset: -4px; z-index: -2; border-radius: 50%; background: radial-gradient(circle, rgba(255, 200, 80, 0.45), transparent 70%); animation: elitePulsa 2s ease-in-out infinite; }
+@keyframes eliteGira { to { transform: rotate(360deg); } }
+@keyframes elitePulsa { 50% { opacity: 0.4; transform: scale(1.08); } }
+.moldura-elite > .avatar { box-shadow: 0 0 0 2px #0a1430; }
+.nome-cmd { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.nome-cmd > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nome-cmd.elite > span { background: linear-gradient(90deg, #fff3c0, #ffc23d 40%, #ff9a3c 70%, #fff3c0); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text;
+  color: transparent; animation: eliteBrilho 3s linear infinite; font-weight: 900; }
+@keyframes eliteBrilho { to { background-position: -200% 0; } }
+.selo-elite { flex: none; display: inline-flex; align-items: center; gap: 2px; padding: 1px 5px 1px 3px; font-style: normal; font-size: 9px; font-weight: 900; letter-spacing: 0.08em;
+  color: #2a1200; background: linear-gradient(180deg, #ffe07a, #ffa21f); border-radius: 3px; box-shadow: 0 0 8px rgba(255, 194, 61, 0.6); }
+.selo-elite .ic { width: 10px; height: 10px; }
+.av-elite { box-shadow: 0 0 0 2px var(--cor), 0 0 10px var(--cor); }
+.av-elite .ic { color: var(--cor); }
+.av-op { position: relative; }
+.av-op.travado .avatar { filter: grayscale(0.7) brightness(0.55); }
+.av-tag { position: absolute; right: -2px; bottom: -2px; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(180deg, #ffe07a, #ffa21f); }
+.av-tag .ic { width: 12px; height: 12px; color: #2a1200; }
+/* vitrine no passe */
+.vitrine-elite { display: flex; flex-direction: column; gap: 10px; }
+.ve-tit { display: flex; align-items: center; gap: 6px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ouro); }
+.ve-tit .ic { width: 18px; height: 18px; }
+.ve-previa { display: flex; align-items: center; gap: 12px; }
+.ve-previa small { display: block; font-size: 11.5px; color: var(--texto2); }
+.ve-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.ve-lista .ic { width: 14px; height: 14px; color: #49e07a; vertical-align: -2px; }
+.ve-avatares { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ve-av { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.ve-av small { font-size: 10.5px; color: var(--texto2); font-weight: 700; }
+/* =================== RANKING =================== */
+.abas-rank { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.aba-rank { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 2px; border: 1.5px solid rgba(90, 200, 255, 0.35); border-radius: 4px; background: rgba(10, 24, 48, 0.85); min-width: 0; }
+.aba-rank .ic { width: 18px; height: 18px; color: var(--texto2); }
+.aba-rank small { font-size: 10px; font-weight: 800; color: var(--texto2); white-space: nowrap; }
+.aba-rank.ativa { border-color: var(--ouro); background: rgba(70, 48, 8, 0.85); box-shadow: 0 0 12px rgba(255, 194, 61, 0.45); }
+.aba-rank.ativa .ic, .aba-rank.ativa small { color: var(--ouro); }
+.rank-desc { font-size: 12px; color: var(--texto2); text-align: center; }
+.rank-meu { display: flex; align-items: center; gap: 10px; }
+.rank-meu-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rank-meu-txt small { font-size: 11px; color: var(--texto2); }
+.rank-meu-val { text-align: right; display: flex; flex-direction: column; }
+.rank-meu-val > b { font-size: 17px; color: var(--ouro); }
+.rank-meu-val small { font-size: 11px; color: var(--texto2); }
+.rank-pos-meu { color: #fff; }
+.rank-lista { display: flex; flex-direction: column; gap: 6px; }
+.rank-linha { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(10, 22, 46, 0.88); border: 1px solid rgba(90, 200, 255, 0.25); border-radius: 4px; }
+.rank-linha .avatar { width: 38px; height: 38px; }
+.rank-pos { width: 26px; text-align: center; font-weight: 900; font-size: 16px; color: var(--texto2); flex: none; }
+.rank-linha.top1 .rank-pos { color: #ffd24a; text-shadow: 0 0 8px rgba(255, 210, 74, 0.8); }
+.rank-linha.top2 .rank-pos { color: #d8e4f2; }
+.rank-linha.top3 .rank-pos { color: #e09a5a; }
+.rank-linha.top1 { border-color: rgba(255, 210, 74, 0.6); }
+.rank-linha.eu { border-color: var(--ciano); box-shadow: 0 0 10px rgba(79, 214, 255, 0.35); }
+.rank-linha.elite { background: linear-gradient(90deg, rgba(70, 48, 8, 0.6), rgba(10, 22, 46, 0.88) 60%); }
+.rank-nome { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.rank-nome small { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--texto2); }
+.rank-nome .insignia { width: 14px; height: 14px; }
+.rank-val { font-size: 14px; font-weight: 900; white-space: nowrap; }
+.rank-aviso { display: flex; gap: 8px; align-items: flex-start; }
+.rank-aviso .ic { flex: none; width: 18px; height: 18px; color: var(--ouro); }
+.rank-carregando { text-align: center; padding: 20px; color: var(--texto2); font-size: 13px; }

@@ -1,3 +1,4 @@
+import type { LinhaRankingEnvio } from "../core/Nuvem";
 import { BALANCE, DIFICULDADES } from "../data/balance";
 import type { Battle } from "../battle/Battle";
 import type { Modo } from "../battle/types";
@@ -220,4 +221,13 @@ export function usarSkin(s: SaveData, id: string): boolean {
   if (sk.tipo === "escudo") s.skins.escudo = id;
   else s.skins.planeta = id;
   return true;
+}
+
+/** Linha que o jogador publica no ranking global (recordes por modo). */
+export function linhaRanking(s: SaveData): LinhaRankingEnvio {
+  return {
+    nome: s.perfil.nome, avatar: s.perfil.avatar, patente: patenteDe(s).indice, pontos: Math.floor(s.pontos),
+    estrelas: s.estatisticas.estrelas ?? 0, sobrevivencia: Math.floor(s.sobrevivenciaMelhor),
+    jornada_semana: s.jornada.semana, jornada: s.jornada.melhor, diario_dia: s.diario.data, diario: Math.floor(s.diario.melhor),
+  };
 }

@@ -26,9 +26,9 @@ import {
   painelConfig, telaConfig, telaMissoes, type Nav,
 } from "../ui/meta/Screens";
 import {
-  telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaPasse, telaProgresso, telaRecompensas, telaSkins,
+  telaCorreio, telaDiarias, telaEventos, telaHub, telaInventario, telaLogin, telaLoja, telaPasse, telaProgresso, telaRanking, telaRecompensas, telaSkins,
 } from "../ui/meta/Hub";
-import { patenteDe, registrarPartida } from "../meta/Comandante";
+import { linhaRanking, patenteDe, registrarPartida } from "../meta/Comandante";
 import { telaChipsV2, telaFases, telaHangarV2, telaModosV2, telaPlanetaV2 } from "../ui/meta/Paineis";
 import { audio } from "./Audio";
 import { FixedLoop } from "./Loop";
@@ -136,7 +136,10 @@ export class Game implements Nav {
     // salva na nuvem com atraso (junta várias alterações seguidas)
     if (nuvem.logado()) {
       clearTimeout(this.nuvemTimer);
-      this.nuvemTimer = window.setTimeout(() => void nuvem.salvar(this.save).catch(() => {}), 3000);
+      this.nuvemTimer = window.setTimeout(() => {
+        void nuvem.salvar(this.save).catch(() => {});
+        void nuvem.publicarRanking(this.save, linhaRanking(this.save)).catch(() => {});
+      }, 3000);
     }
   }
 
@@ -196,6 +199,7 @@ export class Game implements Nav {
       passe: () => telaPasse(this),
       modos: () => telaModosV2(this),
       skins: () => telaSkins(this),
+      ranking: () => telaRanking(this),
       config: () => telaConfig(this),
     };
     const el = (mapa[tela] ?? mapa.hub)();

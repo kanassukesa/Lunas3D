@@ -5,7 +5,7 @@ import { STAGES } from "../../data/stages";
 import { audio } from "../../core/Audio";
 import type { Chip } from "../../data/types";
 import {
-  atualizarDia, comprar, comprarSkin, diariasProntas, loginDisponivel, mensagensNovas, missoesDoDia, nivelPasse, passeProntos, patenteDe,
+  atualizarDia, comprar, comprarSkin, diariasProntas, loginDisponivel, mensagensNovas, missoesDoDia, nivelPasse, passeProntos, patenteDe, linhaRanking,
   resgatarBonusDiario, resgatarDiaria, resgatarLogin, resgatarMensagem, resgatarPasse, temporadaAtual, textoPremio, usarSkin,
 } from "../../meta/Comandante";
 import { desafioDoDia, formatStat, hojeStr, missoesProntas, semanaStr } from "../../meta/Meta";
@@ -17,6 +17,7 @@ import { fmtInt, fmtTempo, h, ICONE_MOEDA, iconeImg, toast } from "../dom";
 import { ic, icT } from "../Icones";
 import { celebrar } from "../Premio";
 import { telaBau } from "../Bau";
+import { nuvem, type LinhaRanking, type ModoRanking } from "../../core/Nuvem";
 const ret = (ev: MouseEvent) => (ev.currentTarget as HTMLElement).getBoundingClientRect();
 import { moedas, proximaFase, tela, type Nav } from "./Screens";
 
@@ -69,8 +70,20 @@ function pedestal(): HTMLElement | null {
 
 export function avatar(n: number, classe = "avatar"): HTMLElement {
   const url = urlArte(`avatar_${n}`);
-  const cor = AVATARES.find((a) => a.id === n)?.cor ?? "#4fd6ff";
-  return h("span", { class: classe, style: `--cor:${cor}`, html: url ? `<img src="${url}" alt="">` : ic("usuario") });
+  const def = AVATARES.find((a) => a.id === n);
+  const cor = def?.cor ?? "#4fd6ff";
+  return h("span", { class: classe + (def?.elite ? " av-elite" : ""), style: `--cor:${cor}`, html: url ? `<img src="${url}" alt="">` : ic(def?.elite ? "coroa" : "usuario") });
+}
+
+/** Avatar com a moldura Elite animada (quem tem o Passe Premium da temporada). */
+export function avatarComMoldura(n: number, elite: boolean, classe = "avatar"): HTMLElement {
+  const a = avatar(n, classe);
+  return elite ? h("span", { class: "moldura-elite" }, a) : a;
+}
+
+/** Nome do comandante; com Passe Premium fica dourado e ganha o selo ELITE. */
+export function nomeComandante(nome: string, elite: boolean, tag: "b" | "div" = "b"): HTMLElement {
+  return h(tag, { class: "nome-cmd" + (elite ? " elite" : "") }, h("span", { text: nome || "Comandante" }), elite ? h("i", { class: "selo-elite", html: `${ic("coroa")}ELITE` }) : null);
 }
 
 /** Insígnia da patente (arte final `patente_N`), ou null. */
@@ -83,9 +96,9 @@ function perfilCard(nav: Nav): HTMLElement {
   const s = nav.save;
   const pt = patenteDe(s);
   return h("button", { class: "perfil", onclick: () => nav.ir("progresso") },
-    h("span", { class: "perfil-av" }, avatar(s.perfil.avatar), insignia(pt.indice, "insignia mini")),
+    h("span", { class: "perfil-av" }, avatarComMoldura(s.perfil.avatar, temPremium(s)), insignia(pt.indice, "insignia mini")),
     h("span", { class: "perfil-txt" },
-      h("b", { text: s.perfil.nome || "Comandante" }),
+      nomeComandante(s.perfil.nome, temPremium(s)),
       h("span", { class: "perfil-pat", html: `<em>${pt.atual.nome}</em> · ${fmtInt(s.pontos)} pts` }),
       h("span", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(pt.frac * 100)}%` }))));
 }
@@ -106,7 +119,7 @@ export function barraInferior(nav: Nav, ativa: string): HTMLElement {
     item("progresso", "grafico", "Progresso", () => nav.ir("progresso")),
     item("inventario", "caixa", "Inventário", () => nav.ir("inventario")),
     item("cla", "grupo", "Clã", emBreve(nav, "Clã")),
-    item("ranking", "ranking", "Ranking", emBreve(nav, "Ranking")));
+    item("ranking", "ranking", "Ranking", () => nav.ir("ranking")));
 }
 
 // ------------------------------------------------------------------ HUB
@@ -185,7 +198,13 @@ export function telaLogin(nav: Nav): HTMLElement {
   const grade = h("div", { class: "avatares" });
   const desenhar = () => {
     grade.replaceChildren(...AVATARES.map((a) => {
-      const b = h("button", { class: "av-op" + (a.id === escolhido ? " sel" : ""), "aria-label": `Avatar ${a.id}`, onclick: () => { escolhido = a.id; desenhar(); } }, avatar(a.id, "avatar grande"));
+      const travado = !!a.elite && !temPremium(s) && s.perfil.avatar !== a.id;
+      const b = h("button", { class: "av-op" + (a.id === escolhido ? " sel" : "") + (travado ? " travado" : ""), "aria-label": a.nome ?? `Avatar ${a.id}`,
+        onclick: () => {
+          if (travado) { toast(nav.root, `${a.nome}: exclusivo do Passe Premium`); return; }
+          escolhido = a.id; desenhar();
+        } },
+        avatar(a.id, "avatar grande"), a.elite ? h("i", { class: "av-tag", html: travado ? ic("cadeado") : ic("coroa") }) : null);
       return b;
     }));
   };
@@ -401,9 +420,9 @@ export function telaProgresso(nav: Nav): HTMLElement {
   const est = (icone: string, k: string, v: string) => h("div", { class: "est-item neon" }, h("span", { class: "est-ic", html: ic(icone) }), h("b", { text: v }), h("small", { text: k }));
   const el = tela(nav, "PROGRESSO",
     h("div", { class: "cartao perfil-grande neon" },
-      h("span", { class: "perfil-av" }, avatar(s.perfil.avatar, "avatar grande"), insignia(pt.indice, "insignia media")),
+      h("span", { class: "perfil-av" }, avatarComMoldura(s.perfil.avatar, temPremium(s), "avatar grande"), insignia(pt.indice, "insignia media")),
       h("div", { style: "flex:1;min-width:0" },
-        h("div", { class: "nome", text: s.perfil.nome || "Comandante" }),
+        nomeComandante(s.perfil.nome, temPremium(s), "div"),
         h("div", { class: "pat-nome", text: pt.atual.nome }),
         pt.prox ? h("div", { class: "pat-prox" }, h("span", { text: "Próxima:" }), insignia(pt.indice + 1, "insignia micro"), h("b", { text: pt.prox.nome })) : null,
         h("div", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(pt.frac * 100)}%` })),
@@ -590,6 +609,87 @@ export function telaPasse(nav: Nav): HTMLElement {
             if (r.ok && MODO_PAGAMENTO === "teste") { audio.sfx("vitoria"); nav.persistir(); nav.ir("passe"); }
           } })),
     seloTeste(),
+    vitrineElite(nav, premium),
     h("div", { class: "passe-cab" }, h("span", { text: "GRÁTIS" }), h("span", { text: "PREMIUM" })),
     ...linhas);
+}
+
+/** O que o Passe Premium dá de visual (todo mundo vê no ranking e no perfil). */
+function vitrineElite(nav: Nav, premium: boolean): HTMLElement {
+  const s = nav.save;
+  const elites = AVATARES.filter((a) => a.elite);
+  return h("div", { class: "cartao neon roxo vitrine-elite" + (premium ? " ativa" : "") },
+    h("div", { class: "ve-tit", html: `${ic("coroa")}<span>Visual ELITE ${premium ? "· ativo" : "· incluso no Premium"}</span>` }),
+    h("div", { class: "ve-previa" },
+      avatarComMoldura(s.perfil.avatar, true, "avatar grande"),
+      h("div", null, nomeComandante(s.perfil.nome, true), h("small", { text: "Assim os outros jogadores te veem no ranking" }))),
+    h("ul", { class: "ve-lista" },
+      h("li", { html: `${ic("check")} Moldura dourada animada no avatar` }),
+      h("li", { html: `${ic("check")} Nome dourado com o selo <b>ELITE</b> no perfil e no ranking` }),
+      h("li", { html: `${ic("check")} ${elites.length} comandantes exclusivos` }),
+      h("li", { html: `${ic("check")} Skins premium de escudo e planeta` })),
+    h("div", { class: "ve-avatares" }, ...elites.map((a) => h("button", { class: "ve-av", onclick: () => (premium ? nav.ir("login") : toast(nav.root, `${a.nome}: exclusivo do Passe Premium`)) },
+      avatar(a.id, "avatar grande"), h("small", { text: a.nome ?? "" })))));
+}
+
+// ------------------------------------------------------------------ RANKING (global, por modo)
+
+const MODOS_RANKING: { id: ModoRanking; nome: string; icone: string; desc: string; valor: (v: number) => string }[] = [
+  { id: "elo", nome: "Elo", icone: "trofeu", desc: "Pontos de comandante (patente).", valor: (v) => `${fmtInt(v)} pts` },
+  { id: "campanha", nome: "Campanha", icone: "estrela", desc: "Estrelas somando as 4 dificuldades.", valor: (v) => `${fmtInt(v)} ★` },
+  { id: "sobrevivencia", nome: "Sobrevivência", icone: "infinito", desc: "Maior tempo vivo na Sobrevivência Infinita.", valor: (v) => fmtTempo(v) },
+  { id: "jornada", nome: "Jornada", icone: "sol", desc: "Etapas vencidas na Jornada desta semana.", valor: (v) => `${v}/5 etapas` },
+  { id: "diario", nome: "Desafio", icone: "calendario", desc: "Melhor tempo no Desafio Diário de hoje.", valor: (v) => fmtTempo(v) },
+];
+let modoRanking: ModoRanking = "elo";
+const cacheRanking = new Map<string, { t: number; dados: Awaited<ReturnType<typeof nuvem.ranking>> }>();
+
+export function telaRanking(nav: Nav): HTMLElement {
+  const s = nav.save;
+  const modo = MODOS_RANKING.find((m) => m.id === modoRanking)!;
+  const meu = linhaRanking(s);
+  const meuValor: Record<ModoRanking, number> = {
+    elo: meu.pontos, campanha: meu.estrelas, sobrevivencia: meu.sobrevivencia,
+    jornada: meu.jornada_semana === semanaStr() ? meu.jornada : 0, diario: meu.diario_dia === hojeStr() ? meu.diario : 0,
+  };
+  const abas = h("div", { class: "abas-rank" }, ...MODOS_RANKING.map((m) =>
+    h("button", { class: "aba-rank" + (m.id === modoRanking ? " ativa" : ""), onclick: () => { modoRanking = m.id; nav.ir("ranking"); } },
+      h("span", { html: ic(m.icone) }), h("small", { text: m.nome }))));
+  const posicao = h("b", { class: "rank-pos-meu", text: "—" });
+  const meuCard = h("div", { class: "cartao neon ouro rank-meu" },
+    avatarComMoldura(s.perfil.avatar, temPremium(s)),
+    h("div", { class: "rank-meu-txt" }, nomeComandante(s.perfil.nome, temPremium(s)), h("small", { text: `Seu recorde · ${modo.nome}` })),
+    h("div", { class: "rank-meu-val" }, h("b", { text: meuValor[modo.id] > 0 ? modo.valor(meuValor[modo.id]) : "—" }), h("small", { html: "Posição " }, posicao)));
+  const lista = h("div", { class: "rank-lista" });
+  const pat = (i: number) => insignia(i, "insignia micro");
+  const linha = (l: LinhaRanking, pos: number) => {
+    const v = Number((l as unknown as Record<string, number>)[{ elo: "pontos", campanha: "estrelas", sobrevivencia: "sobrevivencia", jornada: "jornada", diario: "diario" }[modo.id]]);
+    return h("div", { class: "rank-linha" + (l.eu ? " eu" : "") + (pos <= 3 ? ` top${pos}` : "") + (l.elite ? " elite" : "") },
+      h("span", { class: "rank-pos", text: String(pos) }),
+      avatarComMoldura(l.avatar, l.elite),
+      h("div", { class: "rank-nome" }, nomeComandante(l.nome, l.elite), h("small", null, pat(l.patente), h("span", { text: PATENTES[l.patente]?.nome ?? "" }))),
+      h("b", { class: "rank-val", text: modo.valor(v) }));
+  };
+  const aviso = (txt: string, icone = "alerta") => h("div", { class: "cartao desc rank-aviso" }, h("span", { html: ic(icone) }), h("span", { html: txt }));
+  if (!nuvem.configurada) {
+    lista.append(aviso(`O ranking online liga quando o servidor do jogo estiver ativo. Seus recordes já ficam guardados e entram no ranking automaticamente.`));
+  } else {
+    const chave = modo.id + (modo.id === "jornada" ? semanaStr() : modo.id === "diario" ? hojeStr() : "");
+    const mostrar = (d: Awaited<ReturnType<typeof nuvem.ranking>>) => {
+      lista.replaceChildren(...(d.linhas.length ? d.linhas.map((l, i) => linha(l, i + 1)) : [aviso("Ninguém no ranking ainda. Seja o primeiro!")]));
+      posicao.textContent = d.minhaPosicao ? `#${d.minhaPosicao}` : "—";
+      if (!nuvem.logado()) lista.prepend(aviso("Entre com sua conta em <b>Configurações</b> para aparecer no ranking.", "usuario"));
+    };
+    const c = cacheRanking.get(chave);
+    if (c && Date.now() - c.t < 60_000) mostrar(c.dados);
+    else {
+      lista.append(h("div", { class: "rank-carregando", text: "Carregando ranking…" }));
+      nuvem.ranking(modo.id, modo.id === "jornada" ? semanaStr() : modo.id === "diario" ? hojeStr() : undefined)
+        .then((d) => { cacheRanking.set(chave, { t: Date.now(), dados: d }); if (nav.telaAtual() === "ranking") mostrar(d); })
+        .catch(() => lista.replaceChildren(aviso("Não foi possível carregar o ranking agora. Tente de novo em instantes.")));
+    }
+  }
+  const el = tela(nav, "RANKING", abas, h("div", { class: "rank-desc", text: modo.desc }), meuCard, lista);
+  el.append(barraInferior(nav, "ranking"));
+  return el;
 }
