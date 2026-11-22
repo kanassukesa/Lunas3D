@@ -13,7 +13,7 @@ import { initTextures } from "../render/Textures";
 import { aparencia } from "../render/Aparencia";
 import { Hud } from "../ui/Hud";
 import { telaLevelUp } from "../ui/LevelUpScreen";
-import { telaBuild, telaPausa, telaResultado } from "../ui/Panels";
+import { botao3, faixaTitulo, telaBuild, telaPausa, telaResultado } from "../ui/Panels";
 import { telaBau } from "../ui/Bau";
 import { telaPromocao } from "../ui/Promocao";
 import { anuncioRecompensado, anunciosRestantes, talvezIntersticial } from "../meta/Anuncios";
@@ -21,7 +21,7 @@ import { sincronizarCompras } from "../meta/Pagamentos";
 import { nuvem } from "./Nuvem";
 import { toast } from "../ui/dom";
 import { h, ICONE_MOEDA } from "../ui/dom";
-import { ic, icT } from "../ui/Icones";
+import { ic } from "../ui/Icones";
 import {
   painelConfig, telaConfig, telaMissoes, type Nav,
 } from "../ui/meta/Screens";
@@ -362,21 +362,21 @@ export class Game implements Nav {
     const pct = Math.round((1 - F) * 100);
     const linha = (icone: string, texto: string, valor: string, ruim = true) =>
       h("div", { class: "desist-linha" + (ruim ? " ruim" : "") }, h("span", { class: "desist-ic", html: icone }), h("span", { text: texto }), h("b", { html: valor }));
-    const el = h("div", { class: "overlay desistir" },
-      h("div", { class: "titulo", style: "color:var(--vermelho)", text: "DESISTIR?" }),
+    const el = h("div", { class: "overlay desistir ov3" },
+      faixaTitulo("DESISTIR?"),
       h("div", { class: "subtitulo", text: "Abandonar a missão tem penalidade. Lutar até o fim, mesmo perdendo, rende a recompensa completa." }),
       h("div", { class: "cartao neon desist-cartao" },
         linha(ICONE_MOEDA.creditos, "Créditos", `<s>${cheio}</s> ${fica} <em>-${pct}%</em>`),
         linha(ic("estrela", "ic-estrela"), "Pontos de comandante", `<em>-${pct}%</em>`),
         linha(ICONE_MOEDA.nucleos, "Núcleos", "<em>perdidos</em>"),
         linha(ic("chip"), "Chip da partida", "<em>perdido</em>")),
-      h("button", { class: "btn primario", style: "min-width:240px", html: icT("play", "Voltar a lutar"), onclick: () => this.fechar() }),
-      h("button", { class: "btn", style: "min-width:240px;color:var(--vermelho)", html: icT("fechar", "Desistir mesmo assim"), onclick: () => {
+      botao3("laranja", "play", "Voltar a lutar", () => this.fechar()),
+      h("button", { class: "bt3 vermelho", onclick: () => {
         this.fechar();
         b.desistiu = true;
         b.terminar(false);
         b.reviveu = true; // desistir não oferece reviver
-      } }));
+      } }, h("span", { class: "bt3-ic", html: ic("fechar") }), h("span", { class: "bt3-txt", text: "Desistir mesmo assim" })));
     this.abrir(el, "pausa");
   }
 

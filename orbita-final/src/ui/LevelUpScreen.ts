@@ -7,6 +7,7 @@ import { arteCarta, arteSentinela } from "./CardArt";
 import { urlArte } from "../render/Sprites";
 import { h, ICONE_MOEDA } from "./dom";
 import { ic } from "./Icones";
+import { faixaTitulo } from "./Panels";
 
 /** Linha de slots das sentinelas (6), com a arte e as estrelas de nível. */
 export function slotsSentinelas(b: Battle, destaque?: string): HTMLElement {
@@ -18,7 +19,7 @@ export function slotsSentinelas(b: Battle, destaque?: string): HTMLElement {
   for (let i = 0; i < n; i++) {
     const s = b.sentinels[i];
     if (!s) {
-      linha.append(h("div", { class: "slot-sent vazio" }));
+      linha.append(h("div", { class: "slot-sent vazio" }, h("span", { class: "slot-mais", html: ic("mais") })));
       continue;
     }
     const est = h("div", { class: "estrelinhas" });
@@ -82,7 +83,8 @@ export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrol
         blocoEvolucao(b, o),
         h("div", { class: "cl-rodape" },
           h("span", { style: `color:${cor}`, text: RARIDADE_NOME[c.raridade] }),
-          pilhas > 0 && max > 1 && max < 99 ? h("span", { text: `${pilhas}/${max}` }) : null)),
+          pilhas > 0 && max > 1 && max < 99 ? h("span", { text: `${pilhas}/${max}` }) : null),
+        h("i", { class: "cl-gema" })),
     );
   });
   const gratis = b.cards.rerrolagensGratis;
@@ -90,13 +92,13 @@ export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrol
   return h(
     "div",
     { class: "overlay levelup" },
-    h("div", { class: "lv-cabecalho" }, h("span", { text: "SUBIU DE NÍVEL" }), h("b", { text: `Nv. ${b.nivel - b.pendentes + 1}` })),
-    h("div", { class: "lv-painel" }, slotsSentinelas(b), h("div", { class: "lv-legenda", text: `Sentinelas ${b.sentinels.length}/${b.slots()}` })),
+    faixaTitulo("SUBIU DE NÍVEL", h("em", { class: "lv-nv", text: `Nv. ${b.nivel - b.pendentes + 1}` })),
+    h("div", { class: "moldura3 lv-painel3" }, slotsSentinelas(b), h("div", { class: "lv-legenda", text: `Sentinelas ${b.sentinels.length}/${b.slots()}` })),
     lista,
     h("div", { class: "linha" },
       b.cards.podeRerrolar() || !anuncio
-        ? h("button", { class: "btn", html: txtRer, disabled: !b.cards.podeRerrolar(), onclick: aoRerrolar })
-        : h("button", { class: "btn ciano", html: `${ic("play")}<span>Rerrolar · anúncio</span>`, onclick: aoRerrolar }),
-      h("span", { class: "moeda", style: "color:var(--texto2)", html: `${ICONE_MOEDA.sucata} ${Math.floor(b.sucata)} sucata` })),
+        ? h("button", { class: "bt3 ouro lv-rer", html: txtRer, disabled: !b.cards.podeRerrolar(), onclick: aoRerrolar })
+        : h("button", { class: "bt3 azul lv-rer", html: `${ic("play")}<span>Rerrolar · anúncio</span>`, onclick: aoRerrolar }),
+      h("span", { class: "lv-sucata", html: `${ICONE_MOEDA.sucata} ${Math.floor(b.sucata)} sucata` })),
   );
 }

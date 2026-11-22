@@ -101,13 +101,32 @@ class SentinelView implements Freeable {
     this.ring.scale.set(this.torre.dupla || temArte(`sentinela_${id}`) ? 1.15 : 0.62);
     this.ring.visible = false;
     this.root.addChild(this.glow, this.ring, this.torre.root);
+    if (id === "campo") {
+      // Domo Elétrico: em vez de torre, uma cúpula elétrica em volta do planeta
+      this.torre.root.visible = false;
+      this.glow.visible = false;
+      const arte = temArte("domo_eletrico");
+      this.domo = new Sprite(tex(arte ? "domo_eletrico" : "escudo"));
+      this.domo.anchor.set(0.5);
+      this.domo.blendMode = "add";
+      this.domo.tint = arte ? 0xffffff : 0x5effa8;
+      this.domo.scale.set((RAIO_DOMO * 2) / (this.domo.texture.width * 0.96));
+      this.arcos = new Graphics();
+      this.arcos.blendMode = "add";
+      this.root.addChild(this.domo, this.arcos);
+    }
   }
+  domo: Sprite | null = null;
+  arcos: Graphics | null = null;
+  arcoTick = -1;
   free(): void {
     this.root.destroy({ children: true });
   }
 }
 
 const CORES_PROJ: Record<string, number> = { estilhaco: 0xffffff };
+/** Raio visual do Domo Elétrico (um pouco além do escudo do planeta). */
+const RAIO_DOMO = BALANCE.planeta.raioEscudo * 1.28;
 
 export class BattleRenderer {
   readonly world = new Container();
@@ -444,6 +463,33 @@ export class BattleRenderer {
     }
     v.root.x = s.x;
     v.root.y = s.y;
+    if (v.domo && v.arcos) {
+      // cúpula respira, brilha forte logo após cada pulso e solta arcos elétricos pela superfície
+      const desde = 1 / Math.max(0.01, s.stats.cadencia) - Math.max(0, s.cd);
+      const pulso = Math.max(0, 1 - desde * 3);
+      v.domo.alpha = 0.22 + 0.06 * Math.sin(this.tempo * 4) + 0.5 * pulso + (s.evoluido ? 0.12 : 0);
+      v.domo.rotation = this.tempo * 0.12;
+      const k = (RAIO_DOMO * 2) / (v.domo.texture.width * 0.96);
+      v.domo.scale.set(k * (1 + 0.04 * pulso));
+      if (Math.floor(this.tempo * 20) !== v.arcoTick) {
+        v.arcoTick = Math.floor(this.tempo * 20);
+        const g = v.arcos;
+        g.clear();
+        const n = (s.evoluido ? 6 : 3) + Math.round(pulso * 4);
+        for (let i = 0; i < n; i++) {
+          let a = Math.random() * Math.PI * 2;
+          const passos = 5;
+          g.moveTo(Math.cos(a) * RAIO_DOMO, Math.sin(a) * RAIO_DOMO);
+          for (let j = 0; j < passos; j++) {
+            a += 0.09 + Math.random() * 0.08;
+            const r = RAIO_DOMO * (0.93 + Math.random() * 0.14);
+            g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+          }
+        }
+        g.stroke({ width: 2.2, color: 0xc8ffe4, alpha: 0.85 });
+      }
+      return;
+    }
     // a cabeça gira para mirar; a base acompanha a órbita devagar
     v.torre.cabeca.rotation = s.def.id === "laser" && s.raios[0] ? s.raios[0].ang : s.ang;
     if (v.torre.base) v.torre.base.rotation = this.tempo * 0.15;

@@ -7,6 +7,7 @@ import { CHIP_RARIDADE_COR, CHIP_SET_MAP, CHIP_SLOT_NOME } from "../data/chips";
 import { formatStat } from "../meta/Meta";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg } from "./dom";
 import { ic, icT } from "./Icones";
+import { urlArte } from "../render/Sprites";
 
 /** Linha "Supremo" do painel de build: o que falta para evoluir. */
 function evolucaoTexto(b: Battle, id: SentinelId): HTMLElement | null {
@@ -50,19 +51,34 @@ function painelBuild(b: Battle): HTMLElement {
   return p;
 }
 
+/** Faixa de título com asas douradas (padrão das telas de batalha). */
+export function faixaTitulo(texto: string, extra?: HTMLElement | null): HTMLElement {
+  return h("div", { class: "faixa3" }, h("span", { class: "faixa3-asa e" }), h("div", { class: "faixa3-placa" }, h("b", { text: texto }), extra ?? null), h("span", { class: "faixa3-asa d" }));
+}
+
+/** Botão chanfrado grande (laranja / azul / vermelho / ouro). */
+export function botao3(cor: "laranja" | "azul" | "vermelho" | "ouro", icone: string, texto: string, onclick: () => void): HTMLElement {
+  return h("button", { class: "bt3 " + cor, onclick }, h("span", { class: "bt3-ic", html: ic(icone) }), h("span", { class: "bt3-txt", text: texto }));
+}
+
 export function telaBuild(b: Battle, fechar: () => void): HTMLElement {
-  return h("div", { class: "overlay" }, h("div", { class: "titulo", text: "BUILD" }), painelBuild(b), h("button", { class: "btn ciano", text: "Voltar", onclick: fechar }));
+  return h("div", { class: "overlay ov3" },
+    faixaTitulo("BUILD"),
+    h("div", { class: "moldura3 build3" }, painelBuild(b)),
+    botao3("azul", "voltar", "Voltar", fechar));
 }
 
 export function telaPausa(acoes: { continuar(): void; config(): void; desistir(): void }): HTMLElement {
-  return h(
-    "div",
-    { class: "overlay" },
-    h("div", { class: "titulo", text: "PAUSADO" }),
-    h("button", { class: "btn primario", style: "min-width:220px", html: icT("play", "Continuar"), onclick: acoes.continuar }),
-    h("button", { class: "btn", style: "min-width:220px", html: icT("config", "Configurações"), onclick: acoes.config }),
-    h("button", { class: "btn", style: "min-width:220px;color:var(--vermelho)", html: icT("fechar", "Desistir"), onclick: acoes.desistir }),
-  );
+  const planeta = urlArte("emblema_pausa") ?? urlArte("planeta");
+  return h("div", { class: "overlay ov3" },
+    h("div", { class: "pausa3-wrap" },
+      h("div", { class: "pausa3-emblema" + (urlArte("emblema_pausa") ? " arte" : "") },
+        h("span", { class: "pausa3-asa e" }), planeta ? h("img", { src: planeta, alt: "" }) : h("i"), h("span", { class: "pausa3-asa d" })),
+      h("div", { class: "moldura3 pausa3" },
+        h("div", { class: "pausa3-titulo" }, h("b", { text: "PAUSADO" })),
+        botao3("laranja", "play", "Continuar", acoes.continuar),
+        botao3("azul", "config", "Configurações", acoes.config),
+        botao3("vermelho", "fechar", "Desistir", acoes.desistir))));
 }
 
 export function telaResultado(

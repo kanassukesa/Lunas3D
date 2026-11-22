@@ -49,6 +49,12 @@ export function acharAlvo(b: Battle, x: number, y: number, alcance: number, modo
 }
 
 function posicionar(b: Battle, s: SentinelRun): void {
+  // o Domo Elétrico não orbita: é uma cúpula em volta do próprio planeta
+  if (s.def.id === "campo") {
+    s.x = b.planet.x;
+    s.y = b.planet.y;
+    return;
+  }
   const anel = s.slot < 3 ? 0 : 1;
   const cfg = BALANCE.aneis[anel];
   const idx = s.slot % 3;

@@ -52,6 +52,8 @@ CONFIG = {
     "torre_base": ("fundo", 256),
     "cabeca_": ("cabeca", 256),
     "escudo": ("aditivo", 512),
+    "domo_eletrico": ("aditivo", 512),
+    "emblema_": ("recorte", 360),
     "sentinela_": ("fundo", 256),
     "inimigo_": ("fundo", 256),
     "chefe_": ("fundo", 512),
@@ -238,7 +240,7 @@ def processar(arq):
     rgba = aditivo(rgb) if modo == "aditivo" else remover_fundo(rgb)
     img = Image.fromarray(rgba, "RGBA")
     # sentinelas mantêm o centro da base hexagonal no centro do sprite (o cano sai para a direita)
-    img = recortar_quadrado(img, 0.02 if nome == "planeta" or nome.startswith("escudo") else 0.04)
+    img = recortar_quadrado(img, 0.02 if nome == "planeta" or nome.startswith("escudo") or nome == "domo_eletrico" else 0.04)
     img = img.resize((tam, tam), Image.LANCZOS)
     img.save(os.path.join(SAIDA, nome + ".png"), optimize=True)
     print(f"{nome}.png  {tam}x{tam}  ({modo})")

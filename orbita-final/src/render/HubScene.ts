@@ -4,6 +4,7 @@ import { SENTINELS } from "../data/sentinels";
 import type { SentinelId } from "../data/types";
 import { PlanetView } from "./PlanetView";
 import { tex } from "./Textures";
+import { temArte } from "./Sprites";
 import { criarTorre } from "./Torre";
 
 /** Vitrine do hub: planeta girando com as sentinelas do deck orbitando. */
@@ -12,12 +13,26 @@ export class HubScene {
   private planeta = new PlanetView();
   private sents: { s: Container; slot: number; cabeca: Sprite; fase: number }[] = [];
   private t = 0;
+  private domo: Sprite | null = null;
 
   constructor(deck: SentinelId[]) {
     const orb = new Graphics();
     for (const a of BALANCE.aneis) orb.circle(0, 0, a.raio).stroke({ width: 2, color: 0x4fd6ff, alpha: 0.18 });
     this.layer.addChild(orb, this.planeta.layer);
     deck.slice(0, BALANCE.maxSlots).forEach((id, slot) => {
+      if (id === "campo") {
+        // Domo Elétrico na vitrine: cúpula verde em volta do planeta, sem torre orbitando
+        const arte = temArte("domo_eletrico");
+        const domo = new Sprite(tex(arte ? "domo_eletrico" : "escudo"));
+        domo.anchor.set(0.5);
+        domo.blendMode = "add";
+        domo.tint = arte ? 0xffffff : 0x5effa8;
+        domo.alpha = 0.3;
+        domo.scale.set((BALANCE.planeta.raioEscudo * 2.56) / (domo.texture.width * 0.96));
+        this.layer.addChild(domo);
+        this.domo = domo;
+        return;
+      }
       const c = new Container();
       const g = new Sprite(tex("glow"));
       g.anchor.set(0.5);
@@ -49,6 +64,10 @@ export class HubScene {
   update(dt: number): void {
     this.t += dt;
     this.planeta.update(dt, 1, this.t);
+    if (this.domo) {
+      this.domo.rotation = this.t * 0.12;
+      this.domo.alpha = 0.26 + 0.08 * Math.sin(this.t * 3);
+    }
     for (const { s, slot, cabeca, fase } of this.sents) {
       const anel = slot < 3 ? 0 : 1;
       const cfg = BALANCE.aneis[anel];
