@@ -1837,3 +1837,14 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 .pj-skin i { position: absolute; top: 3px; right: 4px; font-size: 8.5px; font-style: normal; font-weight: 900; color: #2a1500; background: #ffc23d; padding: 0 4px; border-radius: 3px; }
 .pj-skins-uso .previa-planeta, .pj-skins-uso .previa-escudo { width: 56px !important; height: 56px !important; }
 .pj-acoes { display: flex; justify-content: center; }
+/* build: arte da arma no lugar do losango */
+.sent-arte { position: relative; display: grid; place-items: center; width: 46px; height: 46px; flex: none; border-radius: 10px;
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--cor) 28%, #0d2240), #061024 75%); border: 1.5px solid color-mix(in srgb, var(--cor) 70%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--cor) 40%, transparent); }
+.sent-arte img { width: 40px; height: 40px; object-fit: contain; }
+.sent-arte.evo { border-color: #ffc23d; box-shadow: 0 0 10px rgba(255, 194, 61, 0.6); }
+/* resultado: nada encolhe; a tela rola (o painel da build ficava espremido atrás dos botões) */
+.overlay.resultado > * { flex: none !important; }
+.overlay.resultado { padding-bottom: calc(var(--sa-b) + 24px) !important; }
+.overlay.resultado .painel { max-height: none !important; overflow: visible !important; }
+.overlay.resultado .linha { flex-wrap: wrap; justify-content: center; }

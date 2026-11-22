@@ -8,6 +8,7 @@ import { formatStat } from "../meta/Meta";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg } from "./dom";
 import { ic, icT } from "./Icones";
 import { urlArte } from "../render/Sprites";
+import { arteSentinela } from "./CardArt";
 import { audio } from "../core/Audio";
 
 /** Linha "Supremo" do painel de build: o que falta para evoluir. */
@@ -32,7 +33,9 @@ function painelBuild(b: Battle): HTMLElement {
     for (let k = 1; k <= 5; k++) pips.append(h("i", { class: k <= s.nivel ? "on" : "" }));
     p.append(
       h("div", { class: "sent-linha" + (destaque ? " mvp" : "") },
-        h("i", { class: "dot", style: `background:${hex(s.def.cor)}` }),
+        // arte da arma (torre vista de cima), com a cor dela no contorno
+        h("span", { class: "sent-arte" + (s.evoluido ? " evo" : ""), style: `--cor:${hex(s.def.cor)}` },
+          h("img", { src: urlArte(`sentinela_${s.def.id}`) ?? arteSentinela(s.def.id, s.evoluido), alt: s.def.nome })),
         h("div", { style: "flex:1" },
           h("div", { style: "font-weight:800", html: s.evoluido ? `${ic("coroa", "ic ic-ouro")} ${s.def.evolucao.nome}` : s.def.nome }, pips),
           h("div", { style: "font-size:12px;color:var(--texto2)", text: `Dano ${fmtInt(s.stats.dano)} · ${s.stats.cadencia.toFixed(2)}/s · crít ${(s.stats.critChance * 100).toFixed(0)}%` }),
@@ -177,7 +180,6 @@ export function telaResultado(
     linhas.push(h("button", { class: "btn ouro btn-dobrar", html: `${ic("play")}<span>${acoes.semAnuncios ? "Dobrar recompensa (VIP)" : "Dobrar recompensa · assistir anúncio"}</span>`, onclick: acoes.dobrar }));
   }
   const painel = painelBuild(b);
-  painel.style.maxHeight = "34vh";
   linhas.push(painel);
   const bts = h("div", { class: "linha" });
   if (acoes.reviver) {
