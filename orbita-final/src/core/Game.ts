@@ -13,7 +13,8 @@ import { initTextures } from "../render/Textures";
 import { aparencia } from "../render/Aparencia";
 import { Hud } from "../ui/Hud";
 import { telaLevelUp } from "../ui/LevelUpScreen";
-import { botao3, faixaTitulo, telaBuild, telaPausa, telaResultado } from "../ui/Panels";
+import { botao3, faixaTitulo, telaBuild, telaNovidades, telaPausa, telaResultado } from "../ui/Panels";
+import { NOVIDADES, VERSAO_ATUAL } from "../data/novidades";
 import { telaCla } from "../ui/meta/Cla";
 import { telaBau } from "../ui/Bau";
 import { criarCoach, type PassoCoach } from "../ui/Tutorial";
@@ -157,6 +158,19 @@ export class Game implements Nav {
     this.resize();
     void this.conectarNuvem();
     this.cerimoniaPendente();
+    this.novidadesPendentes();
+  }
+
+  /** "Teve atualização": mostra uma vez o resumo da versão nova (quem está começando agora não vê). */
+  private novidadesPendentes(): void {
+    if (this.save.novidadesVista === VERSAO_ATUAL) return;
+    const novato = !this.save.perfil.nome || this.save.onboarding < 3;
+    this.save.novidadesVista = VERSAO_ATUAL;
+    this.persistir();
+    if (novato) return;
+    const el = telaNovidades(NOVIDADES[0], () => { audio.sfx("clique"); el.remove(); });
+    el.style.zIndex = "61";
+    this.root.append(el);
   }
 
   /** Ao abrir uma versão nova (ou depois de sincronizar), celebra a patente atual se ainda não foi celebrada (nunca a primeira). */

@@ -61,7 +61,8 @@ function blocoEvolucao(b: Battle, o: Oferta): HTMLElement | null {
 /** Tela de level-up: slots no topo, cartas lado a lado (título, ilustração, descrição) e rerrolagem. */
 export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrolar: () => void, anuncio = false): HTMLElement {
   const ofertas = b.cards.ofertas;
-  const lista = h("div", { class: "cartas-lv" + (ofertas.length > 3 ? " cinco" : "") });
+  // a tela não rola: as cartas encolhem para caber (2 linhas quando há mais de 3 opções)
+  const lista = h("div", { class: "cartas-lv" + (ofertas.length > 3 ? " cinco" : ""), style: `--linhas:${ofertas.length > 3 ? 2 : 1}` });
   ofertas.forEach((o, i) => {
     const c = o.card;
     const cor = RARIDADE_COR[c.raridade];
@@ -83,7 +84,8 @@ export function telaLevelUp(b: Battle, aoEscolher: (o: Oferta) => void, aoRerrol
         style: `--cor:${cor};animation-delay:${i * 0.06}s${moldura ? `;--moldura:url('${moldura}')` : ""}`, onclick: () => aoEscolher(o) },
         h("div", { class: "cl-titulo", text: c.nome }),
         h("div", { class: "cl-arte" }, h("img", { src: arteCarta(c), alt: "" }), tag, est),
-        h("div", { class: "cl-desc", text: o.texto }),
+        // a etiqueta "Nova" já diz que é sentinela nova: o texto fica só com o que ela faz
+        h("div", { class: "cl-desc", text: c.tipo === "nova_sentinela" ? o.texto.replace(/^Nova sentinela:\s*/i, "") : o.texto }),
         blocoEvolucao(b, o),
         h("div", { class: "cl-rodape" },
           h("span", { style: `color:${cor}`, text: RARIDADE_NOME[c.raridade] }),

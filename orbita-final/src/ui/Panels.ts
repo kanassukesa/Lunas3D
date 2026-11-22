@@ -66,6 +66,16 @@ export function faixaTitulo(texto: string, extra?: HTMLElement | null, variante:
   return h("div", { class: "faixa3" }, h("span", { class: "faixa3-asa e" }), h("div", { class: "faixa3-placa" }, h("b", { text: texto }), extra ?? null), h("span", { class: "faixa3-asa d" }));
 }
 
+/** Janela "Teve atualização!" com o resumo do que mudou. */
+export function telaNovidades(n: { versao: string; titulo: string; itens: string[] }, fechar: () => void): HTMLElement {
+  return h("div", { class: "overlay ov3 novidades" },
+    faixaTitulo("ATUALIZAÇÃO"),
+    h("div", { class: "moldura3 novidades-painel" },
+      h("div", { class: "novidades-cab" }, h("b", { text: n.titulo }), h("small", { text: `Versão ${n.versao}` })),
+      h("ul", { class: "novidades-lista" }, ...n.itens.map((t) => h("li", null, h("span", { html: ic("check") }), h("span", { text: t }))))),
+    botao3("laranja", "play", "Bora jogar!", fechar));
+}
+
 /** Fundo de tela (arte) atrás de um overlay, com escurecimento para o painel ler bem. */
 export function comFundo(el: HTMLElement, nome: string): HTMLElement {
   const u = urlArte(nome);

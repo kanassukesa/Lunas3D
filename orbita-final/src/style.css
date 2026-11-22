@@ -1638,3 +1638,80 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 .login-aba.ativa { background: rgba(79, 214, 255, 0.18); border-color: #6fe3ff; color: #dff6ff; }
 .login-aba .ic { width: 15px; height: 15px; }
 .login-cod { font-size: 24px; font-weight: 900; letter-spacing: 0.4em; text-align: center; }
+/* =================== v5: ajustes de celular (iPhone) =================== */
+/* HUD do topo: nada se sobrepõe em telas estreitas (~375 px) */
+.hud-top { grid-template-columns: minmax(0, 1fr) auto minmax(0, auto) !important; gap: 6px !important; }
+.hud-hp { gap: 6px; min-width: 0; }
+.hud-planeta { width: 40px; height: 40px; }
+.hud-barras { min-width: 0; flex: 1; }
+.hud-centro { min-width: 0; }
+.hud-fase { max-width: 132px; overflow: hidden; text-overflow: ellipsis; padding: 2px 10px 3px !important; font-size: 10px !important; letter-spacing: 0.05em !important; }
+.hud-botoes .btn.icone { width: 38px !important; height: 36px !important; min-height: 36px !important; font-size: 14px !important; }
+.hud-dir { min-width: 0 !important; }
+.hud-tempo { font-size: 18px !important; padding: 2px 9px 3px 12px !important; }
+.barra-seg { height: 16px; }
+.hud-num { font-size: 11px; }
+/* Choque e Ultimate: menores e empilhados no canto direito, longe do planeta */
+.hud-ult { width: 66px !important; height: 66px !important; right: calc(var(--sa-r) + 12px) !important; bottom: calc(var(--sa-b) + 34px) !important; }
+.hud-ult span { width: 54px !important; height: 54px !important; }
+.hud-ult .ic-ult { width: 34px; height: 34px; }
+.hud-hab { width: 52px !important; height: 52px !important; right: calc(var(--sa-r) + 19px) !important; bottom: calc(var(--sa-b) + 34px + 66px + 30px) !important; }
+.hud-hab span { width: 42px !important; height: 42px !important; }
+.hud-hab span .ic { width: 22px !important; height: 22px !important; }
+.hud-ult small, .hud-hab small { bottom: -20px !important; padding: 2px 9px !important; font-size: 9.5px !important; }
+
+/* Subiu de nível: tela fixa (não rola) e cartas com a proporção da moldura */
+.overlay.levelup { overflow: hidden !important; justify-content: flex-start !important; gap: 8px !important; touch-action: none; overscroll-behavior: none;
+  padding-top: calc(var(--sa-t) + 10px) !important; padding-bottom: calc(var(--sa-b) + 10px) !important; }
+.overlay.levelup > * { flex: none; }
+.lv-emblema { width: auto; height: clamp(40px, 8vh, 74px); margin-bottom: -18px; }
+.overlay.levelup .faixa4 { width: min(92vw, 400px); }
+.lv-painel3 { padding: 8px 10px 6px !important; }
+.lv-painel3 .slot-sent { aspect-ratio: 1 / 1; }
+.lv-painel3 .lv-legenda { font-size: 12px; }
+.tuto-cartas { flex: none; padding: 6px 10px !important; font-size: 12px !important; }
+.overlay.levelup > .cartas-lv { flex: 1 1 auto; min-height: 0; width: min(96vw, 480px); container-type: size;
+  display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 8px; }
+/* largura = o que couber na largura (3 por linha) e na altura (1 ou 2 linhas), sempre na proporção 5:8 */
+.cartas-lv .carta-lv { flex: none; width: min(calc((100cqw - 16px) / 3), calc((100cqh - (var(--linhas) - 1) * 8px) / var(--linhas) * 0.625)) !important;
+  aspect-ratio: 5 / 8; height: auto; overflow: hidden !important; container-type: inline-size; }
+.cartas-lv.cinco .carta-lv { width: min(calc((100cqw - 16px) / 3), calc((100cqh - 8px) / 2 * 0.625)) !important; }
+.carta-lv .cl-titulo { min-height: 0; padding: 2px 2px 3px; font-size: 11cqi !important; line-height: 1.1; }
+.carta-lv .cl-arte { flex: none; }
+.carta-lv .cl-desc { flex: 1 1 auto; min-height: 0; overflow: hidden; padding: 4px 3px 0; font-size: 9cqi !important; line-height: 1.22;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; }
+.carta-lv .cl-evo { flex: none; margin: 2px 2px 3px; padding: 3px 4px; gap: 1px; font-size: 7.6cqi !important; }
+.carta-lv .cl-evo .ic { width: 1.1em; height: 1.1em; }
+.carta-lv .cl-evo-tit span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.carta-lv .cl-evo-req span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.carta-lv .cl-rodape { flex: none; padding: 1px 3px 2px; font-size: 7.5cqi !important; }
+.carta-lv .cl-rodape span:first-child { font-size: 1em; }
+.carta-lv .tag-nova { font-size: 8cqi; padding: 1px 5px; top: 4px; }
+/* molduras um pouco mais finas para sobrar espaço por dentro */
+.carta-lv.m-comum { border-width: 19px 8px 11px !important; }
+.carta-lv.m-rara { border-width: 20px 11px 13px !important; }
+.carta-lv.m-epica { border-width: 24px 12px 24px !important; }
+.carta-lv.m-lendaria { border-width: 30px 11px 26px !important; }
+.carta-lv.m-suprema { border-width: 32px 13px 34px !important; }
+.overlay.levelup .linha { flex: none; padding-bottom: 0 !important; }
+.lv-rer { min-height: 46px !important; min-width: 190px !important; }
+.lv-rer span { font-size: 16px !important; }
+/* v5.1: cartas mais altas quando é 1 linha, letra maior e Supremo numa linha só */
+.cartas-lv .carta-lv { width: min(calc((100cqw - 12px) / 3), calc(100cqh * 0.56)) !important; aspect-ratio: 9 / 16; }
+.overlay.levelup > .cartas-lv { gap: 6px; width: min(98vw, 480px); }
+.cartas-lv.cinco .carta-lv { width: min(calc((100cqw - 12px) / 3), calc((100cqh - 6px) / 2 * 0.625)) !important; aspect-ratio: 5 / 8; }
+.carta-lv .cl-titulo { font-size: 11.5cqi !important; }
+.carta-lv .cl-desc { font-size: 10cqi !important; -webkit-line-clamp: 7; }
+.carta-lv .cl-evo { font-size: 8.6cqi !important; }
+.carta-lv .cl-evo-req { display: none; }
+.carta-lv .cl-rodape { font-size: 8cqi !important; }
+.lv-nv { white-space: nowrap; }
+/* janela "Teve atualização" */
+.novidades-painel { display: flex; flex-direction: column; gap: 12px; padding: 18px 18px 20px !important; }
+.novidades-cab { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.novidades-cab b { font-size: 19px; font-weight: 900; font-style: italic; color: #ffe08a; text-shadow: 0 0 10px rgba(255, 194, 61, 0.5); text-wrap: balance; }
+.novidades-cab small { color: var(--texto2); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; font-size: 11px; }
+.novidades-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.novidades-lista li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.35; color: #dff3ff; }
+.novidades-lista li > span:first-child { flex: none; display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; border-radius: 50%; background: rgba(73, 224, 122, 0.18); color: #49e07a; }
+.novidades-lista .ic { width: 13px; height: 13px; }

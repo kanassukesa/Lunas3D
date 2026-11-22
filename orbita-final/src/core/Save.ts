@@ -42,6 +42,8 @@ export interface SaveData {
   perfil: { nome: string; avatar: number };
   /** Pontuação acumulada (define a patente). */
   pontos: number;
+  /** Última versão cujas novidades ("Teve atualização") o jogador já viu. */
+  novidadesVista: string;
   /** Maior patente cuja cerimônia de promoção já foi mostrada. */
   patenteVista?: number;
   dia: { data: string; stats: Record<string, number>; resgatadas: string[]; bonus: boolean; lojaGratis: boolean };
@@ -93,6 +95,7 @@ export function saveNovo(): SaveData {
     jornada: { semana: "", melhor: 0, concluida: false },
     perfil: { nome: "", avatar: 1 },
     pontos: 0,
+    novidadesVista: "",
     dia: { data: "", stats: {}, resgatadas: [], bonus: false, lojaGratis: false },
     login: { ultimoDia: "", dias: 0 },
     correio: { lidas: [], resgatadas: [] },
