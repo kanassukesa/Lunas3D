@@ -423,7 +423,7 @@ export class Battle {
     }
     for (const s of this.shots) if (s.alive && Math.hypot(s.x - p.x, s.y - p.y) < H.raio) s.alive = false;
     p.escudo = Math.min(p.escudoMax, p.escudo + p.escudoMax * H.escudoPct);
-    this.beam("pulso", p.x, p.y, H.raio, 0, 0x7df9ff, 0.6, 26);
+    this.beam("onda", p.x, p.y, H.raio, 0, 0x7df9ff, 0.75, 22);
     this.fx.push({ t: "tremor", força: 12 });
     this.fx.push({ t: "flash", força: 0.35 });
     this.fx.push({ t: "som", id: "pulso" });

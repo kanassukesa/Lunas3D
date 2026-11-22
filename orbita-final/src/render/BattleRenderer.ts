@@ -464,25 +464,30 @@ export class BattleRenderer {
     v.root.x = s.x;
     v.root.y = s.y;
     if (v.domo && v.arcos) {
-      // cúpula respira, brilha forte logo após cada pulso e solta arcos elétricos pela superfície
+      // a cúpula tem o tamanho REAL da área do Domo (cresce com as melhorias); respira,
+      // acende logo após cada pulso e solta arcos elétricos pela borda
+      const R = Math.max(RAIO_DOMO, s.stats.area);
       const desde = 1 / Math.max(0.01, s.stats.cadencia) - Math.max(0, s.cd);
       const pulso = Math.max(0, 1 - desde * 3);
-      v.domo.alpha = 0.22 + 0.06 * Math.sin(this.tempo * 4) + 0.5 * pulso + (s.evoluido ? 0.12 : 0);
-      v.domo.rotation = this.tempo * 0.12;
-      const k = (RAIO_DOMO * 2) / (v.domo.texture.width * 0.96);
-      v.domo.scale.set(k * (1 + 0.04 * pulso));
+      v.domo.alpha = 0.14 + 0.04 * Math.sin(this.tempo * 4) + 0.35 * pulso + (s.evoluido ? 0.08 : 0);
+      v.domo.rotation = this.tempo * 0.1;
+      const k = (R * 2) / (v.domo.texture.width * 0.96);
+      v.domo.scale.set(k * (1 + 0.03 * pulso));
       if (Math.floor(this.tempo * 20) !== v.arcoTick) {
         v.arcoTick = Math.floor(this.tempo * 20);
         const g = v.arcos;
         g.clear();
-        const n = (s.evoluido ? 6 : 3) + Math.round(pulso * 4);
+        // borda da área (sempre visível) + preenchimento bem leve
+        g.circle(0, 0, R).fill({ color: 0x5effa8, alpha: 0.04 + 0.06 * pulso });
+        g.circle(0, 0, R).stroke({ width: 3, color: 0x5effa8, alpha: 0.45 + 0.4 * pulso });
+        g.circle(0, 0, R - 8).stroke({ width: 1, color: 0xc8ffe4, alpha: 0.25 });
+        const n = (s.evoluido ? 7 : 4) + Math.round(pulso * 5);
         for (let i = 0; i < n; i++) {
           let a = Math.random() * Math.PI * 2;
-          const passos = 5;
-          g.moveTo(Math.cos(a) * RAIO_DOMO, Math.sin(a) * RAIO_DOMO);
-          for (let j = 0; j < passos; j++) {
-            a += 0.09 + Math.random() * 0.08;
-            const r = RAIO_DOMO * (0.93 + Math.random() * 0.14);
+          g.moveTo(Math.cos(a) * R, Math.sin(a) * R);
+          for (let j = 0; j < 5; j++) {
+            a += (0.07 + Math.random() * 0.06) * (RAIO_DOMO / R + 0.4);
+            const r = R * (0.95 + Math.random() * 0.1);
             g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
           }
         }
@@ -665,6 +670,7 @@ export class BattleRenderer {
     for (const bm of b.beams) {
       const a = Math.max(0, bm.life / bm.maxLife);
       if (bm.kind === "raio") this.raio(g, bm.x1, bm.y1, bm.x2, bm.y2, bm.cor, bm.w, a);
+      else if (bm.kind === "onda") this.onda(g, bm, a);
       else if (bm.kind === "pulso") {
         const r = bm.x2 * (0.55 + 0.45 * (1 - a));
         g.circle(bm.x1, bm.y1, r).stroke({ width: bm.w * 2, color: bm.cor, alpha: a * 0.35 });
@@ -674,6 +680,42 @@ export class BattleRenderer {
         g.moveTo(bm.x1, bm.y1).lineTo(bm.x2, bm.y2).stroke({ width: bm.w * 0.3, color: 0xffffff, alpha: a * 0.9 });
       }
     }
+  }
+
+  private ondasVistas = new WeakSet<object>();
+
+  /** Onda de choque: disco que acende, anel principal com núcleo branco, anel de rastro, crepitar elétrico e faíscas no início. */
+  private onda(g: Graphics, bm: { x1: number; y1: number; x2: number; cor: number; w: number }, a: number): void {
+    const R = bm.x2;
+    const p = 1 - a;
+    const e = 1 - Math.pow(1 - p, 3);
+    const r = Math.max(4, R * e);
+    if (!this.ondasVistas.has(bm)) {
+      this.ondasVistas.add(bm);
+      const n = this.leve ? 10 : 26;
+      for (let i = 0; i < n; i++) {
+        const ang = (i / n) * Math.PI * 2 + Math.random() * 0.2;
+        this.particles.emitir(bm.x1 + Math.cos(ang) * 40, bm.y1 + Math.sin(ang) * 40, { tex: "spark", cor: bm.cor, vel: R * 2.4, ang, spread: 0.15, vida: 0.45, s0: 1.2, s1: 0.1, stretch: true, drag: 3 });
+      }
+      this.particles.emitir(bm.x1, bm.y1, { tex: "glowSoft", cor: bm.cor, vel: 0, vida: 0.3, s0: R / 60, s1: R / 25, alpha: 0.45 });
+    }
+    g.circle(bm.x1, bm.y1, r).fill({ color: bm.cor, alpha: 0.12 * a });
+    g.circle(bm.x1, bm.y1, r).stroke({ width: bm.w * 3.2 * (1 - p * 0.5), color: bm.cor, alpha: a * 0.22 });
+    g.circle(bm.x1, bm.y1, r).stroke({ width: bm.w * 1.2, color: bm.cor, alpha: a * 0.85 });
+    g.circle(bm.x1, bm.y1, r).stroke({ width: bm.w * 0.35, color: 0xffffff, alpha: a });
+    g.circle(bm.x1, bm.y1, r * 0.8).stroke({ width: bm.w * 0.6, color: bm.cor, alpha: a * 0.35 });
+    // crepitar elétrico: pequenos raios em zigue-zague correndo pelo anel
+    const n = this.leve ? 3 : 7;
+    for (let i = 0; i < n; i++) {
+      let ang = Math.random() * Math.PI * 2;
+      g.moveTo(bm.x1 + Math.cos(ang) * r, bm.y1 + Math.sin(ang) * r);
+      for (let j = 0; j < 4; j++) {
+        ang += 0.05 + Math.random() * 0.06;
+        const rr = r + (Math.random() - 0.5) * bm.w * 3;
+        g.lineTo(bm.x1 + Math.cos(ang) * rr, bm.y1 + Math.sin(ang) * rr);
+      }
+    }
+    g.stroke({ width: 2, color: 0xffffff, alpha: a * 0.8 });
   }
 
   destruir(): void {

@@ -1,5 +1,7 @@
 import type { Battle } from "../battle/Battle";
 import { CAMPOS } from "../data/journey";
+import { BOSSES } from "../data/bosses";
+import { audio } from "../core/Audio";
 import { BALANCE } from "../data/balance";
 import { fmtInt, fmtTempo, h, iconeImg } from "./dom";
 import { ic } from "./Icones";
@@ -212,7 +214,12 @@ export class Hud {
     if (this.set("aviso", aviso) || this.set("trans", transicao)) {
       this.aviso.classList.toggle("oculto", !aviso);
       this.aviso.classList.toggle("ok", transicao);
-      this.aviso.innerHTML = transicao ? `${ic("check")} ETAPA ${b.etapa + 1} CONCLUÍDA` : `${ic("alerta")} CHEFE SE APROXIMANDO ${ic("alerta")}`;
+      this.aviso.classList.toggle("chefe", !transicao && aviso);
+      this.el.classList.toggle("alerta-chefe", !transicao && aviso);
+      const nomeChefe = BOSSES[b.cfg.stage.chefe]?.nome ?? "Chefe";
+      this.aviso.innerHTML = transicao ? `${ic("check")} ETAPA ${b.etapa + 1} CONCLUÍDA`
+        : `<div class="av-faixa"><div class="av-listra"></div><div class="av-corpo"><span class="av-tag">${ic("alerta")} ALERTA ${ic("alerta")}</span><b>${nomeChefe.toUpperCase()}</b><small>se aproximando do planeta</small></div><div class="av-listra"></div></div>`;
+      if (!transicao && aviso) audio.sfx("alerta");
     }
 
     if (this.set("fps", fps === null ? -1 : Math.round(fps))) this.fps.textContent = fps === null ? "" : `${Math.round(fps)} FPS · ${b.inimigosVivos()} inim · ${b.projs.length} proj`;

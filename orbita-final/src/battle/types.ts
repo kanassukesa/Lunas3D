@@ -178,7 +178,8 @@ export interface Zone {
 
 /** Efeitos visuais de linha (laser, raio, pulso) com vida curta. */
 export interface Beam {
-  kind: "raio" | "pulso" | "linha";
+  /** "onda" = onda de choque (Domo e Choque): anel que se expande com rastro e faíscas. */
+  kind: "raio" | "pulso" | "linha" | "onda";
   x1: number;
   y1: number;
   x2: number;

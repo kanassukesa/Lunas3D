@@ -381,7 +381,7 @@ function poco(b: Battle, s: SentinelRun, alvo: Enemy): void {
 function pulso(b: Battle, s: SentinelRun): void {
   const st = s.stats;
   const pl = b.planet;
-  b.beam("pulso", pl.x, pl.y, st.area, 0, s.def.cor, 0.35, 10);
+  b.beam("onda", pl.x, pl.y, st.area, 0, s.def.cor, 0.55, s.evoluido ? 14 : 10);
   const list = b.grid.query(pl.x, pl.y, st.area, b.tmp);
   for (let i = list.length - 1; i >= 0; i--) {
     const e = list[i];

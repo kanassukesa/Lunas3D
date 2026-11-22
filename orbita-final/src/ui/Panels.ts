@@ -8,6 +8,7 @@ import { formatStat } from "../meta/Meta";
 import { fmtInt, fmtTempo, h, hex, ICONE_MOEDA, iconeImg } from "./dom";
 import { ic, icT } from "./Icones";
 import { urlArte } from "../render/Sprites";
+import { audio } from "../core/Audio";
 
 /** Linha "Supremo" do painel de build: o que falta para evoluir. */
 function evolucaoTexto(b: Battle, id: SentinelId): HTMLElement | null {
@@ -92,7 +93,13 @@ export function telaResultado(
   const f = b.fim!;
   const inf = b.cfg.modo === "sobrevivencia";
   const est = h("div", { class: "estrelas" });
-  for (let i = 1; i <= 3; i++) est.append(h("span", { class: i <= f.estrelas ? "" : "off", html: ic("estrela", "ic-estrela") }));
+  // estrelas: as conquistadas acendem uma por vez (com som); as que faltaram ficam apagadas
+  for (let i = 1; i <= 3; i++) {
+    const ganhou = i <= f.estrelas;
+    const el = h("span", { class: "est3" + (ganhou ? " ganhou" : " vazia"), style: `animation-delay:${0.35 + (i - 1) * 0.38}s`, html: ic("estrela", "ic-estrela" + (ganhou ? "" : " off")) });
+    est.append(el);
+    if (ganhou) setTimeout(() => audio.sfx("nivel"), 350 + (i - 1) * 380);
+  }
   const jornada = b.cfg.modo === "jornada";
   const titulo = inf ? "FIM DA LINHA" : jornada ? (f.vitoria ? "JORNADA COMPLETA" : `JORNADA: ${f.etapas}/${b.cfg.etapas?.length ?? 5} ETAPAS`) : f.vitoria ? "VITÓRIA" : "PLANETA PERDIDO";
   const linhas: HTMLElement[] = [
