@@ -29,8 +29,8 @@ for (let s = a; s <= (z || a); s++) {
   for (let r = 0; r < runs; r++) {
     const niveis = Object.fromEntries(pool.map((p) => [p, nivel]));
     const cfg = montarRun({
-      modo: modo as "campanha", stage, dificil: false, seed: 1000 + r * 77 + s,
-      meta: { niveis, talentos: { dano: Math.floor(nivel / 2), hp: Math.floor(nivel / 2), escudo: Math.floor(nivel / 3) }, chipsEquipados: [], base: "canhao", pool },
+      modo: modo as "campanha", stage, dificil: false, seed: 1000 + r * 77 + s, campos: stage.campos,
+      meta: { niveis, talentos: { dano: Math.min(10, Math.floor(nivel / 2)), hp: Math.min(10, Math.floor(nivel / 2)), escudo: Math.min(10, Math.floor(nivel / 3)) }, chipsEquipados: [], base: "canhao", pool },
     });
     const b = new Battle(cfg);
     let maxInim = 0;

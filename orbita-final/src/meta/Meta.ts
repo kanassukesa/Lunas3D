@@ -5,7 +5,7 @@ import { CHIP_PRINCIPAL, CHIP_SECUNDARIO_FATOR, CHIP_SETS, CHIP_SLOTS, CHIP_STAT
 import { MISSIONS } from "../data/missions";
 import { DAILY_MODS, type DailyMod } from "../data/modes";
 import { SENTINELS } from "../data/sentinels";
-import { STAGES } from "../data/stages";
+import { FASE_LIBERA_DIFICIL, STAGES } from "../data/stages";
 import { TALENTS } from "../data/talents";
 import type { Chip, SentinelId, StageDef } from "../data/types";
 import { Rng, hashString } from "../core/Rng";
@@ -83,7 +83,7 @@ export function gerarChip(s: SaveData, rng: Rng, raridade: number): Chip {
 }
 
 export function raridadeDrop(rng: Rng, fase: number, dificil: boolean): number {
-  const bonus = fase / 10 + (dificil ? 0.5 : 0);
+  const bonus = Math.min(fase, 20) / 10 + (dificil ? 0.5 : 0);
   const pesos = [Math.max(10, 60 - bonus * 40), 28 + bonus * 15, 9 + bonus * 15, 2 + bonus * 6];
   return rng.weighted(pesos);
 }
@@ -294,7 +294,7 @@ export function resgatarMissao(s: SaveData, id: string): boolean {
 
 export function faseLiberada(s: SaveData, idx: number, dificil: boolean): boolean {
   if (dificil) {
-    if (s.campanha.normal[STAGES.length - 1] === 0) return false;
+    if (s.campanha.normal[FASE_LIBERA_DIFICIL] === 0) return false;
     return idx === 0 || s.campanha.dificil[idx - 1] > 0;
   }
   return idx === 0 || s.campanha.normal[idx - 1] > 0;

@@ -237,7 +237,7 @@ export class Game implements Nav {
   jogarCampanha(idx: number, dificil: boolean): void {
     if (!faseLiberada(this.save, idx, dificil)) return;
     const stage = STAGES[idx];
-    this.iniciar("campanha", stage, idx, dificil, (Date.now() >>> 0) ^ (idx * 7919));
+    this.iniciar("campanha", stage, idx, dificil, (Date.now() >>> 0) ^ (idx * 7919), undefined, stage.campos);
   }
 
   jogarDiario(): void {

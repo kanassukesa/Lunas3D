@@ -56,7 +56,7 @@ export const BALANCE = {
   /** Habilidade ativa do planeta: onda de choque. */
   habilidade: { recarga: 22, raio: 620, empurrao: 260, dano: 40, escudoPct: 0.2 },
   hangar: {
-    nivelMax: 30,
+    nivelMax: 40,
     danoPorNivel: 0.06,
     custoBase: 60,
     custoCresc: 1.16,

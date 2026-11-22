@@ -118,6 +118,10 @@ export interface StageDef {
   mult: number;
   ondas: Onda[];
   modificadores: string[];
+  /** Efeitos de campo (ids de CAMPOS em journey.ts) aplicados na fase. */
+  campos?: string[];
+  /** Setor da campanha (1 = Órbita Próxima, 2 = Fronteira Sombria). */
+  setor?: number;
 }
 
 export interface CardRequisitos {

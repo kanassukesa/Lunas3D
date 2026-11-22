@@ -17,12 +17,12 @@ export const PATENTES: Patente[] = [
   { nome: "Cadete", pontos: 20_000, fase: 1 },
   { nome: "Sargento", pontos: 60_000, fase: 2 },
   { nome: "Tenente", pontos: 140_000, fase: 3 },
-  { nome: "Capitão", pontos: 280_000, fase: 4 },
-  { nome: "Major", pontos: 500_000, fase: 5 },
-  { nome: "Coronel", pontos: 850_000, fase: 6 },
-  { nome: "General", pontos: 1_400_000, fase: 8 },
-  { nome: "Almirante", pontos: 2_200_000, fase: 9 },
-  { nome: "Lenda da Órbita", pontos: 3_500_000, fase: 10 },
+  { nome: "Capitão", pontos: 280_000, fase: 5 },
+  { nome: "Major", pontos: 500_000, fase: 8 },
+  { nome: "Coronel", pontos: 850_000, fase: 11 },
+  { nome: "General", pontos: 1_400_000, fase: 14 },
+  { nome: "Almirante", pontos: 2_200_000, fase: 17 },
+  { nome: "Lenda da Órbita", pontos: 3_500_000, fase: 20 },
 ];
 
 /** Avatares (arte final `avatar_1..6`; sem ela, um capacete desenhado na cor). */

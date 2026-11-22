@@ -7,7 +7,8 @@ import { BALANCE } from "../../data/balance";
 import { BOSSES } from "../../data/bosses";
 import { CHIP_RARIDADE_COR, CHIP_RARIDADES, CHIP_SET_MAP, CHIP_SETS, CHIP_SLOT_NOME, CHIP_SLOTS } from "../../data/chips";
 import { SENTINELS, SENTINEL_IDS } from "../../data/sentinels";
-import { STAGES } from "../../data/stages";
+import { FASE_LIBERA_DIFICIL, SETORES, STAGES } from "../../data/stages";
+import { CAMPOS } from "../../data/journey";
 import { TALENTS } from "../../data/talents";
 import type { Chip, ChipSlot, SentinelId } from "../../data/types";
 import { audio } from "../../core/Audio";
@@ -44,7 +45,7 @@ const ARTE_FASE = ["planeta_mapa_lava", "carta_explosao", "tile_planeta", "chefe
 
 export function telaFases(nav: Nav, dificil: boolean): HTMLElement {
   const s = nav.save;
-  const difLib = s.campanha.normal[STAGES.length - 1] > 0;
+  const difLib = s.campanha.normal[FASE_LIBERA_DIFICIL] > 0;
   const arr = dificil ? s.campanha.dificil : s.campanha.normal;
   const atual = proximaFase(s);
   const abas = h("div", { class: "abas-v2" },
@@ -54,17 +55,27 @@ export function telaFases(nav: Nav, dificil: boolean): HTMLElement {
     const lib = faseLiberada(s, i, dificil);
     const est = arr[i];
     const ehAtual = lib && i === (dificil ? Math.max(0, arr.findIndex((x) => x === 0)) : atual);
-    const fundo = arte(`fase_${st.id}`, ARTE_FASE[i % ARTE_FASE.length]);
-    return h("button", { class: "fase-v2" + (lib ? "" : " bloq") + (ehAtual ? " atual" : ""), disabled: !lib, onclick: () => nav.jogarCampanha(i, dificil) },
-      fundo ? h("img", { class: "fase-arte", src: fundo, alt: "" }) : null,
+    // setor 2 reaproveita a arte do setor 1 com outra tonalidade até chegar arte própria (fase_11..20)
+    const propria = urlArte(`fase_${st.id}`);
+    const fundo = propria ?? arte(`fase_${((st.id - 1) % 10) + 1}`, ARTE_FASE[i % ARTE_FASE.length]);
+    const campos = (st.campos ?? []).map((c) => CAMPOS.find((x) => x.id === c)).filter(Boolean) as typeof CAMPOS;
+    const linha = h("button", { class: "fase-v2" + (lib ? "" : " bloq") + (ehAtual ? " atual" : "") + ((st.setor ?? 1) === 2 ? " setor2" : ""), disabled: !lib, onclick: () => nav.jogarCampanha(i, dificil) },
+      fundo ? h("img", { class: "fase-arte" + (!propria && (st.setor ?? 1) === 2 ? " tingida" : ""), src: fundo, alt: "" }) : null,
       h("span", { class: "fase-num" + (est > 0 ? " feita" : ""), html: lib ? `<b>${st.id}</b>` : ic("cadeado") }),
       h("span", { class: "fase-txt" },
         h("b", { text: st.nome }),
         h("small", { text: `Chefe: ${BOSSES[st.chefe].nome}` }),
         lib ? h("span", { class: "fase-est", html: [1, 2, 3].map((k) => ic("estrela", "ic-estrela" + (k <= est ? "" : " off"))).join("") })
-          : h("span", { class: "fase-bloq", text: `Vença a Fase ${st.id - 1} para liberar` })),
+          : h("span", { class: "fase-bloq", text: `Vença a Fase ${st.id - 1} para liberar` }),
+        campos.length ? h("span", { class: "fase-campos" }, ...campos.map((c) => h("span", { class: "fase-campo", title: c.desc, html: icT(c.icone, c.nome) }))) : null),
       ehAtual ? h("span", { class: "fase-tag", text: "PRÓXIMA" }) : null);
-  });
+    // cabeçalho do setor antes da primeira fase de cada setor
+    const setor = SETORES.find((x) => x.id === (st.setor ?? 1));
+    const primeiro = i === 0 || (STAGES[i - 1].setor ?? 1) !== (st.setor ?? 1);
+    return primeiro && setor
+      ? [h("div", { class: "setor-cab" + (setor.id === 2 ? " s2" : "") }, h("b", { text: setor.nome }), h("small", { text: setor.desc })), linha]
+      : [linha];
+  }).flat();
   const el = telaBanner(nav, "FASES", arte("banner_fases", "tile_mapa") ? (urlArte("banner_fases") ? "banner_fases" : "tile_mapa") : null, abas, ...linhas);
   return el;
 }
