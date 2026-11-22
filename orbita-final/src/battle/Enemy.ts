@@ -94,6 +94,58 @@ export function updateEnemies(b: Battle, dt: number): void {
       case "muro":
         e.vx = e.vy = 0;
         break;
+      case "espectro": {
+        // ciclo visível → invisível (intocável) → reaparece mais perto do planeta
+        const pr = e.def.params!;
+        const ciclo = Number(pr.visivel) + Number(pr.invisivel);
+        const fase = (e.idade + (e.id % 7) * 0.3) % ciclo;
+        const sumido = fase > Number(pr.visivel);
+        if (e.alvoavel && sumido && dist > 300) e.alvoavel = false;
+        else if (!e.alvoavel && (!sumido || dist <= 300)) {
+          e.alvoavel = true;
+          const salto = Math.min(Number(pr.salto), Math.max(0, dist - 260));
+          e.x += nx * salto;
+          e.y += ny * salto;
+          b.fx.push({ t: "explosao", x: e.x, y: e.y, r: 60, cor: 0x9d7bff });
+        }
+        const v2 = vel * (e.alvoavel ? 1 : 1.4);
+        e.vx = nx * v2;
+        e.vy = ny * v2;
+        e.rot = Math.atan2(ny, nx);
+        break;
+      }
+      case "medico": {
+        const pr = e.def.params!;
+        if (dist > Number(pr.distancia)) {
+          e.vx = nx * vel;
+          e.vy = ny * vel;
+        } else e.vx = e.vy = 0;
+        e.fireT -= dt;
+        if (e.fireT <= 0) {
+          e.fireT = Number(pr.recarga);
+          const raio = Number(pr.raio);
+          let curou = false;
+          for (const o of b.enemies) {
+            if (!o.alive || o === e || o.boss || o.hp >= o.hpMax) continue;
+            if (Math.hypot(o.x - e.x, o.y - e.y) < raio) { o.hp = Math.min(o.hpMax, o.hp + o.hpMax * Number(pr.cura)); curou = true; }
+          }
+          if (curou) b.beam("pulso", e.x, e.y, raio, 0, 0x7dff6b, 0.5, 14);
+        }
+        e.rot += dt * 1.2;
+        break;
+      }
+      case "bombardeiro": {
+        const pr = e.def.params!;
+        e.fireT -= dt;
+        if (e.fireT <= 0 && dist > 380) {
+          e.fireT = Number(pr.recarga);
+          b.spawnEnemy(String(pr.tipoMina), e.x - nx * e.r, e.y - ny * e.r);
+        }
+        e.vx = nx * vel;
+        e.vy = ny * vel;
+        e.rot = Math.atan2(ny, nx);
+        break;
+      }
       case "escudeiro": {
         e.fireT -= dt;
         if (e.fireT <= 0) {

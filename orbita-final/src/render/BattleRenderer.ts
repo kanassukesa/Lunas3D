@@ -376,6 +376,8 @@ export class BattleRenderer {
     v.root.x = e.x;
     v.root.y = e.y;
     v.body.rotation = e.rot;
+    // espectro invisível: quase transparente e tremulando
+    v.root.alpha = e.def.comportamento === "espectro" && !e.alvoavel ? 0.12 + 0.08 * Math.sin(this.tempo * 20) : 1;
     const slowed = e.slowT > 0 && e.slowAmt > 0.3;
     if (v.real) v.body.tint = e.flash > 0 ? 0xff9090 : slowed ? 0xa8e8ff : 0xffffff;
     else v.body.tint = e.flash > 0 ? 0xffffff : slowed ? 0x9fe8ff : e.def.cor;

@@ -70,7 +70,10 @@ export type EnemyBehavior =
   | "divisor"
   | "escudeiro"
   | "meteoro"
-  | "muro";
+  | "muro"
+  | "espectro"
+  | "medico"
+  | "bombardeiro";
 
 export interface EnemyDef {
   id: string;
