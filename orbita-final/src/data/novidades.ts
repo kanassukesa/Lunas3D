@@ -11,6 +11,14 @@ export interface Novidade {
 
 export const NOVIDADES: Novidade[] = [
   {
+    versao: "3.7",
+    titulo: "Balanceamento",
+    itens: [
+      "O escudo do planeta recarrega mais devagar (35 por segundo) e espera 4 s sem dano para começar.",
+      "A Rainha da Colmeia ficou mais perigosa: leque de 7 tiros mais fortes e mais enxames.",
+    ],
+  },
+  {
     versao: "3.6",
     titulo: "Amigos, chat e Chefe do Clã",
     itens: [

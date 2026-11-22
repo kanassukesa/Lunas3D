@@ -9,7 +9,7 @@ export const BOSSES: Record<string, BossDef> = {
   rainha_colmeia: {
     id: "rainha_colmeia", nome: "Rainha da Colmeia",
     desc: "Invoca enxames sem parar.",
-    hp: 6300, raio: 110, cor: 0xffd04a, forma: "rainha", danoTiro: 30, dano: 600,
+    hp: 6300, raio: 110, cor: 0xffd04a, forma: "rainha", danoTiro: 45, dano: 600,
   },
   construtor_muros: {
     id: "construtor_muros", nome: "Construtor de Muros",

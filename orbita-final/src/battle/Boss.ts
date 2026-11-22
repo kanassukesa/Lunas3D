@@ -82,14 +82,14 @@ export function updateBoss(b: Battle, e: Enemy, dt: number): void {
     case "rainha_colmeia": {
       if (s.t1 <= 0) {
         s.t1 = e.hp < e.hpMax * 0.5 ? 2.6 : 3.6;
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < 14; i++) {
           b.spawnEnemy("enxame", e.x + b.rng.range(-80, 80), e.y + b.rng.range(40, 120));
         }
       }
       if (s.t2 <= 0) {
-        s.t2 = 4.5;
+        s.t2 = 3.8;
         for (let i = 0; i < 3; i++) b.spawnEnemy("batedor", e.x + (i - 1) * 90, e.y + 80);
-        leque(b, e, 5, 0.7, 280, 0xffd04a);
+        leque(b, e, 7, 0.9, 280, 0xffd04a);
       }
       break;
     }

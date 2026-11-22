@@ -10,8 +10,8 @@ export const BALANCE = {
     raioEscudo: 150,
     hp: 3000,
     escudo: 500,
-    escudoRegen: 50,
-    escudoAtraso: 3,
+    escudoRegen: 35, // era 50: o escudo voltava cheio rápido demais e os chefes não ameaçavam
+    escudoAtraso: 4, // segundos sem dano até começar a recarregar (era 3)
     armadura: 0,
   },
   aneis: [

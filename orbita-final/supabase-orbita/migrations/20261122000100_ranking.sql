@@ -27,6 +27,9 @@ drop policy if exists "ranking: dono grava" on public.ranking;
 drop policy if exists "ranking: dono atualiza" on public.ranking;
 create policy "ranking: dono grava" on public.ranking for insert with check (auth.uid() = user_id);
 create policy "ranking: dono atualiza" on public.ranking for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- o "salvar ou atualizar" (upsert) do jogo precisa que o dono consiga ler a PRÓPRIA linha
+drop policy if exists "ranking: dono lê" on public.ranking;
+create policy "ranking: dono lê" on public.ranking for select using (auth.uid() = user_id);
 -- sem policy de select na tabela: a leitura pública é só pela view abaixo (sem expor user_id)
 
 create or replace view public.ranking_publico as
