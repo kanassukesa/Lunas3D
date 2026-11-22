@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SaveData } from "./Save";
 
 /**
- * Conta na nuvem (Supabase): login por e-mail (link mágico), progresso salvo no servidor e compras.
+ * Conta na nuvem (Supabase): login por código de 6 dígitos (e-mail ou SMS), progresso salvo no servidor,
+ * compras, ranking e clãs.
  * Só liga com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`; sem isso o jogo funciona 100% local.
  * O cliente do Supabase é carregado sob demanda (não pesa no jogo local).
  */
@@ -14,6 +15,7 @@ class Nuvem {
   private sb: SupabaseClient | null = null;
   private userId: string | null = null;
   email: string | null = null;
+  telefone: string | null = null;
 
   private async cliente(): Promise<SupabaseClient> {
     if (!this.sb) {
@@ -30,9 +32,11 @@ class Nuvem {
     const { data } = await sb.auth.getSession();
     this.userId = data.session?.user.id ?? null;
     this.email = data.session?.user.email ?? null;
+    this.telefone = data.session?.user.phone || null;
     sb.auth.onAuthStateChange((_e, sess) => {
       this.userId = sess?.user.id ?? null;
       this.email = sess?.user.email ?? null;
+      this.telefone = sess?.user.phone || null;
     });
   }
 
@@ -40,16 +44,36 @@ class Nuvem {
     return !!this.userId;
   }
 
-  async entrarEmail(email: string): Promise<void> {
+  /** Nome da conta para mostrar (e-mail ou celular). */
+  conta(): string {
+    return this.email || (this.telefone ? "+" + this.telefone.replace(/^\+/, "") : "") || "conectado";
+  }
+
+  /** Envia o código de 6 dígitos (por e-mail, ou SMS se `destino` for um celular +55...). */
+  async enviarCodigo(destino: string): Promise<void> {
     const sb = await this.cliente();
-    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+    const { error } = destino.includes("@")
+      ? await sb.auth.signInWithOtp({ email: destino, options: { shouldCreateUser: true } })
+      : await sb.auth.signInWithOtp({ phone: destino, options: { shouldCreateUser: true } });
     if (error) throw error;
+  }
+
+  /** Confere o código digitado e entra na conta. */
+  async confirmarCodigo(destino: string, codigo: string): Promise<void> {
+    const sb = await this.cliente();
+    const { data, error } = destino.includes("@")
+      ? await sb.auth.verifyOtp({ email: destino, token: codigo, type: "email" })
+      : await sb.auth.verifyOtp({ phone: destino, token: codigo, type: "sms" });
+    if (error) throw error;
+    this.userId = data.session?.user.id ?? data.user?.id ?? null;
+    this.email = data.user?.email || null;
+    this.telefone = data.user?.phone || null;
   }
 
   async sair(): Promise<void> {
     const sb = await this.cliente();
     await sb.auth.signOut();
-    this.userId = this.email = null;
+    this.userId = this.email = this.telefone = null;
   }
 
   /** Cria o checkout no servidor (Edge Function) e devolve a URL de pagamento. */
@@ -107,6 +131,61 @@ class Nuvem {
     return { linhas, minhaPosicao };
   }
 
+  // ---------------------------------------------------------------- clãs
+
+  private async rpc(nome: string, args: Record<string, unknown> = {}): Promise<unknown> {
+    const sb = await this.cliente();
+    const { data, error } = await sb.rpc(nome, args);
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  /** Meu clã (ou null) + posição dele no ranking de clãs. */
+  async meuCla(): Promise<{ cla: Cla; posicao: number } | null> {
+    const sb = await this.cliente();
+    const { data, error } = await sb.from("clas_ranking").select("*").eq("meu", true).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) return null;
+    const cla = data as Cla;
+    const { count } = await sb.from("clas_ranking").select("id", { count: "exact", head: true }).gt("pontos", cla.pontos);
+    return { cla, posicao: (count ?? 0) + 1 };
+  }
+
+  /** Ranking de clãs (top 50), com busca opcional por nome ou tag. */
+  async listarClas(busca = ""): Promise<Cla[]> {
+    const sb = await this.cliente();
+    let q = sb.from("clas_ranking").select("*").order("pontos", { ascending: false }).limit(50);
+    const b = busca.trim().replace(/[%,()]/g, "");
+    if (b) q = q.or(`nome.ilike.%${b}%,tag.ilike.%${b}%`);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Cla[];
+  }
+
+  async membrosCla(): Promise<MembroCla[]> {
+    const sb = await this.cliente();
+    const { data, error } = await sb.from("cla_membros_publico").select("*").order("pontos", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as MembroCla[];
+  }
+
+  async chatCla(): Promise<MensagemCla[]> {
+    const sb = await this.cliente();
+    const { data, error } = await sb.from("cla_chat_publico").select("*").order("id", { ascending: false }).limit(50);
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as MensagemCla[]).reverse();
+  }
+
+  criarCla(nome: string, tag: string, descricao: string, emblema: number): Promise<unknown> {
+    return this.rpc("criar_cla", { p_nome: nome, p_tag: tag, p_descricao: descricao, p_emblema: emblema });
+  }
+  entrarCla(id: string): Promise<unknown> { return this.rpc("entrar_cla", { p_cla: id }); }
+  sairCla(): Promise<unknown> { return this.rpc("sair_cla"); }
+  expulsar(membro: string): Promise<unknown> { return this.rpc("expulsar_membro", { p_membro: membro }); }
+  alternarOficial(membro: string): Promise<unknown> { return this.rpc("alternar_oficial", { p_membro: membro }); }
+  editarCla(descricao: string, aberto: boolean): Promise<unknown> { return this.rpc("editar_cla", { p_descricao: descricao, p_aberto: aberto }); }
+  enviarChat(texto: string): Promise<unknown> { return this.rpc("enviar_chat", { p_texto: texto }); }
+
   async carregar(): Promise<SaveData | null> {
     if (!this.userId) return null;
     const sb = await this.cliente();
@@ -125,3 +204,7 @@ export interface LinhaRankingEnvio {
 export interface LinhaRanking extends LinhaRankingEnvio { id: string; eu: boolean; elite: boolean }
 
 export const nuvem = new Nuvem();
+
+export interface Cla { id: string; nome: string; tag: string; descricao: string; emblema: number; aberto: boolean; membros: number; pontos: number; estrelas: number; meu: boolean }
+export interface MembroCla { id: string; eu: boolean; cargo: "lider" | "oficial" | "membro"; nome: string; avatar: number; elite: boolean; patente: number; pontos: number }
+export interface MensagemCla { id: number; autor: string; eu: boolean; nome: string; texto: string; criado_em: string }

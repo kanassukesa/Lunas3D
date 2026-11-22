@@ -5,7 +5,7 @@
 create table if not exists public.ranking (
   user_id uuid primary key references auth.users (id) on delete cascade,
   nome text not null check (char_length(nome) between 3 and 14),
-  avatar smallint not null default 1 check (avatar between 1 and 9),
+  avatar smallint not null default 1 check (avatar between 1 and 12),
   patente smallint not null default 0 check (patente between 0 and 9),
   pontos bigint not null default 0 check (pontos between 0 and 100000000),
   estrelas integer not null default 0 check (estrelas between 0 and 240),
@@ -34,7 +34,7 @@ select
   md5(r.user_id::text) as id,
   r.user_id = auth.uid() as eu,
   r.nome,
-  case when r.avatar >= 7 and not e.elite then 1 else r.avatar end as avatar,
+  case when r.avatar between 7 and 9 and not e.elite then 1 else r.avatar end as avatar,  -- 7-9 = comandantes ELITE
   e.elite,
   r.patente, r.pontos, r.estrelas, r.sobrevivencia, r.jornada_semana, r.jornada, r.diario_dia, r.diario
 from public.ranking r
@@ -47,3 +47,7 @@ cross join lateral (
 ) e;
 
 grant select on public.ranking_publico to anon, authenticated;
+
+-- comandantes 10-12 (Geada, Enxame, Fagulha): amplia o limite em bancos que já tinham a regra antiga (1-9)
+alter table public.ranking drop constraint if exists ranking_avatar_check;
+alter table public.ranking add constraint ranking_avatar_check check (avatar between 1 and 12);

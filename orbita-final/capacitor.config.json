@@ -3,5 +3,9 @@
   "appName": "Órbita Final",
   "webDir": "dist",
   "backgroundColor": "#05070f",
-  "android": { "allowMixedContent": false }
+  "android": { "allowMixedContent": false },
+  "server": {
+    "url": "https://orbita-final.vercel.app",
+    "errorPath": "offline.html"
+  }
 }

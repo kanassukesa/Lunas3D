@@ -105,7 +105,6 @@ function perfilCard(nav: Nav): HTMLElement {
       h("span", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(pt.frac * 100)}%` }))));
 }
 
-const emBreve = (nav: Nav, nome: string) => () => toast(nav.root, `${nome}: em breve!`);
 
 function lateral(icone: string, nome: string, onclick: () => void, badge = 0, classe = ""): HTMLElement {
   return h("button", { class: "lat " + classe, onclick },
@@ -120,7 +119,7 @@ export function barraInferior(nav: Nav, ativa: string): HTMLElement {
     item("hub", "casa", "Início", () => nav.ir("hub")),
     item("progresso", "grafico", "Progresso", () => nav.ir("progresso")),
     item("inventario", "caixa", "Inventário", () => nav.ir("inventario")),
-    item("cla", "grupo", "Clã", emBreve(nav, "Clã")),
+    item("cla", "grupo", "Clã", () => nav.ir("cla")),
     item("ranking", "ranking", "Ranking", () => nav.ir("ranking")));
 }
 

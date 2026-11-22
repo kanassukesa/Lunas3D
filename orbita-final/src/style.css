@@ -1590,3 +1590,51 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 .missoes-passe .nome { display: flex; align-items: center; gap: 6px; }
 .missoes-passe .perfil-barra { height: 10px; border-radius: 5px; }
 .missoes-passe .perfil-barra i { background: linear-gradient(90deg, #8a4bff, #c79bff 70%, #f0e2ff); box-shadow: 0 0 8px #a46bff; }
+/* =================== Clã =================== */
+.cla-corpo { display: flex; flex-direction: column; gap: 10px; padding-bottom: 90px; }
+.cla-emblema { display: inline-grid; place-items: center; width: 36px; height: 36px; flex: none; color: var(--cor);
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--cor) 30%, #0a1834), #061024 75%);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--cor) 60%, transparent)); }
+.cla-emblema .ic { width: 20px; height: 20px; }
+.cla-emblema.grande { width: 64px; height: 64px; }
+.cla-emblema.grande .ic { width: 34px; height: 34px; }
+.cla-intro { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.cla-criar { display: flex; flex-direction: column; gap: 8px; }
+.cla-criar .nome { display: flex; align-items: center; gap: 6px; }
+.cla-nome-linha { display: flex; gap: 6px; }
+.cla-nome-linha > .campo-linha:first-child { flex: 1; min-width: 0; }
+.cla-tag-linha { width: 86px; flex: none; }
+.cla-tag-campo { width: 100%; text-transform: uppercase; text-align: center; font-weight: 900; letter-spacing: 0.1em; }
+.cla-emblemas { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.cla-emb-op { display: grid; place-items: center; padding: 4px 0; border-radius: 6px; border: 1px solid transparent; }
+.cla-emb-op.ativo { border-color: #6fe3ff; background: rgba(79, 214, 255, 0.15); }
+.cla-tag { color: #8fd8ff; font-weight: 800; font-size: 0.85em; }
+.cla-linha-dir { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.cla-linha .rank-nome small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.cla-topo { display: flex; gap: 12px; align-items: center; border-color: var(--cor) !important; }
+.cla-topo-txt { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cla-topo-nome { font-size: 20px; font-weight: 900; font-style: italic; }
+.cla-numeros { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; }
+.cla-numeros span { display: inline-flex; align-items: center; gap: 4px; }
+.cla-numeros .ic { width: 15px; height: 15px; }
+.cla-abas { margin: 0; }
+.cla-cargo { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); }
+.cla-cargo.lider { color: #2a1500; background: linear-gradient(180deg, #ffe39a, #ffb31f); }
+.cla-cargo.oficial { color: #eaf7ff; background: linear-gradient(180deg, #4fa8e0, #1d5a9a); }
+.cla-acoes { display: flex; gap: 4px; }
+.cla-acoes .btn { min-height: 28px; padding: 2px 8px; }
+.cla-chat-lista { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow-y: auto; padding: 8px; background: rgba(6, 14, 30, 0.85); border: 1px solid rgba(90, 200, 255, 0.25); border-radius: 6px; }
+.cla-msg { align-self: flex-start; max-width: 82%; display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; border-radius: 10px 10px 10px 2px; background: rgba(40, 80, 130, 0.55); overflow-wrap: anywhere; }
+.cla-msg.eu { align-self: flex-end; border-radius: 10px 10px 2px 10px; background: rgba(120, 70, 220, 0.55); }
+.cla-msg small { font-size: 10px; color: var(--texto2); font-weight: 800; }
+.cla-chat-envio { display: flex; gap: 6px; margin-top: 8px; }
+.cla-chat-envio .campo-linha { flex: 1; min-width: 0; }
+.cla-sair { align-self: center; color: var(--vermelho); }
+/* login por código */
+.login-codigo { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.login-txt { font-size: 13px; color: var(--texto2); }
+.login-abas { display: flex; gap: 6px; }
+.login-aba { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 7px; border-radius: 6px; border: 1px solid rgba(110, 210, 255, 0.35); font-size: 13px; font-weight: 800; }
+.login-aba.ativa { background: rgba(79, 214, 255, 0.18); border-color: #6fe3ff; color: #dff6ff; }
+.login-aba .ic { width: 15px; height: 15px; }
+.login-cod { font-size: 24px; font-weight: 900; letter-spacing: 0.4em; text-align: center; }

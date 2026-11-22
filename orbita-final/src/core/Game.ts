@@ -14,6 +14,7 @@ import { aparencia } from "../render/Aparencia";
 import { Hud } from "../ui/Hud";
 import { telaLevelUp } from "../ui/LevelUpScreen";
 import { botao3, faixaTitulo, telaBuild, telaPausa, telaResultado } from "../ui/Panels";
+import { telaCla } from "../ui/meta/Cla";
 import { telaBau } from "../ui/Bau";
 import { criarCoach, type PassoCoach } from "../ui/Tutorial";
 import { Rng } from "./Rng";
@@ -250,6 +251,7 @@ export class Game implements Nav {
       modos: () => telaModosV2(this),
       skins: () => telaSkins(this),
       ranking: () => telaRanking(this),
+      cla: () => telaCla(this),
       comandantes: () => telaComandantes(this),
       briefing: () => telaBriefing(this),
       config: () => telaConfig(this),
