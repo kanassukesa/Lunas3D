@@ -11,6 +11,15 @@ export interface Novidade {
 
 export const NOVIDADES: Novidade[] = [
   {
+    versao: "3.9",
+    titulo: "Perfil dos jogadores e selo ELITE",
+    itens: [
+      "Quem tem o Passe Premium aparece com moldura dourada e o selo ELITE no chat, no clã, nos amigos e no ranking.",
+      "Toque em qualquer jogador para ver o perfil: patente, clã, comandante, progresso, estatísticas e skins.",
+      "Pelo perfil dá para adicionar amigo ou abrir a conversa.",
+    ],
+  },
+  {
     versao: "3.8",
     titulo: "Jogo mais leve e rápido",
     itens: [

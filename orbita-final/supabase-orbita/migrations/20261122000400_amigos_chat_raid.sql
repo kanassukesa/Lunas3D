@@ -35,7 +35,8 @@ create index if not exists mensagens_naolidas_idx on public.mensagens (para_user
 alter table public.mensagens enable row level security;
 
 -- amigos, pedidos recebidos e enviados (id = md5 do outro jogador)
-create or replace function public.meus_amigos()
+drop function if exists public.meus_amigos();
+create function public.meus_amigos()
 returns table (id text, pedido bigint, situacao text, nome text, avatar smallint, patente smallint, pontos bigint, visto_em timestamptz, nao_lidas int)
 language sql stable security definer set search_path = public as $$
   select md5(o.outro::text), a.id,
@@ -52,7 +53,8 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 -- busca para adicionar amigo: diz se já é amigo / pedido pendente
-create or replace function public.buscar_comandantes(p_nome text)
+drop function if exists public.buscar_comandantes(text);
+create function public.buscar_comandantes(p_nome text)
 returns table (id text, nome text, avatar smallint, patente smallint, pontos bigint, amizade text)
 language sql stable security definer set search_path = public as $$
   select md5(r.user_id::text), r.nome,
@@ -177,7 +179,8 @@ begin
 end $$;
 
 -- situação do chefe do MEU clã na semana + ranking de dano dos membros
-create or replace function public.raid_do_cla(p_semana text)
+drop function if exists public.raid_do_cla(text);
+create function public.raid_do_cla(p_semana text)
 returns table (vida bigint, dano bigint, derrotado boolean, membro text, nome text, avatar smallint, dano_membro bigint, eu boolean, premio_pego boolean)
 language sql stable security definer set search_path = public as $$
   select coalesce(cr.vida, 150000 * greatest((select count(*) from cla_membros where cla_id = meu_cla()), 2)),

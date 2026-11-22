@@ -5,6 +5,14 @@ import { fmtInt, h, toast } from "../dom";
 import { ic, icT } from "../Icones";
 import { avatarComMoldura, insignia, nomeComandante } from "./Hub";
 import { tela, type Nav } from "./Screens";
+import { abrirPerfil, tocarParaPerfil } from "./Perfil";
+
+/** Abre a conversa com um amigo a partir de outra tela (ex.: perfil). */
+export function abrirConversa(nav: Nav, p: { id: string; nome: string; avatar: number; patente: number; pontos?: number; visto_em?: string | null; elite?: boolean }): void {
+  conversaCom = { id: p.id, pedido: 0, situacao: "amigo", nome: p.nome, avatar: p.avatar, patente: p.patente, pontos: p.pontos ?? 0,
+    visto_em: p.visto_em ?? new Date(0).toISOString(), nao_lidas: 0, elite: p.elite };
+  nav.ir("conversa");
+}
 
 /** Amigo aberto na conversa (tela "conversa"). */
 let conversaCom: Amigo | null = null;
@@ -25,10 +33,10 @@ function visto(iso: string): { txt: string; online: boolean } {
   return { txt: `visto há ${Math.round(min / 1440)} dias`, online: false };
 }
 
-function cabecalho(nome: string, avatarN: number, patente: number, extra: string): HTMLElement[] {
+function cabecalho(nome: string, avatarN: number, patente: number, extra: string, elite = false): HTMLElement[] {
   return [
-    avatarComMoldura(avatarN, false),
-    h("div", { class: "rank-nome" }, nomeComandante(nome, false),
+    avatarComMoldura(avatarN, elite),
+    h("div", { class: "rank-nome" }, nomeComandante(nome, elite),
       h("small", null, insignia(patente, "insignia micro"), h("span", { text: extra }))),
   ];
 }
@@ -53,7 +61,7 @@ export function telaAmigos(nav: Nav): HTMLElement {
   // ---- adicionar amigo (busca pelo nome do comandante)
   const campo = h("input", { class: "campo", id: "amigo-busca", maxlength: "14", placeholder: "Nome do comandante", autocomplete: "off" }) as HTMLInputElement;
   const res = h("div", { class: "rank-lista" });
-  const linhaBusca = (c: ComandanteBusca) => h("div", { class: "rank-linha" }, ...cabecalho(c.nome, c.avatar, c.patente, `${PATENTES[c.patente]?.nome ?? ""} · ${fmtInt(c.pontos)} pts`),
+  const linhaBusca = (c: ComandanteBusca) => tocarParaPerfil(h("div", { class: "rank-linha" }, ...cabecalho(c.nome, c.avatar, c.patente, `${PATENTES[c.patente]?.nome ?? ""} · ${fmtInt(c.pontos)} pts`, !!c.elite),
     c.amizade === "amigo" ? h("small", { class: "desc", html: icT("check", "Amigo") })
       : c.amizade === "enviado" ? h("small", { class: "desc", text: "Pedido enviado" })
       : h("button", { class: "btn ciano pequeno", text: c.amizade === "recebido" ? "Aceitar" : "Adicionar", onclick: async (ev: MouseEvent) => {
@@ -65,7 +73,7 @@ export function telaAmigos(nav: Nav): HTMLElement {
           toast(nav.root, r === "aceito" ? `Você e ${c.nome} agora são amigos!` : `Pedido enviado para ${c.nome}.`);
           if (r === "aceito") carregar();
         } catch (e) { b.disabled = false; toast(nav.root, (e as Error).message); }
-      } }));
+      } })), nav, c.id);
   let t = 0;
   campo.addEventListener("input", () => {
     clearTimeout(t);
@@ -88,7 +96,7 @@ export function telaAmigos(nav: Nav): HTMLElement {
     const blocos: HTMLElement[] = [];
     if (recebidos.length) {
       blocos.push(h("div", { class: "secao-titulo", text: `Pedidos de amizade (${recebidos.length})` }),
-        ...recebidos.map((a) => h("div", { class: "rank-linha amigo-pedido" }, ...cabecalho(a.nome, a.avatar, a.patente, "quer ser seu amigo"),
+        ...recebidos.map((a) => h("div", { class: "rank-linha amigo-pedido" }, ...cabecalho(a.nome, a.avatar, a.patente, "quer ser seu amigo", !!a.elite),
           h("div", { class: "cla-acoes" },
             h("button", { class: "btn ciano pequeno", text: "Aceitar", onclick: async () => {
               try { await nuvem.responderAmizade(a.pedido, true); audio.sfx("nivel"); toast(nav.root, `Você e ${a.nome} agora são amigos!`); carregar(); } catch (e) { toast(nav.root, (e as Error).message); }
@@ -103,14 +111,14 @@ export function telaAmigos(nav: Nav): HTMLElement {
       const v = visto(a.visto_em);
       blocos.push(h("button", { class: "rank-linha amigo-linha" + (v.online ? " online" : ""), onclick: () => { conversaCom = a; nav.ir("conversa"); } },
         h("span", { class: "amigo-ponto" + (v.online ? " on" : "") }),
-        ...cabecalho(a.nome, a.avatar, a.patente, v.txt),
+        ...cabecalho(a.nome, a.avatar, a.patente, v.txt, !!a.elite),
         h("div", { class: "cla-linha-dir" },
           a.nao_lidas ? h("i", { class: "badge amigo-badge", text: String(a.nao_lidas) }) : null,
           h("span", { class: "amigo-chat", html: ic("correio") }))));
     }
     if (enviados.length) {
       blocos.push(h("div", { class: "secao-titulo", text: "Pedidos enviados" }),
-        ...enviados.map((a) => h("div", { class: "rank-linha" }, ...cabecalho(a.nome, a.avatar, a.patente, "esperando resposta"),
+        ...enviados.map((a) => h("div", { class: "rank-linha" }, ...cabecalho(a.nome, a.avatar, a.patente, "esperando resposta", !!a.elite),
           h("button", { class: "btn pequeno", text: "Cancelar", onclick: async () => { try { await nuvem.removerAmigo(a.id); carregar(); } catch (e) { toast(nav.root, (e as Error).message); } } }))));
     }
     lista.replaceChildren(...blocos);
@@ -134,12 +142,17 @@ function chatGlobal(nav: Nav): HTMLElement[] {
     if (fim === ultimo && !forcar) return;
     const noFim = lista.scrollHeight - lista.scrollTop - lista.clientHeight < 60 || ultimo === -1;
     ultimo = fim;
-    lista.replaceChildren(...(ms.length ? ms.filter((m) => !denunciadas.has(m.id)).map((m) => h("div", { class: "cla-msg global-msg" + (m.eu ? " eu" : "") },
-      h("small", null, m.eu ? null : insignia(m.patente, "insignia micro"), h("b", { class: m.elite ? "nome-elite" : "", text: m.eu ? "Você" : m.nome }), h("span", { text: ` · ${hora(m.criado_em)}` }),
+    lista.replaceChildren(...(ms.length ? ms.filter((m) => !denunciadas.has(m.id)).map((m) => h("div", { class: "global-linha" + (m.eu ? " eu" : "") },
+      m.eu ? null : h("button", { class: "global-av", "aria-label": `Perfil de ${m.nome}`, onclick: () => abrirPerfil(nav, m.autor) }, avatarComMoldura(m.avatar, m.elite)),
+      h("div", { class: "cla-msg global-msg" + (m.eu ? " eu" : "") },
+      h("small", null, m.eu ? null : insignia(m.patente, "insignia micro"),
+        h("b", { class: (m.elite ? "nome-elite" : "") + (m.eu ? "" : " clicavel"), text: m.eu ? "Você" : m.nome, onclick: m.eu ? undefined : () => abrirPerfil(nav, m.autor) }),
+        m.elite && !m.eu ? h("i", { class: "selo-elite", html: `${ic("coroa")}ELITE` }) : null,
+        h("span", { text: ` · ${hora(m.criado_em)}` }),
         m.eu ? null : h("button", { class: "global-denunciar", "aria-label": "Denunciar mensagem", title: "Denunciar", html: ic("alerta"), onclick: async () => {
           try { await nuvem.denunciarGlobal(m.id); denunciadas.add(m.id); toast(nav.root, "Mensagem denunciada. Obrigado!"); void atualizar(true); } catch (e) { toast(nav.root, (e as Error).message); }
         } })),
-      h("span", { text: m.texto })))
+      h("span", { text: m.texto }))))
       : [h("div", { class: "desc", text: "Ninguém falou ainda. Diga oi para todo mundo!" })]));
     if (noFim) lista.scrollTop = lista.scrollHeight;
   }).catch(() => lista.replaceChildren(h("div", { class: "desc", text: "Não foi possível carregar o chat agora." })));
@@ -197,8 +210,8 @@ export function telaConversa(nav: Nav): HTMLElement {
     try { await nuvem.removerAmigo(a.id); toast(nav.root, `${a.nome} foi removido dos amigos.`); nav.ir("amigos"); } catch (e) { toast(nav.root, (e as Error).message); }
   } });
   const el = tela(nav, "CONVERSA",
-    h("div", { class: "rank-linha conversa-topo" }, h("span", { class: "amigo-ponto" + (v.online ? " on" : "") }), ...cabecalho(a.nome, a.avatar, a.patente, v.txt),
-      h("button", { class: "btn pequeno", html: icT("voltar", "Amigos"), onclick: () => nav.ir("amigos") })),
+    tocarParaPerfil(h("div", { class: "rank-linha conversa-topo" }, h("span", { class: "amigo-ponto" + (v.online ? " on" : "") }), ...cabecalho(a.nome, a.avatar, a.patente, v.txt, !!a.elite),
+      h("button", { class: "btn pequeno", html: icT("voltar", "Amigos"), onclick: (ev: MouseEvent) => { ev.stopPropagation(); nav.ir("amigos"); } })), nav, a.id),
     lista,
     h("div", { class: "cla-chat-envio" }, h("div", { class: "campo-linha" }, campo), h("button", { class: "btn ciano", "aria-label": "Enviar", html: ic("play"), onclick: enviar })),
     remover);

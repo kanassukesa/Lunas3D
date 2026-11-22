@@ -269,7 +269,15 @@ export function usarSkin(s: SaveData, id: string): boolean {
 
 /** Linha que o jogador publica no ranking global (recordes por modo). */
 export function linhaRanking(s: SaveData): LinhaRankingEnvio {
+  const e = s.estatisticas;
+  const ch = ["partidas", "abates", "chefes", "evolucoes", "melhorPartida", "jornadas", "diarios"] as const;
   return {
+    perfil: {
+      e: Object.fromEntries(ch.map((k) => [k, Math.floor(e[k] ?? 0)])),
+      fases: s.campanha.normal.filter((x) => x > 0).length,
+      fasesDificil: (s.campanha as unknown as { dificil?: number[] }).dificil?.filter((x) => x > 0).length ?? 0,
+      skinPlaneta: s.skins.planeta, skinEscudo: s.skins.escudo, skins: s.skins.possui.slice(0, 40), ult: ultDoComandante(s),
+    },
     nome: s.perfil.nome, avatar: s.perfil.avatar, patente: patenteDe(s).indice, pontos: Math.floor(s.pontos),
     estrelas: s.estatisticas.estrelas ?? 0, sobrevivencia: Math.floor(s.sobrevivenciaMelhor),
     jornada_semana: s.jornada.semana, jornada: s.jornada.melhor, diario_dia: s.diario.data, diario: Math.floor(s.diario.melhor),

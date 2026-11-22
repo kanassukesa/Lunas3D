@@ -21,6 +21,7 @@ import { criarPreviaUlt } from "../PreviaUlt";
 import { nuvem, type LinhaRanking, type ModoRanking, noApk } from "../../core/Nuvem";
 const ret = (ev: MouseEvent) => (ev.currentTarget as HTMLElement).getBoundingClientRect();
 import { moedas, proximaFase, tela, type Nav } from "./Screens";
+import { tocarParaPerfil } from "./Perfil";
 import { abrirBriefing } from "./Paineis";
 
 // ------------------------------------------------------------------ peças
@@ -835,11 +836,11 @@ export function telaRanking(nav: Nav): HTMLElement {
   const pat = (i: number) => insignia(i, "insignia micro");
   const linha = (l: LinhaRanking, pos: number) => {
     const v = Number((l as unknown as Record<string, number>)[{ elo: "pontos", campanha: "estrelas", sobrevivencia: "sobrevivencia", jornada: "jornada", diario: "diario" }[modo.id]]);
-    return h("div", { class: "rank-linha" + (l.eu ? " eu" : "") + (pos <= 3 ? ` top${pos}` : "") + (l.elite ? " elite" : "") },
+    return tocarParaPerfil(h("div", { class: "rank-linha" + (l.eu ? " eu" : "") + (pos <= 3 ? ` top${pos}` : "") + (l.elite ? " elite" : "") },
       h("span", { class: "rank-pos", text: String(pos) }),
       avatarComMoldura(l.avatar, l.elite),
       h("div", { class: "rank-nome" }, nomeComandante(l.nome, l.elite), h("small", null, pat(l.patente), h("span", { text: PATENTES[l.patente]?.nome ?? "" }))),
-      h("b", { class: "rank-val", text: modo.valor(v) }));
+      h("b", { class: "rank-val", text: modo.valor(v) })), nav, l.id);
   };
   const aviso = (txt: string, icone = "alerta") => h("div", { class: "cartao desc rank-aviso" }, h("span", { html: ic(icone) }), h("span", { html: txt }));
   if (!nuvem.configurada) {

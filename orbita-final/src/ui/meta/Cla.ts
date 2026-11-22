@@ -11,6 +11,7 @@ import { fmtInt, h, ICONE_MOEDA, toast } from "../dom";
 import { ic, icT } from "../Icones";
 import { avatarComMoldura, barraInferior, insignia, nomeComandante } from "./Hub";
 import { tela, type Nav } from "./Screens";
+import { tocarParaPerfil } from "./Perfil";
 
 /** Emblemas do clã (índice 1-8 no banco): ícone + cor. */
 export const EMBLEMAS: { icone: string; cor: string }[] = [
@@ -214,7 +215,7 @@ function abaMembros(nav: Nav, alvo: HTMLElement, cla: Cla): void {
     const linha = (m: MembroCla, pos: number) => {
       const podeExpulsar = eu && !m.eu && m.cargo !== "lider" && (eu.cargo === "lider" || (eu.cargo === "oficial" && m.cargo === "membro"));
       const podePromover = eu?.cargo === "lider" && !m.eu;
-      return h("div", { class: "rank-linha" + (m.eu ? " eu" : "") + (m.elite ? " elite" : "") },
+      return tocarParaPerfil(h("div", { class: "rank-linha" + (m.eu ? " eu" : "") + (m.elite ? " elite" : "") },
         h("span", { class: "rank-pos", text: String(pos) }),
         avatarComMoldura(m.avatar, m.elite),
         h("div", { class: "rank-nome" }, nomeComandante(m.nome, m.elite),
@@ -226,7 +227,7 @@ function abaMembros(nav: Nav, alvo: HTMLElement, cla: Cla): void {
             podePromover ? h("button", { class: "btn pequeno", "aria-label": "Promover", html: ic(m.cargo === "oficial" ? "voltar" : "evoluir"),
               onclick: () => acao(nav, () => nuvem.alternarOficial(m.id), m.cargo === "oficial" ? `${m.nome} voltou a membro.` : `${m.nome} agora é oficial.`) }) : null,
             podeExpulsar ? h("button", { class: "btn pequeno", "aria-label": "Expulsar", style: "color:var(--vermelho)", html: ic("fechar"),
-              onclick: () => acao(nav, () => nuvem.expulsar(m.id), `${m.nome} foi expulso.`) }) : null) : null));
+              onclick: () => acao(nav, () => nuvem.expulsar(m.id), `${m.nome} foi expulso.`) }) : null) : null)), nav, m.id);
     };
     const extras: HTMLElement[] = [];
     if (manda) extras.push(caixaConvidar(nav));
@@ -240,9 +241,9 @@ function abaMembros(nav: Nav, alvo: HTMLElement, cla: Cla): void {
 function caixaConvidar(nav: Nav): HTMLElement {
   const campo = h("input", { class: "campo", id: "cla-convidar", maxlength: "14", placeholder: "Nome do comandante", autocomplete: "off" }) as HTMLInputElement;
   const res = h("div", { class: "cla-busca-res" });
-  const linha = (j: JogadorBusca) => h("div", { class: "rank-linha" },
-    avatarComMoldura(j.avatar, false),
-    h("div", { class: "rank-nome" }, nomeComandante(j.nome, false),
+  const linha = (j: JogadorBusca) => tocarParaPerfil(h("div", { class: "rank-linha" },
+    avatarComMoldura(j.avatar, !!j.elite),
+    h("div", { class: "rank-nome" }, nomeComandante(j.nome, !!j.elite),
       h("small", null, insignia(j.patente, "insignia micro"), h("span", { text: `${PATENTES[j.patente]?.nome ?? ""} · ${fmtInt(j.pontos)} pts` }))),
     j.tem_cla ? h("small", { class: "desc", text: "Já tem clã" })
       : j.convidado ? h("small", { class: "desc", html: icT("check", "Convidado") })
@@ -251,7 +252,7 @@ function caixaConvidar(nav: Nav): HTMLElement {
         b.disabled = true;
         try { await nuvem.convidar(j.id); b.replaceWith(h("small", { class: "desc", html: icT("check", "Convidado") })); toast(nav.root, `Convite enviado para ${j.nome}!`); }
         catch (e) { b.disabled = false; toast(nav.root, (e as Error).message); }
-      } }));
+      } })), nav, j.id);
   let t = 0;
   campo.addEventListener("input", () => {
     clearTimeout(t);
@@ -360,11 +361,11 @@ function abaChefe(nav: Nav, alvo: HTMLElement): void {
       cartao.append(h("div", { class: "desc", text: "Você não causou dano neste chefe, então ficou sem o prêmio desta vez." }));
     }
     const lista = h("div", { class: "rank-lista" }, ...(membros.length ? membros.map((l, i) =>
-      h("div", { class: "rank-linha" + (l.eu ? " eu" : "") + (i < 3 ? ` top${i + 1}` : "") },
+      tocarParaPerfil(h("div", { class: "rank-linha" + (l.eu ? " eu" : "") + (i < 3 ? ` top${i + 1}` : "") },
         h("span", { class: "rank-pos", text: String(i + 1) }),
-        avatarComMoldura(l.avatar, false),
-        h("div", { class: "rank-nome" }, nomeComandante(l.nome, false), h("small", { text: `${(Number(l.dano_membro) / Math.max(1, dano) * 100).toFixed(0)}% do dano` })),
-        h("b", { class: "rank-val", text: fmtInt(Number(l.dano_membro)) })))
+        avatarComMoldura(l.avatar, !!l.elite),
+        h("div", { class: "rank-nome" }, nomeComandante(l.nome, !!l.elite), h("small", { text: `${(Number(l.dano_membro) / Math.max(1, dano) * 100).toFixed(0)}% do dano` })),
+        h("b", { class: "rank-val", text: fmtInt(Number(l.dano_membro)) })), nav, l.membro))
       : [aviso("Ninguém atacou ainda. Jogue uma partida para causar o primeiro dano!", "espadas")]));
     alvo.replaceChildren(cartao, h("div", { class: "secao-titulo", text: "Dano dos membros" }), lista);
   }).catch(() => alvo.replaceChildren(aviso("Não foi possível carregar o chefe do clã agora.")));

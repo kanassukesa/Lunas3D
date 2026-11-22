@@ -28,7 +28,8 @@ where cv.para_user = auth.uid();
 grant select on public.meus_convites to authenticated;
 
 -- busca por nome do comandante (mínimo 2 letras), sem expor user_id
-create or replace function public.buscar_jogadores(p_nome text)
+drop function if exists public.buscar_jogadores(text);
+create function public.buscar_jogadores(p_nome text)
 returns table (id text, nome text, avatar smallint, patente smallint, pontos bigint, tem_cla boolean, convidado boolean)
 language sql stable security definer set search_path = public as $$
   select md5(r.user_id::text), r.nome,

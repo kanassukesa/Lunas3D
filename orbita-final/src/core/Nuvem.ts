@@ -293,6 +293,12 @@ class Nuvem {
   async raidDoCla(semana: string): Promise<LinhaRaid[]> { return ((await this.rpc("raid_do_cla", { p_semana: semana })) ?? []) as LinhaRaid[]; }
   async resgatarRaid(semana: string): Promise<number> { return Number(await this.rpc("resgatar_raid", { p_semana: semana })); }
 
+  /** Perfil público de qualquer jogador (id dos rankings/chats/clãs). */
+  async perfilJogador(id: string): Promise<PerfilJogador | null> {
+    const ls = ((await this.rpc("perfil_jogador", { p_id: id })) ?? []) as PerfilJogador[];
+    return ls[0] ?? null;
+  }
+
   /** Procura jogadores pelo nome do comandante (para convidar ao clã). */
   async buscarJogadores(nome: string): Promise<JogadorBusca[]> {
     return ((await this.rpc("buscar_jogadores", { p_nome: nome })) ?? []) as JogadorBusca[];
@@ -321,6 +327,19 @@ const COLUNA_RANKING: Record<ModoRanking, string> = { elo: "pontos", campanha: "
 export interface LinhaRankingEnvio {
   nome: string; avatar: number; patente: number; pontos: number; estrelas: number; sobrevivencia: number;
   jornada_semana: string; jornada: number; diario_dia: string; diario: number;
+  /** Tem o Passe Premium da temporada (selo ELITE). */
+  premium?: boolean;
+  /** Resumo público do progresso (tela de perfil). */
+  perfil?: PerfilPublico;
+}
+export interface PerfilPublico {
+  e: Record<string, number>; fases: number; fasesDificil: number; skinPlaneta: string; skinEscudo: string; skins: string[]; ult: string; patenteNome?: string;
+}
+export interface PerfilJogador {
+  id: string; eu: boolean; nome: string; avatar: number; elite: boolean; patente: number; pontos: number; estrelas: number;
+  sobrevivencia: number; jornada: number; jornada_semana: string; diario: number; diario_dia: string; visto_em: string;
+  perfil: Partial<PerfilPublico>; cla_nome: string | null; cla_tag: string | null; cla_emblema: number | null; cla_cargo: string | null;
+  amizade: "" | "amigo" | "enviado" | "recebido";
 }
 export interface LinhaRanking extends LinhaRankingEnvio { id: string; eu: boolean; elite: boolean }
 
@@ -334,10 +353,10 @@ export function noApk(): boolean {
 export interface Cla { id: string; nome: string; tag: string; descricao: string; emblema: number; aberto: boolean; membros: number; pontos: number; estrelas: number; meu: boolean }
 export interface MembroCla { id: string; eu: boolean; cargo: "lider" | "oficial" | "membro"; nome: string; avatar: number; elite: boolean; patente: number; pontos: number }
 export interface MensagemCla { id: number; autor: string; eu: boolean; nome: string; texto: string; criado_em: string }
-export interface JogadorBusca { id: string; nome: string; avatar: number; patente: number; pontos: number; tem_cla: boolean; convidado: boolean }
+export interface JogadorBusca { id: string; nome: string; avatar: number; patente: number; pontos: number; tem_cla: boolean; convidado: boolean; elite?: boolean }
 export interface ConviteCla { id: number; cla_id: string; nome: string; tag: string; emblema: number; membros: number; de_nome: string; criado_em: string }
-export interface Amigo { id: string; pedido: number; situacao: "amigo" | "recebido" | "enviado"; nome: string; avatar: number; patente: number; pontos: number; visto_em: string; nao_lidas: number }
-export interface ComandanteBusca { id: string; nome: string; avatar: number; patente: number; pontos: number; amizade: "" | "amigo" | "enviado" | "recebido" }
+export interface Amigo { id: string; pedido: number; situacao: "amigo" | "recebido" | "enviado"; nome: string; avatar: number; patente: number; pontos: number; visto_em: string; nao_lidas: number; elite?: boolean }
+export interface ComandanteBusca { id: string; nome: string; avatar: number; patente: number; pontos: number; amizade: "" | "amigo" | "enviado" | "recebido"; elite?: boolean }
 export interface MensagemPrivada { id: number; eu: boolean; texto: string; criado_em: string }
-export interface LinhaRaid { vida: number; dano: number; derrotado: boolean; membro: string | null; nome: string; avatar: number; dano_membro: number; eu: boolean | null; premio_pego: boolean | null }
+export interface LinhaRaid { vida: number; dano: number; derrotado: boolean; membro: string | null; nome: string; avatar: number; dano_membro: number; eu: boolean | null; premio_pego: boolean | null; elite?: boolean }
 export interface MensagemGlobal { id: number; autor: string; eu: boolean; nome: string; avatar: number; patente: number; elite: boolean; texto: string; criado_em: string }

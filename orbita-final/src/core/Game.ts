@@ -221,7 +221,7 @@ export class Game implements Nav {
       clearTimeout(this.nuvemTimer);
       this.nuvemTimer = window.setTimeout(() => {
         void nuvem.salvar(this.save).catch(() => {});
-        void nuvem.publicarRanking(this.save, linhaRanking(this.save)).catch(() => {});
+        void nuvem.publicarRanking(this.save, { ...linhaRanking(this.save), premium: temPremium(this.save) }).catch(() => {});
       }, 3000);
     }
   }
