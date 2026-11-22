@@ -1218,3 +1218,35 @@ span.bau-fechado .ic { width: 120px; height: 120px; color: var(--ouro); }
 .previa-escudo.v2 .pe-arte { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; mix-blend-mode: screen; animation: peGira 14s linear infinite; }
 .previa-escudo.v2::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--cor) 80%, transparent), 0 0 14px color-mix(in srgb, var(--cor) 60%, transparent); }
 @keyframes peGira { to { transform: rotate(360deg); } }
+
+/* comandantes v2: painel com prévia da ultimate */
+.cmd-perfil { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.cmd-perfil .nome-cmd { font-size: 18px; font-weight: 900; }
+.cmd-perfil small { font-size: 12px; color: var(--texto2); }
+.cmd-detalhe { display: flex; flex-direction: column; gap: 10px; --borda-neon: color-mix(in srgb, var(--cor) 75%, transparent) !important; }
+.cmd-det-topo { display: flex; align-items: center; gap: 12px; }
+.cmd-det-nome { display: block; font-size: 17px; }
+.cmd-det-ult { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-weight: 900; color: var(--cor); letter-spacing: 0.04em; text-transform: uppercase; font-size: 13px; }
+.cmd-det-ult .ic { width: 18px; height: 18px; }
+.cmd-det-ult.elite { color: var(--ouro); }
+.cmd-previa { position: relative; border: 1px solid color-mix(in srgb, var(--cor) 50%, transparent); border-radius: 4px; overflow: hidden; }
+.previa-ult { display: block; width: 100%; height: auto; aspect-ratio: 320 / 180; }
+.cmd-det-desc { margin: 0; font-size: 13px; color: var(--texto); line-height: 1.35; }
+.cmd-emcampo, .cmd-travado { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; font-weight: 800; border-radius: 4px; }
+.cmd-emcampo { color: #49e07a; background: rgba(73, 224, 122, 0.12); border: 1px solid rgba(73, 224, 122, 0.45); }
+.cmd-travado { color: var(--texto2); background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); }
+.cmd-emcampo .ic, .cmd-travado .ic { width: 16px; height: 16px; }
+.cmd-grade-mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.cmd-mini { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 2px 6px; border: 1.5px solid rgba(90, 200, 255, 0.25); border-radius: 4px; background: rgba(10, 22, 46, 0.85); min-width: 0; }
+.cmd-mini .avatar { width: 50px; height: 50px; }
+.cmd-mini small { font-size: 10px; font-weight: 800; color: var(--texto2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.cmd-mini.ver { border-color: var(--cor); box-shadow: 0 0 12px color-mix(in srgb, var(--cor) 55%, transparent); background: color-mix(in srgb, var(--cor) 14%, #0a162e); }
+.cmd-mini.ver small { color: #fff; }
+.cmd-mini.bloq .avatar { filter: grayscale(0.8) brightness(0.5); }
+.cmd-mini.elite { border-color: rgba(255, 194, 61, 0.45); }
+.cmd-mini-tag { position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: #3a4a66; }
+.cmd-mini-tag .ic { width: 11px; height: 11px; color: #c8d4e8; }
+.cmd-mini.elite .cmd-mini-tag { background: linear-gradient(180deg, #ffe07a, #ffa21f); }
+.cmd-mini.elite .cmd-mini-tag .ic { color: #2a1200; }
+.cmd-mini-tag.ok { background: #49e07a; }
+.cmd-mini-tag.ok .ic { color: #052a12; }

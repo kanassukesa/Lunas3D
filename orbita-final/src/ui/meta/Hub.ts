@@ -17,6 +17,7 @@ import { fmtInt, fmtTempo, h, ICONE_MOEDA, iconeImg, toast } from "../dom";
 import { ic, icT } from "../Icones";
 import { celebrar } from "../Premio";
 import { telaBau } from "../Bau";
+import { criarPreviaUlt } from "../PreviaUlt";
 import { nuvem, type LinhaRanking, type ModoRanking } from "../../core/Nuvem";
 const ret = (ev: MouseEvent) => (ev.currentTarget as HTMLElement).getBoundingClientRect();
 import { moedas, proximaFase, tela, type Nav } from "./Screens";
@@ -210,7 +211,7 @@ export function telaLogin(nav: Nav): HTMLElement {
   };
   desenhar();
   const entrar = () => {
-    const nome = input.value.trim().replace(/\s+/g, " ");
+    const nome = editando ? s.perfil.nome : input.value.trim().replace(/\s+/g, " ");
     if (nome.length < 3) { erro.textContent = "Use pelo menos 3 letras."; return; }
     if (!/^[\p{L}\p{N} _.-]+$/u.test(nome)) { erro.textContent = "Use só letras, números, espaço, ponto ou traço."; return; }
     s.perfil = { nome, avatar: escolhido };
@@ -229,7 +230,7 @@ export function telaLogin(nav: Nav): HTMLElement {
       grade,
       h("button", { class: "btn primario", type: "submit", html: icT("play", editando ? "Salvar" : "Entrar") }),
       editando ? h("button", { class: "btn", type: "button", html: icT("voltar", "Voltar"), onclick: () => nav.ir("hub") }) : null,
-      h("p", { class: "login-nota", text: "Seu perfil fica salvo neste aparelho." })));
+      h("p", { class: "login-nota", text: "Atenção: o nick não pode ser trocado depois. O comandante você troca quando quiser." })));
   tela.querySelector("form")!.addEventListener("submit", (e) => {
     e.preventDefault();
     entrar();
@@ -428,7 +429,7 @@ export function telaProgresso(nav: Nav): HTMLElement {
         h("div", { class: "perfil-barra" }, h("i", { style: `width:${Math.round(pt.frac * 100)}%` })),
         h("div", { class: "desc", text: pt.prox ? `${fmtInt(s.pontos)} / ${fmtInt(pt.prox.pontos)} pontos para ${pt.prox.nome}` : `${fmtInt(s.pontos)} pontos · patente máxima` }),
         pt.trava ? h("div", { class: "pat-trava", html: `${ic("cadeado")} ${pt.trava}` }) : null),
-      h("button", { class: "btn icone", html: ic("usuario"), "aria-label": "Editar perfil", onclick: () => nav.ir("login") })),
+      h("button", { class: "btn icone", html: ic("usuario"), "aria-label": "Comandantes", onclick: () => nav.ir("comandantes") })),
     h("button", { class: "cartao neon ouro skins-atalho", onclick: () => nav.ir("comandantes") },
       h("span", { class: "skins-atalho-ic" }, avatar(s.perfil.avatar)),
       h("div", { style: "flex:1;text-align:left" }, h("div", { class: "nome", text: "Comandantes" }),
@@ -637,7 +638,7 @@ function vitrineElite(nav: Nav, premium: boolean): HTMLElement {
       h("li", { html: `${ic("check")} Nome dourado com o selo <b>ELITE</b> no perfil e no ranking` }),
       h("li", { html: `${ic("check")} ${elites.length} comandantes exclusivos com <b>ultimates próprias e mais fortes</b>` }),
       h("li", { html: `${ic("check")} Skins premium de escudo e planeta` })),
-    h("div", { class: "ve-avatares" }, ...elites.map((a) => h("button", { class: "ve-av", onclick: () => (premium ? nav.ir("login") : toast(nav.root, `${a.nome}: exclusivo do Passe Premium`)) },
+    h("div", { class: "ve-avatares" }, ...elites.map((a) => h("button", { class: "ve-av", onclick: () => (premium ? nav.ir("comandantes") : toast(nav.root, `${a.nome}: exclusivo do Passe Premium`)) },
       avatar(a.id, "avatar grande"), h("small", { text: a.nome ?? "" })))));
 }
 
@@ -705,32 +706,45 @@ export function telaRanking(nav: Nav): HTMLElement {
 
 // ------------------------------------------------------------------ COMANDANTES (cada um com a sua ultimate)
 
+/** Comandante aberto no painel de prévia (só visual até tocar em "Usar"). */
+let cmdPrevia = 0;
+
 export function telaComandantes(nav: Nav): HTMLElement {
   const s = nav.save;
-  const cards = AVATARES.map((a) => {
-    const lib = comandanteLiberado(s, a);
-    const sel = s.perfil.avatar === a.id;
-    const u = ULTIMATES[a.ult];
-    const botao = sel ? h("span", { class: "skin-tag uso", html: icT("check", "Em campo") })
-      : lib ? h("button", { class: "btn ciano pequeno", text: "Escolher", onclick: () => {
-        s.perfil.avatar = a.id; nav.persistir(); audio.sfx("nivel"); toast(nav.root, `${a.nome} no comando! Ultimate: ${u.nome}`); nav.ir("comandantes");
-      } })
-      : a.elite ? h("button", { class: "btn ouro pequeno", html: icT("coroa", "Passe Premium"), onclick: () => nav.ir("passe") })
-      : h("span", { class: "skin-tag", html: icT("cadeado", a.libera?.texto ?? "Bloqueado") });
-    return h("div", { class: "cmd-card neon" + (a.elite ? " ouro elite" : "") + (sel ? " sel" : "") + (lib ? "" : " bloq"), style: `--cor:${a.cor}` },
-      a.elite ? h("span", { class: "cmd-selo", html: `${ic("coroa")}ELITE` }) : null,
+  if (!AVATARES.some((a) => a.id === cmdPrevia)) cmdPrevia = s.perfil.avatar;
+  const a = AVATARES.find((x) => x.id === cmdPrevia) ?? AVATARES[0];
+  const lib = comandanteLiberado(s, a);
+  const emCampo = s.perfil.avatar === a.id;
+  const u = ULTIMATES[a.ult];
+  const acao = emCampo ? h("div", { class: "cmd-emcampo", html: icT("check", "Em campo") })
+    : lib ? h("button", { class: "btn primario", html: icT("play", "Usar este comandante"), onclick: () => {
+      s.perfil.avatar = a.id; nav.persistir(); audio.sfx("nivel"); toast(nav.root, `${a.nome} no comando!`); nav.ir("comandantes");
+    } })
+    : a.elite ? h("button", { class: "btn ouro", html: icT("coroa", "Liberar com o Passe Premium"), onclick: () => nav.ir("passe") })
+    : h("div", { class: "cmd-travado", html: icT("cadeado", a.libera?.texto ?? "Bloqueado") });
+  const detalhe = h("div", { class: "cartao neon cmd-detalhe" + (a.elite ? " ouro" : ""), style: `--cor:${a.cor}` },
+    h("div", { class: "cmd-det-topo" },
       h("span", { class: "cmd-av" }, avatarComMoldura(a.id, !!a.elite, "avatar grande")),
-      h("b", { class: "cmd-nome", text: a.nome }),
-      h("div", { class: "cmd-ult" + (u.elite ? " elite" : "") }, h("span", { html: ic(u.icone) }), h("div", null, h("b", { text: u.nome }), h("small", { text: u.desc }))),
-      botao);
+      h("div", { style: "min-width:0" },
+        h("b", { class: "cmd-det-nome", text: a.nome }),
+        a.elite ? h("span", { class: "selo-elite", html: `${ic("coroa")}ELITE` }) : null,
+        h("div", { class: "cmd-det-ult" + (u.elite ? " elite" : ""), html: `${ic(u.icone)}<span>${u.nome}</span>` }))),
+    h("div", { class: "cmd-previa" }, criarPreviaUlt(a.ult, a.cor)),
+    h("p", { class: "cmd-det-desc", text: u.desc }),
+    acao);
+  const cards = AVATARES.map((x) => {
+    const l = comandanteLiberado(s, x);
+    return h("button", { class: "cmd-mini" + (x.id === a.id ? " ver" : "") + (s.perfil.avatar === x.id ? " campo" : "") + (l ? "" : " bloq") + (x.elite ? " elite" : ""), style: `--cor:${x.cor}`,
+      onclick: () => { cmdPrevia = x.id; nav.ir("comandantes"); } },
+      avatar(x.id, "avatar"),
+      !l ? h("i", { class: "cmd-mini-tag", html: ic(x.elite ? "coroa" : "cadeado") }) : s.perfil.avatar === x.id ? h("i", { class: "cmd-mini-tag ok", html: ic("check") }) : null,
+      h("small", { text: x.nome.replace("Comandante ", "").replace("do ", "") }));
   });
   const el = tela(nav, "COMANDANTES",
-    h("div", { class: "cartao neon cmd-topo" },
-      h("span", { class: "cmd-av" }, avatarComMoldura(s.perfil.avatar, temPremium(s), "avatar grande")),
-      h("div", null, nomeComandante(s.perfil.nome, temPremium(s), "div"),
-        h("small", { text: `Ultimate em campo: ${ULTIMATES[ultDoComandante(s)].nome}` }),
-        h("small", { class: "cmd-dica", text: "Cada comandante leva a própria ultimate para a batalha. Novos comandantes liberam com a campanha e a patente." }))),
-    h("div", { class: "cmd-grade" }, ...cards));
+    h("div", { class: "cmd-perfil" }, nomeComandante(s.perfil.nome, temPremium(s), "div"), h("small", { text: `Ultimate em campo: ${ULTIMATES[ultDoComandante(s)].nome}` })),
+    detalhe,
+    h("div", { class: "secao-titulo", text: "Toque num comandante para ver a ultimate" }),
+    h("div", { class: "cmd-grade-mini" }, ...cards));
   el.append(barraInferior(nav, "progresso"));
   return el;
 }

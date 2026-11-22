@@ -189,7 +189,8 @@ export class Game implements Nav {
       planeta: () => telaPlanetaV2(this),
       missoes: () => telaDiarias(this),
       conquistas: () => telaMissoes(this),
-      login: () => telaLogin(this),
+      // o nick é definitivo: depois de criado, "login" vira a tela de comandantes
+      login: () => (this.save.perfil.nome ? telaComandantes(this) : telaLogin(this)),
       correio: () => telaCorreio(this),
       eventos: () => telaEventos(this),
       recompensas: () => telaRecompensas(this),

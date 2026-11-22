@@ -120,7 +120,7 @@ export function painelConfig(nav: Nav, voltar: () => void, noJogo = false): HTML
       }
     }
     p.append(h("div", { class: "config-linha" }, h("span", { text: `Comandante: ${nav.save.perfil.nome || "—"}` }),
-      h("button", { class: "btn pequeno", html: icT("usuario", "Editar perfil"), onclick: () => nav.ir("login") })));
+      h("button", { class: "btn pequeno", html: icT("usuario", "Comandantes"), onclick: () => nav.ir("comandantes") })));
     p.append(h("div", { class: "config-linha" }, h("span", { text: "Apagar progresso" }),
       h("button", { class: "btn pequeno", style: "color:var(--vermelho)", text: "Apagar", onclick: () => {
         if (!confirm("Apagar todo o progresso? Isso não pode ser desfeito.")) return;
