@@ -1,3 +1,4 @@
+import { statEventos } from "./Eventos";
 import type { LinhaRankingEnvio } from "../core/Nuvem";
 import { BALANCE, DIFICULDADES } from "../data/balance";
 import type { Battle } from "../battle/Battle";
@@ -70,6 +71,7 @@ export function statDia(s: SaveData, k: string, v: number): void {
   atualizarSemana(s);
   s.dia.stats[k] = (s.dia.stats[k] ?? 0) + v;
   s.semana.stats[k] = (s.semana.stats[k] ?? 0) + v;
+  statEventos(s, k, v);
 }
 
 /** XP do passe: só missões dão (partida não dá). */

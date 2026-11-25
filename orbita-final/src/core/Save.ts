@@ -47,6 +47,8 @@ export interface SaveData {
   /** Maior patente cuja cerimônia de promoção já foi mostrada. */
   patenteVista?: number;
   dia: { data: string; stats: Record<string, number>; resgatadas: string[]; bonus: boolean; lojaGratis: boolean };
+  /** Progresso nos eventos especiais (src/data/eventos.ts), por id do evento. */
+  eventos?: Record<string, { stats: Record<string, number>; resgatados: string[] }>;
   login: { ultimoDia: string; dias: number };
   correio: { lidas: string[]; resgatadas: string[] };
   skins: { possui: string[]; planeta: string; escudo: string };

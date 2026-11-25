@@ -1,3 +1,5 @@
+import { eventosAtivos } from "../../data/eventos";
+import { marcarResgate, premiosDeEventoProntos, progressoMeta } from "../../meta/Eventos";
 import { AVATARES, CORREIO, ULTIMATES, LOGIN_DIAS, LOJA, BONUS_DIARIAS, BONUS_DIARIAS_XP, DIARIAS_POR_DIA, PASSE, PASSE_PREMIOS, PATENTES, SKINS, type MissaoDiariaDef, type SkinDef } from "../../data/comandante";
 import { CHIP_RARIDADE_COR, CHIP_RARIDADES, CHIP_SET_MAP, CHIP_SLOTS, CHIP_SLOT_NOME } from "../../data/chips";
 import { SENTINEL_IDS } from "../../data/sentinels";
@@ -6,7 +8,7 @@ import { audio } from "../../core/Audio";
 import type { Chip } from "../../data/types";
 import {
   atualizarDia, comprar, comprarSkin, diariasProntas, loginDisponivel, mensagensNovas, missoesDoDia, nivelPasse, passeProntos, patenteDe, linhaRanking, comandanteLiberado, ultDoComandante,
-  resgatarBonusDiario, resgatarDiaria, resgatarLogin, missoesDaSemana, resgatarSemanal, atualizarSemana, resgatarMensagem, resgatarPasse, temporadaAtual, textoPremio, usarSkin,
+  resgatarBonusDiario, resgatarDiaria, resgatarLogin, missoesDaSemana, resgatarSemanal, atualizarSemana, resgatarMensagem, resgatarPasse, temporadaAtual, textoPremio, usarSkin, darPremio,
 } from "../../meta/Comandante";
 import { desafioDoDia, formatStat, hojeStr, missoesProntas, semanaStr } from "../../meta/Meta";
 import { urlArte } from "../../render/Sprites";
@@ -161,7 +163,7 @@ export function telaHub(nav: Nav): HTMLElement {
         : h("div", { class: "logo", html: "ÓRBITA FINAL<small>DEFESA PLANETÁRIA</small>" }),
       h("div", { class: "lat-col esq" },
         lateral("correio", "Correio", () => nav.ir("correio"), mensagensNovas(s)),
-        lateral("calendario", "Eventos", () => nav.ir("eventos"), s.diario.data === hojeStr() && s.diario.concluido ? 0 : 1),
+        lateral("calendario", "Eventos", () => nav.ir("eventos"), premiosDeEventoProntos(s)),
         lateral("trofeu", "Conquistas", () => nav.ir("conquistas"), conquistas),
         lateral("grupo", "Amigos", () => nav.ir("amigos"), nuvem.avisosAmigos)),
       h("div", { class: "hub-vitrine", "data-vitrine": "1" }),
@@ -410,26 +412,44 @@ function faltaAte(alvo: Date): string {
 }
 
 export function telaEventos(nav: Nav): HTMLElement {
+  // só eventos especiais com data (lançamento, temporadas); os modos fixos ficam na tela Modos
   const s = nav.save;
-  const d = desafioDoDia();
-  const meiaNoite = new Date();
-  meiaNoite.setHours(24, 0, 0, 0);
-  const segunda = new Date();
-  segunda.setHours(24, 0, 0, 0);
-  while (segunda.getDay() !== 1) segunda.setDate(segunda.getDate() + 1);
-  const ev = (icone: string, cor: string, titulo: string, tempo: string, desc: string, status: string, acao: string, onclick: () => void) =>
-    h("div", { class: "cartao evento", style: `--acc:${cor}` },
-      h("div", { class: "cab" }, h("span", { class: "cartao-ic", html: ic(icone) }),
-        h("div", { style: "flex:1" }, h("div", { class: "nome", text: titulo }), h("div", { class: "desc", html: `${ic("relogio")} termina em ${tempo}` }))),
-      h("div", { class: "desc", text: desc }),
-      h("div", { class: "desc", text: status }),
-      h("div", { class: "acoes" }, h("button", { class: "btn primario pequeno", html: icT("play", acao), onclick })));
-  return tela(nav, "EVENTOS",
-    ev("calendario", "#4fd6ff", "Desafio Diário", faltaAte(meiaNoite), `${d.mod.nome}: ${d.mod.desc}`,
-      s.diario.data === hojeStr() && s.diario.concluido ? "Concluído hoje" : "Ainda não concluído hoje", "Jogar", () => nav.jogarDiario()),
-    ev("bussola", "#ff5aa5", "Jornada da Semana", faltaAte(segunda), "5 etapas seguidas, sem cura entre elas, com efeitos de campo da semana.",
-      s.jornada.semana === semanaStr() ? `Melhor: ${s.jornada.melhor}/5 etapas` : "Ainda não jogada nesta semana", "Partir", () => nav.jogarJornada()),
-    ev("infinito", "#b36bff", "Sobrevivência", "sempre aberto", "Ondas sem fim. Um chefe a cada 3 minutos.", `Recorde: ${fmtTempo(s.sobrevivenciaMelhor)}`, "Sobreviver", () => nav.jogarSobrevivencia()));
+  const ativos = eventosAtivos();
+  const fimDoDia = (data: string) => new Date(`${data}T23:59:59`);
+  if (!ativos.length) {
+    return tela(nav, "EVENTOS",
+      h("div", { class: "cartao evento vazio", style: "--acc:#4fd6ff;text-align:center" },
+        h("span", { class: "cartao-ic", style: "margin:0 auto", html: ic("calendario") }),
+        h("div", { class: "nome", text: "Nenhum evento agora" }),
+        h("div", { class: "desc", text: "Eventos especiais, como o de lançamento e as temporadas, aparecem aqui com prêmios exclusivos. Fique de olho!" }),
+        h("div", { class: "acoes", style: "justify-content:center" },
+          h("button", { class: "btn primario pequeno", html: icT("play", "Ver os modos"), onclick: () => nav.ir("modos") }))));
+  }
+  const blocos: HTMLElement[] = [];
+  for (const e of ativos) {
+    const feitas = e.metas.filter((m) => progressoMeta(s, e, m).resgatada).length;
+    blocos.push(h("div", { class: "cartao evento", style: `--acc:${e.cor}` },
+      h("div", { class: "cab" }, h("span", { class: "cartao-ic", html: ic(e.icone) }),
+        h("div", { style: "flex:1" }, h("div", { class: "nome", text: e.nome }), h("div", { class: "desc", html: `${ic("relogio")} termina em ${faltaAte(fimDoDia(e.fim))} · ${feitas}/${e.metas.length} prêmios` }))),
+      h("div", { class: "desc", text: e.desc })));
+    for (const m of e.metas) {
+      const { valor, pronta, resgatada } = progressoMeta(s, e, m);
+      blocos.push(h("div", { class: "cartao missao" + (resgatada ? " lida" : "") },
+        h("div", { class: "cab" }, h("div", { style: "flex:1" }, h("div", { class: "nome", text: m.texto }),
+          h("div", { class: "desc premio", html: textoPremio(m.premio, ICONE_MOEDA) })),
+          pronta ? h("button", { class: "btn ouro pequeno", text: "Resgatar", onclick: (ev: MouseEvent) => {
+            const o = ret(ev);
+            if (!marcarResgate(s, e, m)) return;
+            const chip = darPremio(s, m.premio);
+            nav.persistir();
+            nav.ir("eventos");
+            celebrar(nav.root, o, m.premio, chip, "EVENTO");
+          } })
+            : h("span", { class: "desc", html: resgatada ? ic("check") : `${fmtInt(Math.min(valor, m.meta))}/${fmtInt(m.meta)}` })),
+        h("div", { class: "prog" }, h("b", { style: `width:${Math.min(100, (valor / m.meta) * 100)}%` }))));
+    }
+  }
+  return tela(nav, "EVENTOS", ...blocos);
 }
 
 // ------------------------------------------------------------------ MISSÕES DIÁRIAS
