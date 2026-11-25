@@ -1,0 +1,72 @@
+/*
+ * Arte em pixel art nos menus/telas (DOM): ampliar sem borrar.
+ * Toda a arte nova em pixel art é .png (src/assets/pixel e src/assets/hud); a arte antiga é .webp,
+ * então estas regras só pegam a pixel art.
+ */
+img[src$=".png"],
+img[src*=".png?"],
+[style*=".png"] {
+  image-rendering: pixelated;
+}
+
+/* molduras de raridade das cartas em pixel art (Parte 8A): fatias medidas pelo miolo de cada moldura; 1 pixel da arte = 0,75 px na tela (arte em dobro de resolução, mais nítida) */
+.carta-lv.m-comum { border-width: 16.5px 8.25px 11.25px 8.25px !important; border-image-slice: 22 11 15 11 fill !important; image-rendering: pixelated; }
+.carta-lv.m-rara { border-width: 21.75px 10.5px 13.5px 12.75px !important; border-image-slice: 29 14 18 17 fill !important; image-rendering: pixelated; }
+.carta-lv.m-epica { border-width: 24px 15.75px 12.75px 19.5px !important; border-image-slice: 32 21 17 26 fill !important; image-rendering: pixelated; }
+.carta-lv.m-lendaria { border-width: 24px 17.25px 20.25px 18px !important; border-image-slice: 32 23 27 24 fill !important; image-rendering: pixelated; }
+.carta-lv.m-suprema { border-width: 38.25px 24.75px 21.75px 25.5px !important; border-image-slice: 51 33 29 34 fill !important; image-rendering: pixelated; }
+
+/* o nome da raridade não encosta na borda de baixo da moldura */
+.carta-lv.com-moldura .cl-rodape { margin-bottom: 5px; padding: 0 6px !important; }
+/* título não encosta na pedra do topo */
+.carta-lv.com-moldura .cl-titulo { margin-top: 3px; }
+/* quando a carta tem muito conteúdo (ex.: caixa "Supremo"), a descrição encolhe e o rodapé sempre aparece */
+.carta-lv.com-moldura .cl-desc { flex: 1 1 0; min-height: 0; overflow: hidden; }
+.carta-lv.com-moldura .cl-rodape,
+.carta-lv.com-moldura .cl-evo,
+.carta-lv.com-moldura .cl-arte,
+.carta-lv.com-moldura .cl-titulo { flex-shrink: 0; }
+/* nome da raridade centralizado e com contorno escuro (não some em cima do canto colorido da moldura) */
+.carta-lv.com-moldura .cl-rodape { justify-content: center; gap: 8px; }
+.carta-lv.com-moldura .cl-rodape span { text-shadow: 0 0 2px #000, 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000; }
+
+/* ---------- botões das telas (Continuar, Ver build, Desistir...) em pixel art (Parte 8B) ----------
+ * border-image: só o meio do botão estica; os cantos chanfrados ficam inteiros. */
+.bt3 {
+  clip-path: none !important;
+  background: none !important;
+  filter: none !important;
+  border-style: solid;
+  border-width: 13px 18px;
+  border-image: url("../assets/pixel/botao_azul.png") 20 28 fill / 13px 18px stretch;
+  image-rendering: pixelated;
+  padding: 0 6px !important;
+}
+.bt3::before,
+.bt3::after { display: none !important; }
+.bt3.laranja,
+.bt3.ouro { border-image-source: url("../assets/pixel/botao_laranja.png"); }
+.bt3.vermelho { border-image-source: url("../assets/pixel/botao_vermelho.png"); }
+.bt3:active { filter: brightness(1.15) !important; }
+.bt3-txt {
+  font-family: "Pixelify Sans", "Segoe UI", system-ui, sans-serif;
+  font-style: normal;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55), 0 0 2px #000;
+}
+
+/* ---------- fogos de artifício da VITÓRIA (Pixel FX, 37 quadros de 240x248 numa tira) ---------- */
+.overlay.resultado .fogos { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.overlay.resultado > :not(.fogos) { position: relative; z-index: 1; }
+.fogos .fogo {
+  position: absolute;
+  width: 240px;
+  height: 248px;
+  margin: -100px 0 0 -120px; /* pivô do efeito (120, 100) no ponto sorteado */
+  background-repeat: no-repeat;
+  background-size: 8880px 248px; /* 37 x 240 */
+  image-rendering: pixelated;
+  transform: scale(var(--k, 1));
+  animation: fogoQuadros 3.6s steps(37) infinite both;
+}
+@keyframes fogoQuadros { from { background-position: 0 0; } to { background-position: -8880px 0; } }
+@media (prefers-reduced-motion: reduce) { .fogos { display: none; } }

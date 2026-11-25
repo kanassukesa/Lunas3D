@@ -57,6 +57,13 @@ export function updateBoss(b: Battle, e: Enemy, dt: number): void {
   s.t3 += dt;
   const id = s.def.id;
   if (id !== "eclipse") e.x = b.planet.x + Math.sin(s.t3 * 0.4) * 160;
+  // todo chefe fica ENFURECIDO abaixo de 50% de vida (troca o desenho, treme a tela);
+  // o Colosso tem a própria virada de fase (com padrão de tiro novo) logo abaixo
+  if (s.fase === 1 && id !== "colosso_igneo" && e.hp < e.hpMax * 0.5) {
+    s.fase = 2;
+    b.fx.push({ t: "tremor", força: 14 });
+    b.fx.push({ t: "som", id: "chefe" });
+  }
 
   switch (id) {
     case "colosso_igneo": {

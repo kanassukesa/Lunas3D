@@ -48,17 +48,40 @@ export function acharAlvo(b: Battle, x: number, y: number, alcance: number, modo
   return best;
 }
 
+/** Armas que não atiram: não orbitam, ficam instaladas na superfície do planeta. */
+export const NO_PLANETA: ReadonlySet<string> = new Set(["campo", "serra", "drone"]);
+/** Ângulos (na borda do planeta) das instalações: topo, depois esquerda e direita do topo. */
+const ANG_INSTALACAO = [-Math.PI / 2, -Math.PI / 2 - 0.95, -Math.PI / 2 + 0.95];
+
+/** Onde fica a instalação de uma arma do planeta: ponto na borda e ângulo (para fora). */
+export function posInstalacao(b: Battle, s: SentinelRun): { x: number; y: number; ang: number } {
+  const lista = b.sentinels.filter((o) => NO_PLANETA.has(o.def.id));
+  const ang = ANG_INSTALACAO[Math.max(0, lista.indexOf(s)) % ANG_INSTALACAO.length];
+  const r = BALANCE.planeta.raio * 0.97;
+  return { x: b.planet.x + Math.cos(ang) * r, y: b.planet.y + Math.sin(ang) * r, ang };
+}
+
 function posicionar(b: Battle, s: SentinelRun): void {
-  // o Domo Elétrico não orbita: é uma cúpula em volta do próprio planeta
-  if (s.def.id === "campo") {
-    s.x = b.planet.x;
-    s.y = b.planet.y;
+  if (NO_PLANETA.has(s.def.id)) {
+    // o Domo pulsa do centro do planeta; Serra e Colmeia saem da própria instalação
+    if (s.def.id === "campo") {
+      s.x = b.planet.x;
+      s.y = b.planet.y;
+    } else {
+      const p = posInstalacao(b, s);
+      s.x = p.x;
+      s.y = p.y;
+    }
     return;
   }
-  const anel = s.slot < 3 ? 0 : 1;
+  // só as armas que atiram orbitam, distribuídas por igual nos anéis
+  const orbita = b.sentinels.filter((o) => !NO_PLANETA.has(o.def.id));
+  const ordem = Math.max(0, orbita.indexOf(s));
+  const anel = ordem < 3 ? 0 : 1;
   const cfg = BALANCE.aneis[anel];
-  const idx = s.slot % 3;
-  const a = (idx / cfg.slots) * TAU + b.t * cfg.velAngular + (anel ? Math.PI / 3 : -Math.PI / 2);
+  const noAnel = Math.min(cfg.slots, Math.max(1, anel ? orbita.length - 3 : Math.min(3, orbita.length)));
+  const idx = ordem % 3;
+  const a = (idx / noAnel) * TAU + b.t * cfg.velAngular + (anel ? Math.PI / 3 : -Math.PI / 2);
   s.x = b.planet.x + Math.cos(a) * cfg.raio;
   s.y = b.planet.y + Math.sin(a) * cfg.raio;
 }
@@ -353,6 +376,7 @@ function portal(b: Battle, s: SentinelRun, alvo: Enemy): void {
     const c = k === 0 ? alvo : acharAlvo(b, s.x, s.y, st.alcance, "aleatorio", usados);
     if (!c) break;
     b.beam("pulso", c.x, c.y, st.area, 0, s.def.cor, 0.45, 14);
+    b.fx.push({ t: "portal", x: c.x, y: c.y, r: st.area });
     let enviados = 0;
     for (const e of b.grid.query(c.x, c.y, st.area, b.tmp).slice()) {
       if (!e.alive) continue;

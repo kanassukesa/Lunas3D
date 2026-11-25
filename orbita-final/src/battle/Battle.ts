@@ -73,6 +73,7 @@ export class Battle {
   boss: Enemy | null = null;
   chefeDerrotado = false;
   avisoChefe = false;
+  /** Torres priorizam o chefe quando ele está no alcance (sempre ligado; o botão "Mira no chefe" foi removido). */
   focoChefe = true;
   fim: BattleResult | null = null;
   reviveu = false;
@@ -295,6 +296,7 @@ export class Battle {
     s.dano = dano;
     s.cor = cor;
     s.life = 9;
+    s.arte = undefined;
     s.view = undefined;
     this.shots.push(s);
     return s;
@@ -482,6 +484,7 @@ export class Battle {
     this.fx.push({ t: "tremor", força: 30 });
     this.fx.push({ t: "flash", força: 1 });
     this.fx.push({ t: "som", id: "explosaoGrande" });
+    this.fx.push({ t: "explosaoChefe", x: e.x, y: e.y });
     for (let i = 0; i < 8; i++) {
       this.fx.push({ t: "explosao", x: e.x + this.rng.range(-120, 120), y: e.y + this.rng.range(-120, 120), r: 140, cor: e.boss!.def.cor });
     }
@@ -567,7 +570,22 @@ export class Battle {
     this.campo.step(dt);
 
     updateEnemies(this, dt);
-    if (this.boss && this.boss.alive) updateBoss(this, this.boss, dt);
+    if (this.boss && this.boss.alive) {
+      // tiros que o chefe soltou neste passo usam o desenho de tiro dele (tiro_<chefe>)
+      const n0 = this.shots.length;
+      const inim0 = this.enemies.length;
+      updateBoss(this, this.boss, dt);
+      const arte = `tiro_${this.boss.boss?.def.id}`;
+      for (let i = n0; i < this.shots.length; i++) this.shots[i].arte = arte;
+      const bs = this.boss.boss;
+      // pose de ataque por 0,35 s; depois descansa pelo menos 0,6 s (quem atira sem parar não fica travado de boca aberta)
+      if (bs) {
+        const at = (bs.ataque ?? -1) - dt;
+        // atacar = atirou OU invocou inimigos (a Rainha solta enxames)
+        const agiu = this.shots.length > n0 || this.enemies.length > inim0;
+        bs.ataque = agiu && at <= -0.6 ? 0.35 : Math.max(-1, at);
+      }
+    }
 
     // grid de colisão
     this.grid.clear();

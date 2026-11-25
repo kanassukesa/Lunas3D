@@ -11,6 +11,17 @@ export interface Novidade {
 
 export const NOVIDADES: Novidade[] = [
   {
+    versao: "3.10",
+    titulo: "Visual novo em pixel art",
+    itens: [
+      "O jogo inteiro foi redesenhado em pixel art: fundos, planeta e skins, armas, inimigos, chefes, HUD, cartas e menus.",
+      "As armas mudam de visual a cada upgrade (nível 3, nível 5 e evoluída).",
+      "Domo Elétrico, Serra e Colmeia agora ficam instalados no planeta.",
+      "Chefes animados: piscam, abrem a boca para atacar e ficam enfurecidos abaixo de 50% de vida.",
+      "Tiros, explosões e efeitos novos, e fogos de artifício na vitória.",
+    ],
+  },
+  {
     versao: "3.9",
     titulo: "Perfil dos jogadores e selo ELITE",
     itens: [

@@ -1,0 +1,217 @@
+/*
+ * HUD da batalha em PIXEL ART (Parte 7).
+ * As peças (molduras, botões, ícones) vêm de src/assets/hud, limpas pelo scripts/fatiar_folha.py,
+ * e são ampliadas sem borrar (image-rendering: pixelated). Os números/textos usam a fonte pixel.
+ * Fica num arquivo separado do style.css e vem depois dele, então estas regras ganham.
+ */
+.hud {
+  --fonte-px: "Pixelify Sans", "Segoe UI", system-ui, sans-serif;
+}
+.hud img.ic-px {
+  image-rendering: pixelated;
+  display: block;
+  width: 20px;
+  height: auto;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
+}
+
+/* ---------- planeta + anel ---------- */
+.hud .hud-planeta {
+  position: relative;
+  background: none;
+  box-shadow: none;
+}
+.hud .hud-planeta::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  background: url("../assets/hud/hud_anel_planeta.png") center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.hud .hud-planeta-mapa { image-rendering: pixelated; }
+
+/* ícones de coração e escudo ao lado das barras */
+.hud .hud-rotulo { display: grid; place-items: center; }
+.hud .hud-rotulo img.ic-px { width: 16px; }
+
+/* ---------- nome da fase ---------- */
+.hud .hud-fase {
+  background: url("../assets/hud/hud_placa_fase.png") center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  padding: 2px 16px 3px;
+  font-family: var(--fonte-px);
+  font-weight: 700;
+  font-size: 11px;
+  color: #bfefff;
+  text-shadow: 0 1px 0 #000;
+}
+
+/* ---------- botões pausar / velocidade / cartas ---------- */
+.hud .hud-botoes .btn {
+  background: url("../assets/hud/hud_bt_peq.png") center / 100% 100% no-repeat !important;
+  image-rendering: pixelated;
+  clip-path: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: grid;
+  place-items: center;
+  font-family: var(--fonte-px);
+  font-weight: 700;
+  font-size: 12px;
+  color: #9ff0ff;
+  text-shadow: 0 1px 0 #000;
+}
+.hud .hud-botoes .btn::before,
+.hud .hud-botoes .btn::after { display: none !important; }
+.hud .hud-botoes .btn:active { transform: translateY(1px); filter: brightness(1.2); }
+/* ícone pequeno e no centro do hexágono (o hexágono tem uns 70% de miolo útil) */
+.hud .hud-botoes .btn { padding: 0 !important; line-height: 0; }
+.hud .hud-botoes .btn img.ic-px { width: 15px; height: 15px; object-fit: contain; margin: auto; }
+
+/* ---------- tempo e nível ---------- */
+.hud .hud-tempo {
+  background: url("../assets/hud/hud_placa_tempo.png") center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  font-family: var(--fonte-px);
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  color: #e8fbff;
+  text-shadow: 0 1px 0 #000;
+  border: none !important;
+  box-shadow: none !important;
+  clip-path: none !important;
+}
+.hud .hud-tempo::before,
+.hud .hud-tempo::after { display: none !important; }
+.hud .hud-nivel-selo {
+  background: url("../assets/hud/hud_selo_nivel.png") center / 100% 100% no-repeat !important;
+  image-rendering: pixelated;
+  clip-path: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  font-family: var(--fonte-px);
+  text-shadow: 0 1px 0 #000;
+  min-width: 58px;
+  padding: 0 12px !important;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+}
+.hud .hud-nivel-selo small { font-size: 9px; color: #f0c8ff; }
+.hud .hud-nivel-selo b { font-size: 15px; line-height: 1; }
+.hud .hud-nivel-selo::before,
+.hud .hud-nivel-selo::after { display: none !important; }
+
+/* números das barras */
+.hud .hud-num,
+.hud .hud-esc-num {
+  font-family: var(--fonte-px);
+  font-weight: 700;
+}
+
+/* ---------- CHOQUE e ULTIMATE ----------
+ * O anel colorido de fora (conic-gradient) continua mostrando a carga; o botão em pixel art fica por dentro. */
+.hud .hud-hab span {
+  background: url("../assets/hud/hud_bt_choque.png") center / 100% 100% no-repeat !important;
+  image-rendering: pixelated;
+  box-shadow: none !important;
+}
+.hud .hud-ult span {
+  background: url("../assets/hud/hud_bt_ult.png") center / 100% 100% no-repeat !important;
+  image-rendering: pixelated;
+  box-shadow: none !important;
+}
+.hud .hud-hab span img.ic-px { width: 24px; }
+.hud .hud-ult span img.ic-px { width: 26px; }
+.hud .hud-hab.pronto span,
+.hud .hud-ult.pronto span { filter: brightness(1.25) drop-shadow(0 0 6px rgba(255, 210, 120, 0.6)); }
+.hud .hud-hab small,
+.hud .hud-ult small {
+  font-family: var(--fonte-px);
+  font-weight: 700;
+}
+
+/* ---------- chefe e alerta ---------- */
+.hud .hud-chefe > div:first-child,
+.hud .aviso b,
+.hud .aviso .av-tag {
+  font-family: var(--fonte-px);
+}
+
+/* ---------- barras (folha 7C) ----------
+ * border-image: só o MEIO do desenho estica; as pontas de metal e a caveira ficam do tamanho certo.
+ * (números = pixels da arte: trilho com pontas de 12 px e bordas de 4 px; barra do chefe com 18 px na caveira) */
+.hud .barra-seg {
+  height: 18px;
+  gap: 1px;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  border-style: solid;
+  border-width: 4px 9px;
+  border-image: url("../assets/hud/hud_barra_trilho.png") 8 24 fill / 4px 9px stretch;
+  image-rendering: pixelated;
+  box-sizing: border-box;
+}
+.hud .barra-seg i { border-radius: 0; background: rgba(0, 0, 0, 0.35); }
+.hud .barra-seg i b {
+  background: url("../assets/hud/hud_barra_vida.png") center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  box-shadow: none;
+}
+.hud .barra-seg.baixa i b { filter: hue-rotate(-110deg) saturate(1.4); }
+
+.hud .barra-escudo {
+  height: 12px;
+  margin-top: 3px;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+  border-style: solid;
+  border-width: 3px 7px;
+  border-image: url("../assets/hud/hud_barra_trilho.png") 8 24 fill / 3px 7px stretch;
+  image-rendering: pixelated;
+  box-sizing: border-box;
+  position: relative;
+}
+.hud .barra-escudo b {
+  background: url("../assets/hud/hud_barra_escudo.png") left center / auto 100% repeat-x;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  box-shadow: none;
+}
+
+.hud .barra-xp {
+  height: 10px;
+  border-radius: 0;
+  background: none;
+  border-style: solid;
+  border-width: 3px 7px;
+  border-image: url("../assets/hud/hud_barra_trilho.png") 8 24 fill / 3px 7px stretch;
+  image-rendering: pixelated;
+  box-sizing: border-box;
+}
+.hud .barra-xp b {
+  background: url("../assets/hud/hud_barra_escudo.png") center / 100% 100% no-repeat;
+  filter: hue-rotate(55deg) saturate(1.3);
+  image-rendering: pixelated;
+  box-shadow: none;
+}
+
+.hud .hud-chefe .barra {
+  height: 22px;
+  border-radius: 0;
+  background: none;
+  border-style: solid;
+  border-width: 4px 10px 4px 20px;
+  border-image: url("../assets/hud/hud_barra_chefe.png") 8 20 8 36 fill / 4px 10px 4px 20px stretch;
+  image-rendering: pixelated;
+  box-sizing: border-box;
+}
+.hud .hud-chefe .barra b {
+  background: url("../assets/hud/hud_barra_vida.png") center / 100% 100% no-repeat;
+  filter: hue-rotate(-110deg) saturate(1.5);
+  image-rendering: pixelated;
+}

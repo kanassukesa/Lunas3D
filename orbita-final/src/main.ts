@@ -1,5 +1,8 @@
+import { carregarFx } from "./render/EfeitosFx";
 import { Application } from "pixi.js";
 import "./style.css";
+import "./ui/hud-pixel.css";
+import "./ui/pixel-ui.css";
 import { Game } from "./core/Game";
 import { carregarSprites } from "./render/Sprites";
 import { prebaixarArtes, retentarImagens } from "./core/Atualizacao";
@@ -20,7 +23,7 @@ async function main(): Promise<void> {
     height: window.innerHeight,
   });
   document.getElementById("game")!.appendChild(app.canvas);
-  await carregarSprites();
+  await Promise.all([carregarSprites(), carregarFx()]);
   const game = new Game(app);
   game.init();
   (window as unknown as { game: Game }).game = game;

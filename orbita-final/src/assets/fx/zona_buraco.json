@@ -1,0 +1,743 @@
+{
+ "frames": [
+  {
+   "filename": "black-hole 0",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 1",
+   "frame": {
+    "x": 184,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 2",
+   "frame": {
+    "x": 368,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 3",
+   "frame": {
+    "x": 552,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 4",
+   "frame": {
+    "x": 736,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 5",
+   "frame": {
+    "x": 0,
+    "y": 132,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 6",
+   "frame": {
+    "x": 184,
+    "y": 132,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 7",
+   "frame": {
+    "x": 368,
+    "y": 132,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 8",
+   "frame": {
+    "x": 552,
+    "y": 132,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 9",
+   "frame": {
+    "x": 736,
+    "y": 132,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 10",
+   "frame": {
+    "x": 0,
+    "y": 264,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 11",
+   "frame": {
+    "x": 184,
+    "y": 264,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 12",
+   "frame": {
+    "x": 368,
+    "y": 264,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 13",
+   "frame": {
+    "x": 552,
+    "y": 264,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 14",
+   "frame": {
+    "x": 736,
+    "y": 264,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 15",
+   "frame": {
+    "x": 0,
+    "y": 396,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 16",
+   "frame": {
+    "x": 184,
+    "y": 396,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 17",
+   "frame": {
+    "x": 368,
+    "y": 396,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 18",
+   "frame": {
+    "x": 552,
+    "y": 396,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 19",
+   "frame": {
+    "x": 736,
+    "y": 396,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 20",
+   "frame": {
+    "x": 0,
+    "y": 528,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 21",
+   "frame": {
+    "x": 184,
+    "y": 528,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 22",
+   "frame": {
+    "x": 368,
+    "y": 528,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 23",
+   "frame": {
+    "x": 552,
+    "y": 528,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 24",
+   "frame": {
+    "x": 736,
+    "y": 528,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 25",
+   "frame": {
+    "x": 0,
+    "y": 660,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 26",
+   "frame": {
+    "x": 184,
+    "y": 660,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 27",
+   "frame": {
+    "x": 368,
+    "y": 660,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 28",
+   "frame": {
+    "x": 552,
+    "y": 660,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 29",
+   "frame": {
+    "x": 736,
+    "y": 660,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 30",
+   "frame": {
+    "x": 0,
+    "y": 792,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  },
+  {
+   "filename": "black-hole 31",
+   "frame": {
+    "x": 184,
+    "y": 792,
+    "w": 184,
+    "h": 132
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 184,
+    "h": 132
+   },
+   "sourceSize": {
+    "w": 184,
+    "h": 132
+   },
+   "duration": 125
+  }
+ ],
+ "meta": {
+  "app": "https://github.com/patch-gg/pixelfx",
+  "version": "1",
+  "image": "black-hole.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 920,
+   "h": 924
+  },
+  "scale": "1",
+  "frameTags": [
+   {
+    "name": "black-hole",
+    "from": 0,
+    "to": 31,
+    "direction": "forward"
+   }
+  ],
+  "pixelfx": {
+   "id": "shadow/black-hole",
+   "name": "Black hole",
+   "fps": 8,
+   "loop": true,
+   "frames": 32,
+   "frameSize": [
+    184,
+    132
+   ],
+   "pivot": [
+    92,
+    124
+   ],
+   "columns": 5
+  }
+ }
+}

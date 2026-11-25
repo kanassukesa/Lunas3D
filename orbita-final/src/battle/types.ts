@@ -45,6 +45,8 @@ export interface BossState {
   campo: number;
   chegou: boolean;
   alvoY: number;
+  /** Segundos restantes da pose de ataque (animação: acabou de atirar). */
+  ataque?: number;
 }
 
 export interface Enemy {
@@ -117,6 +119,8 @@ export interface EnemyShot {
   dano: number;
   cor: number;
   life: number;
+  /** Arte própria do tiro (ex.: tiro_<chefe>); sem ela usa a bola de plasma padrão. */
+  arte?: string;
   view?: unknown;
 }
 
@@ -195,6 +199,8 @@ export type FxEvent =
   | { t: "dmgPlaneta"; x: number; y: number; v: number }
   | { t: "morte"; x: number; y: number; cor: number; r: number }
   | { t: "explosao"; x: number; y: number; r: number; cor: number }
+  | { t: "portal"; x: number; y: number; r: number }
+  | { t: "explosaoChefe"; x: number; y: number }
   | { t: "escudo"; ang: number }
   | { t: "tremor"; força: number }
   | { t: "flash"; força: number }

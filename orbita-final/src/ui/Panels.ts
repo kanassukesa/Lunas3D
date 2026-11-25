@@ -10,6 +10,7 @@ import { ic, icT } from "./Icones";
 import { urlArte } from "../render/Sprites";
 import { arteSentinela } from "./CardArt";
 import { audio } from "../core/Audio";
+import { fogosDeArtificio } from "./Fogos";
 
 /** Linha "Supremo" do painel de build: o que falta para evoluir. */
 function evolucaoTexto(b: Battle, id: SentinelId): HTMLElement | null {
@@ -189,5 +190,8 @@ export function telaResultado(
   if (acoes.repetir) bts.append(h("button", { class: "btn", html: icT("repetir", "Repetir"), onclick: acoes.repetir }));
   bts.append(h("button", { class: "btn ciano", html: acoes.repetir ? icT("casa", "Base") : icT("play", "Continuar"), onclick: acoes.hub }));
   linhas.push(bts);
-  return comFundo(h("div", { class: "overlay resultado", style: "justify-content:flex-start;overflow-y:auto" }, ...linhas), f.vitoria || inf ? "fundo_vitoria" : "fundo_derrota");
+  const tela = comFundo(h("div", { class: "overlay resultado", style: "justify-content:flex-start;overflow-y:auto" }, ...linhas), f.vitoria || inf ? "fundo_vitoria" : "fundo_derrota");
+  // vitória: fogos de artifício animados no fundo
+  if (f.vitoria) tela.prepend(fogosDeArtificio());
+  return tela;
 }

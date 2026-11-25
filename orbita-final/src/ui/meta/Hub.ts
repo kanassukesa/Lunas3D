@@ -157,7 +157,7 @@ export function telaHub(nav: Nav): HTMLElement {
     h("div", { class: "hub-topo" }, perfilCard(nav), moedas(nav)),
     h("div", { class: "hub-palco" },
       urlArte("logo")
-        ? h("div", { class: "logo-img" }, h("img", { src: urlArte("logo")!, alt: "Órbita Final" }), h("small", { text: "DEFESA PLANETÁRIA" }))
+        ? h("div", { class: "logo-img" }, h("img", { src: urlArte("logo")!, alt: "Órbita Final" }))
         : h("div", { class: "logo", html: "ÓRBITA FINAL<small>DEFESA PLANETÁRIA</small>" }),
       h("div", { class: "lat-col esq" },
         lateral("correio", "Correio", () => nav.ir("correio"), mensagensNovas(s)),

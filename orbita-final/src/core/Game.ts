@@ -408,9 +408,6 @@ export class Game implements Nav {
       habilidade: () => {
         if (!this.run?.overlay) b.usarHabilidade();
       },
-      foco: () => {
-        b.focoChefe = !b.focoChefe;
-      },
     });
     this.run = { b, r, loop, hud, overlay: null, overlayTipo: "", modo, idx, dif, tutorial, onb, onbFeitos: [], recompensa: null };
     this.cena.addChild(r.world);

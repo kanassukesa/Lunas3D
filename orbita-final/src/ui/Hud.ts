@@ -14,7 +14,6 @@ export interface HudAcoes {
   cartas(): void;
   ultimate(): void;
   habilidade(): void;
-  foco(): void;
 }
 
 const SEGMENTOS = 10;
@@ -22,6 +21,13 @@ const SEGMENTOS = 10;
 function mapaDaSkin(): string | null {
   const id = aparencia.planeta;
   return urlArte(id === "planeta_terra" ? "planeta_mapa" : `planeta_mapa_${id.replace("planeta_", "")}`) ?? urlArte("planeta_mapa");
+}
+
+/** Ícones do HUD em pixel art (src/assets/hud/hud_ic_<nome>.png); sem a arte, o ícone vetorial de antes. */
+const HUD_PX = import.meta.glob("../assets/hud/hud_ic_*.png", { eager: true, query: "?url", import: "default" }) as Record<string, string>;
+function icPx(nome: string, reserva: string): string {
+  const url = HUD_PX[`../assets/hud/hud_ic_${nome}.png`];
+  return url ? `<img class="ic-px" src="${url}" alt="">` : reserva;
 }
 
 const CAMPO_ICONE: Record<string, string> = Object.fromEntries(CAMPOS.map((c) => [c.id, c.icone]));
@@ -45,7 +51,6 @@ export class Hud {
   private chefeNome: HTMLElement;
   private chefeBarra: HTMLElement;
   private aviso: HTMLElement;
-  private foco: HTMLButtonElement;
   private fps: HTMLElement;
   private dica: HTMLElement;
   private combo: HTMLElement;
@@ -73,17 +78,16 @@ export class Hud {
     this.xp = h("b");
     this.nivelBox = h("div", { class: "hud-nivel" }, h("span", { class: "hud-nivel-selo" }, h("small", { text: "LV" }), this.nivel));
     this.vel = h("button", { class: "btn icone", text: "x1", onclick: () => acoes.velocidade() });
-    this.ult = h("button", { class: "hud-ult", onclick: () => acoes.ultimate() }, h("span", { html: iconeImg("icone_ultimate", ic("raio", "ic-ult"), "ic-ult") }), h("small", { text: "ULTIMATE" }));
+    this.ult = h("button", { class: "hud-ult", onclick: () => acoes.ultimate() }, h("span", { html: icPx("raio", iconeImg("icone_ultimate", ic("raio", "ic-ult"), "ic-ult")) }), h("small", { text: "ULTIMATE" }));
     this.chefeNome = h("div");
     this.chefeBarra = h("b");
     this.chefe = h("div", { class: "hud-chefe oculto" }, this.chefeNome, h("div", { class: "barra" }, this.chefeBarra));
     this.aviso = h("div", { class: "aviso oculto" });
-    this.foco = h("button", { class: "btn pequeno hud-foco oculto", onclick: () => acoes.foco() });
     this.fps = h("div", { class: "fps" });
     this.dica = h("div", { class: "dica oculto" });
     this.combo = h("div", { class: "hud-combo oculto" });
     this.hab = h("button", { class: "hud-hab", "aria-label": "Onda de choque", onclick: () => acoes.habilidade() },
-      h("span", { html: ic("radiacao") }), h("small", { text: "CHOQUE" }));
+      h("span", { html: icPx("choque", ic("radiacao")) }), h("small", { text: "CHOQUE" }));
     this.fase = h("div", { class: "hud-fase", text: nomeFase });
     this.campos = h("div", { class: "hud-campos" });
     this.flash = h("div", { class: "flash" });
@@ -97,8 +101,8 @@ export class Hud {
         { class: "hud-top" },
         h("div", { class: "hud-hp" }, this.planeta,
           h("div", { class: "hud-barras" },
-            h("div", { class: "hud-linha-hp" }, h("span", { class: "hud-rotulo", html: ic("coracao") }), h("div", { class: "hud-hp-barra" }, this.segWrap, this.hpNum)),
-            h("div", { class: "hud-linha-esc" }, h("span", { class: "hud-rotulo esc", html: ic("escudo") }), h("div", { class: "barra-escudo" }, this.escudo, this.escNum)))),
+            h("div", { class: "hud-linha-hp" }, h("span", { class: "hud-rotulo", html: icPx("coracao", ic("coracao")) }), h("div", { class: "hud-hp-barra" }, this.segWrap, this.hpNum)),
+            h("div", { class: "hud-linha-esc" }, h("span", { class: "hud-rotulo esc", html: icPx("escudo", ic("escudo")) }), h("div", { class: "barra-escudo" }, this.escudo, this.escNum)))),
         h(
           "div",
           { class: "hud-centro" },
@@ -106,9 +110,9 @@ export class Hud {
           h(
             "div",
             { class: "hud-botoes" },
-            h("button", { class: "btn icone", html: ic("pausar"), "aria-label": "Pausar", onclick: () => acoes.pausar() }),
+            h("button", { class: "btn icone", html: icPx("pausar", ic("pausar")), "aria-label": "Pausar", onclick: () => acoes.pausar() }),
             this.vel,
-            h("button", { class: "btn icone", html: ic("cartas"), "aria-label": "Cartas", onclick: () => acoes.cartas() }),
+            h("button", { class: "btn icone", html: icPx("cartas", ic("cartas")), "aria-label": "Cartas", onclick: () => acoes.cartas() }),
           ),
         ),
         h("div", { class: "hud-dir" }, this.tempo, this.nivelBox),
@@ -119,7 +123,6 @@ export class Hud {
       this.campos,
       this.aviso,
       this.dica,
-      this.foco,
       this.ult,
       this.hab,
       this.combo,
@@ -233,14 +236,12 @@ export class Hud {
     const boss = b.boss && b.boss.alive ? b.boss : null;
     if (this.set("boss", !!boss)) {
       this.chefe.classList.toggle("oculto", !boss);
-      this.foco.classList.toggle("oculto", !boss);
       if (boss) this.chefeNome.textContent = boss.boss!.def.nome.toUpperCase();
     }
     if (boss) {
       const bf = Math.round((boss.hp / boss.hpMax) * 1000) / 10;
       if (this.set("bossHp", bf)) this.chefeBarra.style.width = Math.max(0, bf) + "%";
     }
-    if (this.set("foco", b.focoChefe)) this.foco.innerHTML = `${ic("mira")}<span>Mira no chefe: ${b.focoChefe ? "ON" : "OFF"}</span>`;
     const transicao = b.transicao > 0;
     const aviso = (b.avisoChefe && !boss) || transicao;
     if (this.set("aviso", aviso) || this.set("trans", transicao)) {
@@ -249,8 +250,9 @@ export class Hud {
       this.aviso.classList.toggle("chefe", !transicao && aviso);
       this.el.classList.toggle("alerta-chefe", !transicao && aviso);
       const nomeChefe = BOSSES[b.cfg.stage.chefe]?.nome ?? "Chefe";
+      const retrato = urlArte(`retrato_${b.cfg.stage.chefe}`);
       this.aviso.innerHTML = transicao ? `${ic("check")} ETAPA ${b.etapa + 1} CONCLUÍDA`
-        : `<div class="av-faixa"><div class="av-listra"></div><div class="av-corpo"><span class="av-tag">${ic("alerta")} ALERTA ${ic("alerta")}</span><b>${nomeChefe.toUpperCase()}</b><small>se aproximando do planeta</small></div><div class="av-listra"></div></div>`;
+        : `<div class="av-faixa"><div class="av-listra"></div>${retrato ? `<img class="av-retrato" src="${retrato}" alt="" style="height:72px;image-rendering:pixelated;margin-right:10px">` : ""}<div class="av-corpo"><span class="av-tag">${ic("alerta")} ALERTA ${ic("alerta")}</span><b>${nomeChefe.toUpperCase()}</b><small>se aproximando do planeta</small></div><div class="av-listra"></div></div>`;
       if (!transicao && aviso) audio.sfx("alerta");
     }
 

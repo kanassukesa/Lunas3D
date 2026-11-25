@@ -9,8 +9,44 @@ import { DamageNumbers } from "./DamageNumbers";
 import { Particles } from "./Particles";
 import { PlanetView } from "./PlanetView";
 import { enemyTexKey, tex } from "./Textures";
-import { temArte } from "./Sprites";
-import { criarTorre, type TorreView } from "./Torre";
+import { ehPixel, temArte } from "./Sprites";
+import larguraChefes from "../assets/pixel/chefes.json";
+import { criarEfeito, quadrosEfeito, tocarEfeito, type QuadrosFx } from "./EfeitosFx";
+import type { AnimatedSprite } from "pixi.js";
+
+/**
+ * Sopro de fogo (Pixel FX "fire/fire-breath") saindo da boca do chefe quando ele ataca enfurecido.
+ * boca = posição da boca no desenho (em pixels, a partir do centro); origem = onde o jato nasce na folha do efeito.
+ */
+const SOPRO: Record<string, { boca: [number, number]; escala: number }> = {
+  colosso_igneo: { boca: [0, 24], escala: 1.35 },
+};
+
+/**
+ * Tiros em pixel art animada (Pixel FX): efeito e tamanho no mundo (escala do quadro).
+ * Os quadros apontam para a DIREITA, como o ângulo do jogo; o pivô (ponta do tiro) vem do JSON.
+ */
+function fxDoTiro(p: Projectile): { nome: string; escala: number } | null {
+  if (p.ult) return null;
+  const arma = p.src?.def.id;
+  if (p.kind === "bala" && arma === "plasma") return { nome: "tiro_plasma", escala: Math.max(1, p.r / 14) };
+  if (p.kind === "bala" && arma === "canhao") return { nome: "tiro_canhao", escala: 1 };
+  if (p.kind === "gelo") return { nome: "tiro_gelo", escala: 0.6 };
+  if (p.kind === "trilho") return { nome: "tiro_trilho", escala: p.r > 30 ? 2 : 1.4 };
+  if (p.kind === "drone") return { nome: "tiro_drone", escala: 0.55 };
+  if (p.kind === "missil") return { nome: "tiro_missil", escala: 0.42 };
+  return null;
+}
+
+/** Explosão do Pixel FX pela cor do inimigo/efeito: fogo (vermelho/laranja), verde ou roxo. */
+function explosaoPorCor(cor: number): string {
+  const r = (cor >> 16) & 255, g = (cor >> 8) & 255, b = cor & 255;
+  if (g > r && g > b) return "expl_verde";
+  if (r >= b && r > 150) return "expl_fogo";
+  return "expl_roxo";
+}
+import { aplicarEstagio, criarTorre, estagioArma, GIRO_PIXEL, PIXEL, texEstagio, type TorreView } from "./Torre";
+import { NO_PLANETA, posInstalacao } from "../battle/Sentinel";
 import type { SentinelId } from "../data/types";
 
 interface Freeable {
@@ -40,6 +76,8 @@ class EnemyView implements Freeable {
   bar = new Graphics();
   key = "";
   real = false;
+  /** Arte em pixel art (escala fixa, frente para baixo). */
+  pixel = false;
   constructor(private pool: ViewPool<EnemyView>) {
     this.body.anchor.set(0.5);
     this.shield.anchor.set(0.5);
@@ -59,6 +97,8 @@ class SpriteView implements Freeable {
   /** Rastro (só mísseis): pares x,y do mais novo para o mais antigo. */
   trail: number[] = [];
   trailTick = 0;
+  /** Quadros do tiro animado (Pixel FX), se for um. */
+  fx: QuadrosFx | null = null;
   haloBase = 1;
   constructor(private pool: ViewPool<SpriteView>, texId: string, halo: boolean) {
     this.root = new Container();
@@ -118,8 +158,15 @@ class SentinelView implements Freeable {
   }
   domo: Sprite | null = null;
   arcos: Graphics | null = null;
+  /** Arma do planeta (Domo, Serra, Colmeia): prédio em pixel art preso na borda do planeta. */
+  inst: Sprite | null = null;
+  instEstagio = 0;
+  /** Lâminas animadas da Serra Orbital. */
+  laminas: AnimatedSprite[] = [];
   arcoTick = -1;
   free(): void {
+    this.inst?.destroy();
+    for (const l of this.laminas) l.destroy();
     this.root.destroy({ children: true });
   }
 }
@@ -158,6 +205,16 @@ export class BattleRenderer {
   private bossAura = new Sprite(tex("glowSoft"));
   private bossRing = new Sprite(tex("anelFino"));
   private bossReal = false;
+  private bossPixel = false;
+  /** Explosões animadas (Pixel FX) e faíscas de impacto. */
+  private fxL = new Container();
+  private faiscaL = new Container();
+  private ultFaisca = 0;
+  private bossQuadro = "";
+  private sopro: AnimatedSprite | null = null;
+  /** Segundos que o sopro de fogo ainda fica aceso. */
+  private soproT = 0;
+  private tempoAnt = 0;
 
   leve = false;
   brilho = true;
@@ -181,7 +238,7 @@ export class BattleRenderer {
     this.bossL.visible = false;
     this.brilhoL.addChild(this.projL, this.particles.layer, this.beamsG);
     this.world.addChild(
-      this.campoG, this.zonesL, this.orbitas, this.planetL.layer, this.enemyL, this.bossL, this.sentL, this.shotL,
+      this.campoG, this.zonesL, this.orbitas, this.planetL.layer, this.enemyL, this.bossL, this.sentL, this.shotL, this.fxL, this.faiscaL,
       this.brilhoL, this.numeros.layer,
     );
     this.enemyPool = new ViewPool(this.enemyL, (p) => new EnemyView(p));
@@ -278,6 +335,11 @@ export class BattleRenderer {
       switch (f.t) {
         case "dmg":
           this.numeros.add(f.x, f.y, f.v, f.crit ? "crit" : "normal");
+          // faísca de impacto (no máximo uma a cada 40 ms, para não poluir)
+          if (!this.leve && this.tempo - this.ultFaisca > 0.04) {
+            this.ultFaisca = this.tempo;
+            tocarEfeito(this.faiscaL, "faisca", f.x, f.y, { escala: f.crit ? 1.2 : 0.8, rot: Math.random() * Math.PI * 2, velocidade: 1.3, max: 16 });
+          }
           break;
         case "dmgPlaneta":
           this.numeros.add(f.x, f.y - 30, f.v, "planeta");
@@ -285,12 +347,22 @@ export class BattleRenderer {
           audio.sfx("dano");
           break;
         case "morte":
-          this.particles.morte(f.x, f.y, f.cor, f.r, this.leve);
+          // explosão animada do Pixel FX (no modo leve, as partículas simples de antes)
+          if (this.leve || !tocarEfeito(this.fxL, explosaoPorCor(f.cor), f.x, f.y, { escala: Math.max(0.5, Math.min(2.2, (f.r * 4.5) / 150)), velocidade: 1.6 }))
+            this.particles.morte(f.x, f.y, f.cor, f.r, this.leve);
           audio.sfx("morte");
           break;
         case "explosao":
-          this.particles.explosao(f.x, f.y, Math.min(f.r, 600), f.cor, this.leve);
+          if (this.leve || !tocarEfeito(this.fxL, explosaoPorCor(f.cor), f.x, f.y, { escala: Math.max(0.5, Math.min(4, (Math.min(f.r, 600) * 2.2) / 150)), velocidade: 1.4 }))
+            this.particles.explosao(f.x, f.y, Math.min(f.r, 600), f.cor, this.leve);
           if (f.r > 60) audio.sfx("explosao");
+          break;
+        case "portal":
+          // portal se abrindo embaixo do alvo (Portal de Dobra)
+          if (!this.leve) tocarEfeito(this.fxL, "portal", f.x, f.y + f.r * 0.2, { escala: Math.max(0.8, f.r / 70), velocidade: 2.6 });
+          break;
+        case "explosaoChefe":
+          tocarEfeito(this.fxL, "expl_chefe", f.x, f.y, { escala: 2.4, velocidade: 1.3, max: 80 });
           break;
         case "escudo":
           this.planetL.impactoEscudo(f.ang);
@@ -342,7 +414,7 @@ export class BattleRenderer {
     if (!b.boss || !b.boss.alive) this.bossL.visible = false;
 
     // sentinelas
-    for (const s of b.sentinels) this.syncSentinel(s);
+    for (const s of b.sentinels) this.syncSentinel(b, s);
 
     // projéteis
     for (const p of b.projs) if (p.alive) this.syncProj(p, trail);
@@ -368,11 +440,34 @@ export class BattleRenderer {
     }
     v.root.x = z.x;
     v.root.y = z.y;
+    v.s.alpha = Math.min(1, z.life * 2, (z.maxLife - z.life) * 4) * 0.9;
+    // Poço Gravitacional: orbe de vazio animado; evoluído, buraco negro com disco (Pixel FX)
+    const nomeFx = z.src?.def.id === "gravidade" ? (z.buracoNegro ? "zona_buraco" : "zona_poco") : null;
+    const q = nomeFx ? quadrosEfeito(nomeFx) : null;
+    if (q) {
+      if (v.fx !== q) {
+        v.fx = q;
+        v.s.anchor.set(q.ancora[0], q.ancora[1]);
+        v.s.blendMode = "normal";
+        v.s.tint = 0xffffff;
+        v.s.rotation = 0;
+      }
+      const i = Math.floor((this.tempo * 1000) / q.ms) % q.texs.length;
+      v.s.texture = q.texs[i];
+      // a parte visível do efeito ocupa ~60% (orbe) / ~80% (disco) do quadro
+      v.s.scale.set((z.r * 2) / (v.s.texture.width * (z.buracoNegro ? 0.8 : 0.6)));
+      return;
+    }
+    if (v.fx) {
+      v.fx = null;
+      v.s.texture = tex("vortice");
+      v.s.anchor.set(0.5);
+    }
     v.s.blendMode = z.src === null || z.buracoNegro ? "normal" : "add";
-    v.s.tint = z.buracoNegro ? 0xffffff : 0xc0a8ff;
+    // Nuvem Nano em rosa; o resto no lilás de antes
+    v.s.tint = z.buracoNegro ? 0xffffff : z.src?.def.id === "nano" ? 0xff5ec8 : 0xc0a8ff;
     v.s.scale.set((z.r * 2.1) / v.s.texture.width);
     v.s.rotation -= 0.06 * (z.buracoNegro ? 2 : 1);
-    v.s.alpha = Math.min(1, z.life * 2, (z.maxLife - z.life) * 4) * 0.9;
   }
 
   private syncEnemy(e: Enemy, trail: boolean): void {
@@ -388,13 +483,18 @@ export class BattleRenderer {
         v.key = k;
       }
       // inimigos ficam um pouco maiores que a hitbox para leitura em telas pequenas
-      if (v.real) v.body.scale.set((e.def.raio * (e.def.raio < 16 ? 4.2 : 3.4)) / v.body.texture.width);
+      // (em pixel art o tamanho já vem certo do fatiar_folha: só amplia pelo tamanho do pixel)
+      v.pixel = v.real && ehPixel(idArte);
+      if (v.pixel) v.body.scale.set(PIXEL);
+      else if (v.real) v.body.scale.set((e.def.raio * (e.def.raio < 16 ? 4.2 : 3.4)) / v.body.texture.width);
       else v.body.scale.set(e.def.raio < 16 ? 1.5 : 1.3);
       v.bar.clear();
     }
     v.root.x = e.x;
     v.root.y = e.y;
-    v.body.rotation = e.rot;
+    // pixel art: desenhado com a frente para BAIXO (o ângulo do jogo começa na direita)
+    // (a Barreira é exceção: o ângulo dela é só uma inclinação perto de 0, e o desenho já é deitado)
+    v.body.rotation = v.pixel && e.def.comportamento !== "muro" ? e.rot - Math.PI / 2 : e.rot;
     // espectro invisível: quase transparente e tremulando
     v.root.alpha = e.def.comportamento === "espectro" && !e.alvoavel ? 0.12 + 0.08 * Math.sin(this.tempo * 20) : 1;
     const slowed = e.slowT > 0 && e.slowAmt > 0.3;
@@ -427,13 +527,22 @@ export class BattleRenderer {
       this.bossSprite.texture = tex(`chefe_${s.def.id}`);
       this.bossAura.tint = s.def.cor;
       this.bossReal = temArte(`chefe_${s.def.id}`);
-      this.bossSprite.scale.set(this.bossReal ? (s.def.raio * 3.1) / this.bossSprite.texture.width : 1);
+      this.bossPixel = this.bossReal && ehPixel(`chefe_${s.def.id}`);
+      this.bossQuadro = "";
+      this.soproT = 0;
+      if (this.sopro) this.sopro.visible = false;
+      // chefe (pixel art ou não) fica do tamanho da área dele; todos os quadros da animação usam a mesma escala
+      // (pixel art: os quadros alinhados têm folga em volta; vale a largura do corpo, do alinhar_quadros.py)
+      const larg = (this.bossPixel && (larguraChefes as Record<string, number>)[`chefe_${s.def.id}`]) || this.bossSprite.texture.width;
+      this.bossSprite.scale.set(this.bossReal ? (s.def.raio * 3.1) / larg : 1);
     }
-    this.bossL.x = e.x;
-    this.bossL.y = e.y;
+    if (this.bossPixel) this.animarChefePixel(e);
+    this.bossL.x = this.bossPixel ? Math.round(e.x) : e.x;
+    this.bossL.y = this.bossPixel ? Math.round(e.y) : e.y;
     // arte final: a nave aponta para o planeta (para baixo) e balança de leve; procedural gira
     // arte final já vem de frente para o planeta (para baixo): esferas giram, naves só balançam
-    if (this.bossReal) {
+    if (this.bossPixel) this.bossSprite.rotation = 0;
+    else if (this.bossReal) {
       const gira = s.def.id === "colosso_igneo" || s.def.id === "singularidade";
       this.bossSprite.rotation = gira ? e.rot * 0.35 : Math.sin(this.tempo * 0.8) * 0.06 + (s.fase === 2 ? Math.sin(this.tempo * 6) * 0.03 : 0);
     }
@@ -454,7 +563,116 @@ export class BattleRenderer {
     }
   }
 
-  private syncSentinel(s: SentinelRun): void {
+  /**
+   * Animação do chefe em pixel art, montada em código com poucos desenhos:
+   *  - chefe_<id> / chefe_<id>_furia (abaixo de 50% de vida)
+   *  - ..._piscar: olhos fechados por um instante a cada poucos segundos (enfurecido pisca mais)
+   *  - ..._ataque: boca/canhão aberto logo depois de atirar, com um pequeno coice
+   *  - flutua alguns pixels; enfurecido treme (sempre em pixels inteiros, para não borrar)
+   */
+  private animarChefePixel(e: Enemy): void {
+    const s = e.boss!;
+    const id = s.def.id;
+    const furia = s.fase === 2 && temArte(`chefe_${id}_furia`) ? "_furia" : "";
+    const base = `chefe_${id}${furia}`;
+    const periodo = furia ? 2.1 : 3.6;
+    const piscando = (this.tempo + (e.id % 5) * 0.7) % periodo < 0.13;
+    const dt = Math.max(0, Math.min(0.1, this.tempo - this.tempoAnt));
+    this.tempoAnt = this.tempo;
+    const cfgSopro = furia ? SOPRO[id] : undefined;
+    if (cfgSopro && (s.ataque ?? 0) > 0) this.soproT = Math.max(this.soproT, 0.9);
+    this.soproT = Math.max(0, this.soproT - dt);
+    // enquanto sopra fogo, a boca fica aberta
+    const atacando = (s.ataque ?? 0) > 0 || (!!cfgSopro && this.soproT > 0);
+    let quadro = base;
+    if (atacando && temArte(`${base}_ataque`)) quadro = `${base}_ataque`;
+    else if (piscando && temArte(`${base}_piscar`)) quadro = `${base}_piscar`;
+    if (quadro !== this.bossQuadro) {
+      this.bossQuadro = quadro;
+      this.bossSprite.texture = tex(quadro);
+    }
+    // flutuar (2 pixels para cima e para baixo) + coice ao atirar + tremor quando enfurecido
+    let dx = 0;
+    let dy = Math.round(Math.sin(this.tempo * 1.7) * 2) * PIXEL;
+    if (atacando) dy -= Math.round(((s.ataque ?? 0) / 0.35) * 3) * PIXEL;
+    if (furia) {
+      const passo = Math.floor(this.tempo * 18);
+      dx = (((passo * 7) % 3) - 1) * PIXEL;
+      dy += (((passo * 5) % 3) - 1) * PIXEL;
+    }
+    this.bossSprite.position.set(dx, dy);
+    // sopro de fogo animado (Pixel FX), apontando para baixo a partir da boca
+    if (cfgSopro && !this.sopro) {
+      this.sopro = criarEfeito("fire-breath");
+      if (this.sopro) {
+        this.sopro.rotation = Math.PI / 2;
+        this.sopro.blendMode = "normal";
+        this.bossL.addChild(this.sopro);
+      }
+    }
+    if (this.sopro) {
+      const ligado = !!cfgSopro && this.soproT > 0;
+      this.sopro.visible = ligado;
+      if (ligado && cfgSopro) {
+        const k = this.bossSprite.scale.x;
+        this.sopro.scale.set(k * cfgSopro.escala);
+        this.sopro.position.set(dx + cfgSopro.boca[0] * k, dy + cfgSopro.boca[1] * k);
+        this.sopro.alpha = Math.min(1, this.soproT * 4);
+      }
+    }
+  }
+
+  /** Lâminas da Serra Orbital: discos de energia animados (Pixel FX) girando em volta do planeta, como na lógica. */
+  private syncSerras(b: Battle, s: SentinelRun, v: SentinelView): void {
+    if (this.leve || !quadrosEfeito("serra")) return;
+    const st = s.stats;
+    const aneis = s.evoluido ? [{ r: st.alcance, v: 1.6 }, { r: st.alcance * 0.72, v: -2.1 }] : [{ r: st.alcance, v: 1.6 }];
+    const n = Math.max(1, Math.round(st.projeteis));
+    let k = 0;
+    for (const an of aneis) {
+      for (let i = 0; i < n; i++, k++) {
+        let lam = v.laminas[k];
+        if (!lam) {
+          lam = criarEfeito("serra")!;
+          lam.blendMode = "add";
+          this.sentL.addChild(lam);
+          v.laminas[k] = lam;
+        }
+        const a = b.t * an.v + (i / n) * Math.PI * 2;
+        lam.position.set(Math.round(b.planet.x + Math.cos(a) * an.r), Math.round(b.planet.y + Math.sin(a) * an.r));
+        // o disco "voa" na direção do giro (o rastro fica para trás)
+        lam.rotation = a + (an.v > 0 ? Math.PI / 2 : -Math.PI / 2);
+        lam.scale.set((st.area * 2) / 40);
+        lam.visible = true;
+      }
+    }
+    for (; k < v.laminas.length; k++) v.laminas[k].visible = false;
+  }
+
+  /** Instalação no planeta (arma que não atira): em pé na borda, apontando para fora; muda de desenho a cada estágio. */
+  private syncInstalacao(b: Battle, s: SentinelRun, v: SentinelView, estagio: number): void {
+    const idTex = texEstagio(`instalacao_${s.def.id}`, estagio);
+    if (!idTex) return;
+    if (!v.inst) {
+      v.inst = new Sprite(tex(idTex));
+      // o chão (morrinho) fica embaixo do desenho: âncora quase na base, para o prédio "sair" do planeta
+      v.inst.anchor.set(0.5, 0.9);
+      v.inst.scale.set(PIXEL);
+      // fica atrás das torres, mas na frente do planeta
+      this.sentL.addChildAt(v.inst, 0);
+      v.torre.root.visible = false;
+      v.glow.visible = false;
+    }
+    if (v.instEstagio !== estagio) {
+      v.instEstagio = estagio;
+      v.inst.texture = tex(idTex);
+    }
+    const p = posInstalacao(b, s);
+    v.inst.position.set(Math.round(p.x), Math.round(p.y));
+    v.inst.rotation = p.ang + GIRO_PIXEL;
+  }
+
+  private syncSentinel(b: Battle, s: SentinelRun): void {
     let v = s.view as SentinelView | undefined;
     if (!v) {
       v = new SentinelView(s.def.id, s.def.cor);
@@ -463,6 +681,9 @@ export class BattleRenderer {
     }
     v.root.x = s.x;
     v.root.y = s.y;
+    const estagio = estagioArma(s.nivel, s.evoluido);
+    if (NO_PLANETA.has(s.def.id)) this.syncInstalacao(b, s, v, estagio);
+    if (s.def.id === "serra") this.syncSerras(b, s, v);
     if (v.domo && v.arcos) {
       // a cúpula tem o tamanho REAL da área do Domo (cresce com as melhorias); respira,
       // acende logo após cada pulso e solta arcos elétricos pela borda
@@ -495,8 +716,23 @@ export class BattleRenderer {
       }
       return;
     }
+    if (v.inst) {
+      // arma do planeta já desenhada como instalação: sem anel/brilho de torre
+      v.ring.visible = false;
+      v.glow.visible = false;
+      return;
+    }
     // a cabeça gira para mirar; a base acompanha a órbita devagar
-    v.torre.cabeca.rotation = s.def.id === "laser" && s.raios[0] ? s.raios[0].ang : s.ang;
+    v.torre.cabeca.rotation = (s.def.id === "laser" && s.raios[0] ? s.raios[0].ang : s.ang) + (v.torre.pixel ? GIRO_PIXEL : 0);
+    if (v.torre.pixel) {
+      // pixel art: troca o desenho conforme o estágio (sem crescer/girar a base, para não borrar os pixels)
+      aplicarEstagio(v.torre, s.def.id, estagio);
+      v.root.x = Math.round(s.x);
+      v.root.y = Math.round(s.y);
+      v.ring.visible = false;
+      v.glow.visible = !this.leve && s.evoluido;
+      return;
+    }
     if (v.torre.base) v.torre.base.rotation = this.tempo * 0.15;
     v.ring.visible = s.evoluido;
     if (s.evoluido) v.ring.rotation += 0.03;
@@ -508,14 +744,29 @@ export class BattleRenderer {
 
   private syncProj(p: Projectile, trail: boolean): void {
     let v = p.view as SpriteView | undefined;
-    const missil = p.kind === "missil";
+    // míssil: se houver o foguete animado do Pixel FX (com a própria fumaça), vai como tiro animado
+    const missil = p.kind === "missil" && !quadrosEfeito("tiro_missil");
     if (!v) {
       const halo = this.brilho && !this.leve;
       v = missil ? this.missilPool.get() : halo && p.kind !== "estilhaco" ? this.projHaloPool.get() : this.projPool.get();
       p.view = v;
+      v.fx = null;
+      v.s.anchor.set(0.5);
+      v.s.blendMode = "add";
+      const fx = missil ? null : fxDoTiro(p);
+      const q = fx ? quadrosEfeito(fx.nome) : null;
       if (missil) {
         v.trail.length = 0;
         v.trailTick = 0;
+      } else if (fx && q) {
+        // tiro animado do Pixel FX
+        v.fx = q;
+        v.s.texture = q.texs[0];
+        v.s.anchor.set(q.ancora[0], q.ancora[1]);
+        v.s.tint = 0xffffff;
+        v.s.blendMode = "normal";
+        v.s.scale.set(fx.escala);
+        if (v.halo) v.halo.visible = false;
       } else {
         const cor = CORES_PROJ[p.kind] ?? p.cor;
         // arte final por tipo de tiro (comprimento no mundo); o resto usa o "bolt" colorido
@@ -553,6 +804,11 @@ export class BattleRenderer {
     v.root.x = p.x;
     v.root.y = p.y;
     v.root.rotation = Math.atan2(p.vy, p.vx);
+    if (v.fx) {
+      const n = v.fx.texs.length;
+      const i = Math.floor((this.tempo * 1000) / v.fx.ms + p.id) % n;
+      if (v.s.texture !== v.fx.texs[i]) v.s.texture = v.fx.texs[i];
+    }
     if (missil) {
       // chama tremulando + ponto do rastro a cada 2 frames (≈ 0,6 s de rastro)
       v.halo!.scale.set(v.haloBase * (0.9 + Math.random() * 0.5), v.haloBase * (0.8 + Math.random() * 0.3));
@@ -597,8 +853,15 @@ export class BattleRenderer {
       v = this.shotPool.get();
       s.view = v;
       const r = (s.cor >> 16) & 255, g = (s.cor >> 8) & 255;
+      v.s.blendMode = "add";
       // bola de plasma da arte final para tiros vermelho/laranja; outras cores seguem o brilho colorido
-      if (temArte("tiro_inimigo") && r > 200 && g < 190) {
+      if (s.arte && ehPixel(s.arte)) {
+        // tiro do chefe em pixel art (desenhado apontando para baixo)
+        v.s.texture = tex(s.arte);
+        v.s.tint = 0xffffff;
+        v.s.blendMode = "normal";
+        v.s.scale.set(PIXEL);
+      } else if (temArte("tiro_inimigo") && r > 200 && g < 190) {
         v.s.texture = tex("tiro_inimigo");
         v.s.tint = 0xffffff;
         v.s.scale.set((s.r * 4.2) / (v.s.texture.width * 0.92));
@@ -610,11 +873,28 @@ export class BattleRenderer {
     }
     v.root.x = s.x;
     v.root.y = s.y;
-    v.root.rotation = Math.atan2(s.vy, s.vx);
+    v.root.rotation = Math.atan2(s.vy, s.vx) - (s.arte && v.s.blendMode === "normal" ? Math.PI / 2 : 0);
   }
 
   private syncDrone(d: Drone): void {
     let v = d.view as SpriteView | undefined;
+    const idPixel = texEstagio("drone_colmeia", d.dono ? estagioArma(d.dono.nivel, d.dono.evoluido) : 1);
+    if (idPixel) {
+      // drone em pixel art (muda junto com o estágio da Colmeia)
+      if (!v) {
+        v = this.dronePool.get();
+        d.view = v;
+      }
+      const t = tex(idPixel);
+      if (v.s.texture !== t) v.s.texture = t;
+      v.s.blendMode = "normal";
+      v.s.tint = d.temp > 0 ? 0xffe070 : 0xffffff;
+      v.s.scale.set(PIXEL);
+      v.root.x = Math.round(d.x);
+      v.root.y = Math.round(d.y);
+      v.root.rotation = d.ang + GIRO_PIXEL;
+      return;
+    }
     if (!v) {
       v = this.dronePool.get();
       d.view = v;

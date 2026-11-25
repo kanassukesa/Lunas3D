@@ -1,5 +1,5 @@
 import { Mesh, MeshGeometry, Shader, Texture } from "pixi.js";
-import { spritesReais } from "./Sprites";
+import { ehPixel, spritesReais } from "./Sprites";
 
 /**
  * Planeta 3D girando: um mapa equirretangular (2:1) enrolado numa esfera por shader,
@@ -27,8 +27,14 @@ uniform sampler2D uNuvens;
 uniform float uRot;
 uniform float uRotNuvem;
 uniform float uDano;
+uniform float uPix;
+uniform vec3 uAtmo;
+uniform float uNuvemA;
+uniform float uEmis;
 void main() {
-  vec2 p = vUV * 2.0 - 1.0;
+  // uPix > 0: planeta em pixel art (a esfera é desenhada numa grade de uPix x uPix pixels)
+  vec2 uv = uPix > 0.0 ? (floor(vUV * uPix) + 0.5) / uPix : vUV;
+  vec2 p = uv * 2.0 - 1.0;
   float r = length(p);
   if (r > 1.0) { finalColor = vec4(0.0); return; }
   float z = sqrt(max(0.0, 1.0 - r * r));
@@ -40,20 +46,27 @@ void main() {
   float lon = atan(m.x, m.z);
   float v = 0.5 - lat / 3.14159265;
   vec3 cor = texture(uMapa, vec2(fract(lon / 6.2831853 + 0.5 + uRot), v)).rgb;
+  vec3 sup = cor;
+  // brilho próprio (lava, cristais): cores fortes e claras acendem mesmo no lado escuro
+  float mxc = max(sup.r, max(sup.g, sup.b));
+  float emis = uEmis * step(0.62, mxc) * step(0.45, (mxc - min(sup.r, min(sup.g, sup.b))) / max(mxc, 0.001));
   vec4 nv = texture(uNuvens, vec2(fract(lon / 6.2831853 + 0.5 + uRotNuvem), v));
-  cor = mix(cor, vec3(1.0), nv.a * 0.9);
+  cor = mix(cor, nv.rgb / max(nv.a, 0.001), nv.a * uNuvemA);
   vec3 L = normalize(vec3(-0.55, -0.62, 0.56));
   float dif = max(dot(n, L), 0.0);
   float lado = smoothstep(-0.25, 0.35, dot(n, L));
+  if (uPix > 0.0) { dif = floor(dif * 5.0 + 0.5) / 5.0; lado = floor(lado * 3.0 + 0.5) / 3.0; }
   cor *= 0.16 + 1.0 * dif;
+  cor += sup * emis * (1.0 - dif) * 0.85 * (1.0 - nv.a * uNuvemA);
   // brilho especular suave no oceano
   vec3 h = normalize(L + vec3(0.0, 0.0, 1.0));
-  cor += vec3(0.55, 0.75, 1.0) * pow(max(dot(n, h), 0.0), 40.0) * 0.35 * (1.0 - nv.a);
+  cor += mix(vec3(1.0), uAtmo, 0.5) * pow(max(dot(n, h), 0.0), 40.0) * 0.35 * (1.0 - nv.a);
   // atmosfera
   float rim = pow(1.0 - z, 2.2);
-  cor += vec3(0.30, 0.62, 1.0) * rim * (0.35 + 0.9 * lado);
+  if (uPix > 0.0) rim = floor(rim * 4.0 + 0.5) / 4.0;
+  cor += uAtmo * rim * (0.35 + 0.9 * lado);
   cor = mix(cor, vec3(1.0, 0.25, 0.25), uDano * 0.4);
-  float a = 1.0 - smoothstep(0.985, 1.0, r);
+  float a = uPix > 0.0 ? 1.0 : 1.0 - smoothstep(0.985, 1.0, r);
   finalColor = vec4(cor * a, a);
 }`;
 
@@ -130,19 +143,35 @@ function gerarMapa(W: number, H: number, nuvens: boolean): Texture {
   return Texture.from(cv);
 }
 
-const mapasCache = new Map<string, { terra: Texture; nuvens: Texture }>();
-function obterMapas(skin = "planeta_terra"): { terra: Texture; nuvens: Texture } {
+type Mapas = { terra: Texture; nuvens: Texture; pixel: boolean };
+/** Cor da atmosfera (brilho na borda) de cada skin de planeta. */
+const ATMOSFERA: Record<string, [number, number, number]> = {
+  terra: [0.3, 0.62, 1.0],
+  lava: [1.0, 0.42, 0.12],
+  gelo: [0.62, 0.92, 1.0],
+  deserto: [1.0, 0.72, 0.38],
+  alien: [0.48, 1.0, 0.36],
+  premium_lava: [1.0, 0.76, 0.24],
+};
+/** Opacidade da camada de atmosfera de cada skin (as mais densas ficam mais transparentes para a superfície aparecer). */
+const OPACIDADE_NUVEM: Record<string, number> = { terra: 0.9, lava: 0.8, gelo: 0.72, deserto: 0.42, alien: 0.36, premium_lava: 0.5 };
+/** Brilho próprio da superfície (lava acesa no lado escuro). */
+const EMISSAO: Record<string, number> = { lava: 1, premium_lava: 1, alien: 0.6 };
+const mapasCache = new Map<string, Mapas>();
+function obterMapas(skin = "planeta_terra"): Mapas {
   let mapas = mapasCache.get(skin) ?? null;
   if (!mapas) {
     const idMapa = skin === "planeta_terra" ? "planeta_mapa" : `planeta_mapa_${skin.replace("planeta_", "")}`;
     const terra = spritesReais.get(idMapa) ?? spritesReais.get("planeta_mapa") ?? gerarMapa(512, 256, false);
-    const nuvens = spritesReais.get("planeta_nuvens") ?? gerarMapa(512, 256, true);
+    const pixel = ehPixel(spritesReais.has(idMapa) ? idMapa : "planeta_mapa");
+    // cada skin pode ter a própria camada de nuvens (planeta_nuvens_<id>: fumaça, neve, poeira...)
+    const nuvens = spritesReais.get(`planeta_nuvens_${skin.replace("planeta_", "")}`) ?? spritesReais.get("planeta_nuvens") ?? gerarMapa(512, 256, true);
     for (const t of [terra, nuvens]) {
       t.source.style.addressModeU = "repeat";
       t.source.style.addressModeV = "clamp-to-edge";
-      t.source.style.scaleMode = "linear";
+      t.source.style.scaleMode = pixel ? "nearest" : "linear";
     }
-    mapas = { terra, nuvens };
+    mapas = { terra, nuvens, pixel };
     mapasCache.set(skin, mapas);
   }
   return mapas;
@@ -156,7 +185,8 @@ export class PlanetSphere {
   velNuvem = 0.018;
 
   constructor(raio: number, skin?: string) {
-    const { terra, nuvens } = obterMapas(skin);
+    const { terra, nuvens, pixel } = obterMapas(skin);
+    const atmo = ATMOSFERA[(skin ?? "planeta_terra").replace("planeta_", "")] ?? ATMOSFERA.terra;
     const geometry = new MeshGeometry({
       positions: new Float32Array([-raio, -raio, raio, -raio, raio, raio, -raio, raio]),
       uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
@@ -171,6 +201,11 @@ export class PlanetSphere {
           uRot: { value: 0, type: "f32" },
           uRotNuvem: { value: 0, type: "f32" },
           uDano: { value: 0, type: "f32" },
+          // mesmo tamanho de pixel do fundo (fundo de 180 px em 540 unidades = 3 unidades por pixel)
+          uPix: { value: pixel ? Math.round((raio * 2) / 3) : 0, type: "f32" },
+          uAtmo: { value: new Float32Array(atmo), type: "vec3<f32>" },
+          uEmis: { value: EMISSAO[(skin ?? "planeta_terra").replace("planeta_", "")] ?? 0, type: "f32" },
+          uNuvemA: { value: OPACIDADE_NUVEM[(skin ?? "planeta_terra").replace("planeta_", "")] ?? 0.9, type: "f32" },
         },
       },
     });
