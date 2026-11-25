@@ -8,7 +8,8 @@ import { STAGES } from "../data/stages";
 import { calcularRecompensas, creditosParciais, gerarChip, podeMelhorar, CUSTO_REVIVER, desafioDoDia, faseLiberada, hojeStr, jornadaDaSemana, semanaStr, snapshot, type Recompensa } from "../meta/Meta";
 import { Background } from "../render/Background";
 import { BattleRenderer } from "../render/BattleRenderer";
-import { HubScene } from "../render/HubScene";
+import { HubScene, type ArmaVitrine } from "../render/HubScene";
+import { SENTINEL_IDS } from "../data/sentinels";
 import { initTextures } from "../render/Textures";
 import { aparencia } from "../render/Aparencia";
 import { Hud } from "../ui/Hud";
@@ -269,7 +270,7 @@ export class Game implements Nav {
     aparencia.planeta = this.save.skins.planeta;
     aparencia.escudo = this.save.skins.escudo;
     if (!this.hub) {
-      this.hub = new HubScene([this.save.deck.base, ...this.save.deck.pool]);
+      this.hub = new HubScene(this.armasDoHangar());
       this.cena.addChild(this.hub.layer);
       this.resize();
     }
@@ -335,10 +336,15 @@ export class Game implements Nav {
     this.hub.encaixar(r.left + r.width / 2, r.top + r.height / 2, Math.min(r.width, r.height) / 2);
   }
 
+  /** Todas as armas liberadas no Hangar (com o nível de cada uma), para a vitrine da tela inicial. */
+  private armasDoHangar(): ArmaVitrine[] {
+    return SENTINEL_IDS.filter((id) => this.save.sentinelas[id]?.desbloqueada).map((id) => ({ id, nivel: this.save.sentinelas[id].nivel }));
+  }
+
   private recriarHub(): void {
     if (!this.hub) return;
     this.hub.destruir();
-    this.hub = new HubScene([this.save.deck.base, ...this.save.deck.pool]);
+    this.hub = new HubScene(this.armasDoHangar());
     this.cena.addChild(this.hub.layer);
     this.resize();
   }
